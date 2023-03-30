@@ -11,6 +11,8 @@ NB. Can we ensure that forum posts are in order?
 NB. Solve the "SQLITE" "SQLITE on Android" TOC search problem.  Recursive "sort"?  End fullpaths with '/'?
 NB. Some of the category links in the search results aren't working/specified properly.
 NB. Newcomers N and Notices N share a tag.  This creates confusion for the sortKey in the categories table.
+NB. Fix the category order in the detail area (add the sortkey to it).
+NB. The subcategory 'Contributing to the J Wiki W.3' seems to be missing from the scroll list under 'Wiki W' and only 'Using the J Wiki W.1' shows up in the results area.
 
 NB. B Items
 NB. Support parallel download of forum posts.
@@ -322,71 +324,6 @@ links =. 7 {"1 entries
 )
 NB. ======================================================
 
-
-NB. ============================ Bob's Categories ================================
-buildBobToc =: 3 : 0
-NB. Build a BobToc: Full Path ; Document Name ; Link
-NB. dbOpenDb ''
-return.
-catTree =. getBobsCategoryTree ''
-table =. ,: a: , a: , a:
-try.
-	pat =. rxcomp 'href="/wiki/Category:([^"]+)"'
-	links =. , > {: sqlreadm__db 'select url from page_cache'
-	for_link. links do.
-		html =. , > > {: sqlreadm__db 'select html from page_cache where url = "' , (, > link) , '"'
-		matches =. pat rxmatches html
-		if. 0 = # matches do. continue. end.
-		offsetLengths =. 1 {"2 matches
-		offsets =. 0 {"1 offsetLengths
-		lengths =. 1 {"1 offsetLengths
-		rawCategories =. lengths <@{."0 1 offsets }."0 1 html
-		categories =. (i:&' ' {. ]) &. > ('_' ; ' ')&rxrplc &. >  rawCategories
-		indexes =. (# catTree) -.~ (1 {"1 catTree) i."_ 0 categories
-		paths =. ,. 2 {"1 indexes { catTree
-		titleIndex =. (2 {"1 Toc) i. < (i.&'#' {. ]) > link
-		if. titleIndex = # Toc do. title =. < '????' else. title =. 1 { , titleIndex { Toc end.
-		table =. table , paths ,"1 1 title , link
-	end.
-catch.
-	smoutput 'Thrown error' ; (13!:12) ''
-	smoutput 'Db Error' ; dbError ''	
-end.
-/:~ }. table
-)
-
-loadLinksTable =: 3 : 0
-try.
-	dbOpenDb''
-	links =. > {: sqlreadm__db 'select url from page_cache'
-	loadCategories &. > links
-catch.
-	smoutput (13!:12) ''
-	smoutput dbError ''
-end.
-)
-
-getBobsCategoryTree =: 3 : 0
-NB. 
-pat =. 'Category:([^\]]+)'
-lines =. <;._2 BobsCategoryStrings
-table =. ,: 0 ; 'N' ; ''
-for_line. lines do.
-	l =. > line
-	level =. +/ '*' = l
-	offsetLength =. pat rxmatch l
-	offset =. 0 { 1 { offsetLength
-	length =. 1 { 1 { offsetLength
-	rawNodeName =. length {. offset }. l
-	nodeName =. (i:&' ' {. ]) rawNodeName
-	parentPath =. > 2 { table {~ (> {."1 table) i: level - 1
-	fullyQualifiedPath =. parentPath , '/' , nodeName
-	table =. table , level ; nodeName ; fullyQualifiedPath
-end.
-(0 1 {"1 table) ,. '*'&, &. > }. &. > 2 {"1 table
-)
-
-BobsCategories =: '' NB. Table of Level ; Node Name N ; Fully-Qualified Path
 
 NB. ==============================================================================
 foo =: 3 : 0

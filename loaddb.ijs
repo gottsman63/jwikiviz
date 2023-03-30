@@ -401,6 +401,7 @@ finishTables =: 3 : 0
 NB. Add level, count, sort and path information to the category table.
 NB. Add count information to the wiki table.
 sqlcmd__db 'begin transaction'
+smoutput 'finishTables!'
 for_category. > {: sqlreadm__db 'select child from categories' do.
 	depth =. _1
 	parent =. , > category
@@ -412,7 +413,10 @@ for_category. > {: sqlreadm__db 'select child from categories' do.
 		path =. parent , '/' , path
 		depth =. >: depth
 	end.
-	parms =. 'categories' ; ('child = "' , (, > category) , '"') ; (, 'level' ; 'fullpath' ; 'sortkey') ; , < depth ; path ; sortkey
+	root =. > {. a: -.~ <;._2 path , '/'
+	finalSortkey =. root , '.' , sortkey
+	root =. > {. < ;._2 path , '/'
+	parms =. 'categories' ; ('child = "' , (, > category) , '"') ; (, 'level' ; 'fullpath' ; 'sortkey') ; , < depth ; path ; finalSortkey
 	sqlupdate__db  parms
 end.
 sqlcmd__db 'commit transaction'
@@ -445,7 +449,8 @@ sqlcmd__db 'begin transaction'
 rootNames =. > 1 { sqlreadm__db 'select child from categories where level = 0'
 NB. rootCategories =. (< 0 #~ # rootNames) , (< (#rootNames) # < '') , (< , rootNames) , (< , '/'&, &. > rootNames)
 for_root. rootNames do.
-	parms =. 'categories' ; ('child = "' , (, > root) , '"') ; (, < 'link') ; 'Category:' , , > root
+	openRoot =. , > root
+	parms =. 'categories' ; ('child = "' , openRoot , '"') ; ('link' ; 'sortkey') ; < ('Category:' , openRoot) ; openRoot
 	sqlupdate__db parms
 end.
 sqlcmd__db 'commit transaction'
@@ -482,7 +487,7 @@ setupTempDirectory ''
 setupDb ''
 loadVoc ''
 loadForum &. > ;: 'chat database general source programming beta'
-downloadWiki ''
+NB. downloadWiki ''
 processCategoryFile &. > {."1 (1!:0) (wikiDir , '/Category_*.html')
 finishTables ''
 )
