@@ -10,9 +10,7 @@ NB. Scroll behavior for long subject- and author lists in forum browser.
 NB. Can we ensure that forum posts are in order?
 NB. Solve the "SQLITE" "SQLITE on Android" TOC search problem.  Recursive "sort"?  End fullpaths with '/'?
 NB. Some of the category links in the search results aren't working/specified properly.
-NB. Newcomers N and Notices N share a tag.  This creates confusion for the sortKey in the categories table.
 NB. Fix the category order in the detail area (add the sortkey to it).
-NB. The subcategory 'Contributing to the J Wiki W.3' seems to be missing from the scroll list under 'Wiki W' and only 'Using the J Wiki W.1' shows up in the results area.
 
 NB. B Items
 NB. Support parallel download of forum posts.
@@ -182,10 +180,11 @@ addSearchToToc =: 3 : 0
 NB. y A search string
 NB. sqlcmd__db 'begin transaction'
 term =. y
-cols =. ;: 'level parent child fullpath count link'
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 1 ; '*Search' ; y ; ('/*Search/' , term) ; 0 ; ''
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Wiki' ; ('/*Search/' , term , '/Wiki') ; _1 ; 'Special:JwikiSearch'
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Forums' ; ('/*Search/' , term , '/Forums') ; _1 ; 'https://www.jsoftware.com/forumsearch.htm'
+sortfragment =. '*Search.' , (": (6!:1) '') , '.' , term , '.'
+cols =. ;: 'level parent child fullpath count link sortkey'
+sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 1 ; '*Search' ; y ; ('/*Search/' , term) ; 0 ; '' ; sortfragment
+sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Wiki' ; ('/*Search/' , term , '/Wiki') ; _1 ; 'Special:JwikiSearch' ; sortfragment , 'Wiki'
+sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Forums' ; ('/*Search/' , term , '/Forums') ; _1 ; 'https://www.jsoftware.com/forumsearch.htm' ; sortfragment , 'Forums'
 resetTocOutlineRailEntries ''
 invalidateDisplay ''
 return.
