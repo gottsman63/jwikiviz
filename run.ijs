@@ -10,6 +10,7 @@ NB. Some of the category links in the search results aren't working/specified pr
 NB. Fix the category order in the detail area (add the sortkey to it).
 NB. The detail area subcategories of Archived Pages have bad titles and fail to load the corresponding category pages.
 NB. Look into putting an index on child category--it would be used by "getLinkForCategory."
+NB. The book chapters are all out of order.  How can I order them?
 
 NB. B Items
 NB. Support parallel download of forum posts.
@@ -112,14 +113,8 @@ direction =. * 11 { sysdata
 smoutput 'mwheel' ; direction
 )
 
-vizform_vocContext_mblup =: 3 : 0
-DefaultUrl =: LastUrlLoaded
-smoutput DefaultUrl
-wd 'set urlBox text "' , DefaultUrl , '"'
-)
-
 vizform_vocContext_mbldbl =: 3 : 0
-if. IFUNIX do. (2!:1) 'open -a Safari "' , LastUrlLoaded , '"' end.
+if. IFUNIX do. (2!:1) 'open -a Safari "' , > 0 { 0 { HistoryMenu , '"' end.
 )
 
 vizform_searchBox_button =: 3 : 0
@@ -462,6 +457,7 @@ if. (1.5 < ((6!:1) '') - CurrentHistoryLoadTime) *. -. '' -: CurrentHistoryEntry
 	wd 'set history select 0'
 	CurrentHistoryEntry =: ''
 end.
+HistoryMenu =: (20 <. # HistoryMenu) {. HistoryMenu
 )
 
 HistoryMenu =: '' NB. Table of Title ; Link
@@ -482,7 +478,6 @@ wd 'set browser url *' , url
 CurrentHistoryEntry =: y
 CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
-smoutput 'Loaded ' , url
 )
 
 NB. ======================== Cached Drawing ===========================
