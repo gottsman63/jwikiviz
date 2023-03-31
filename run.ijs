@@ -4,13 +4,11 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Ensure that the frame rate stays above 30 fps.
-NB. Look for more database caching/indexing opportunities.
-NB. Scroll behavior for long subject- and author lists in forum browser.
-NB. Can we ensure that forum posts are in order?
-NB. Solve the "SQLITE" "SQLITE on Android" TOC search problem.  Recursive "sort"?  End fullpaths with '/'?
+NB. Scroll behavior for long subject- and author lists in forum detail area.
+NB. Can we ensure that forum posts are in order?  Add a sequence number as you parse each post (we don't have the dates).
 NB. Some of the category links in the search results aren't working/specified properly.
 NB. Fix the category order in the detail area (add the sortkey to it).
+NB. Darken the text lines so they're closer to the text letters.
 
 NB. B Items
 NB. Support parallel download of forum posts.
@@ -20,14 +18,7 @@ NB. Can we present user-defined categories?
 NB. Add a "Search" label.
 NB. Crawl the category pages--don't download the site archive.  (It's nearly 10k pages)
 NB. Sometimes there's a stray category link at the end of a category's pages.
-
-NB. January/2016 has a huge forum thread on frames.
-NB. https://www.jsoftware.com/pipermail/programming/2008-January/009364.html
-NB. http://www.jsoftware.com/pipermail/chat/2022-May/009097.html
-appDir =: jpath '~temp/jwikiviz'
-wikiDir =: appDir , '/code.jsoftware.com/wiki'
-codeSearchFile =: appDir , '/codesearch.html'
-forumFilesDir =: appDir , '/forums'
+NB. The search results should show "Wiki" in the same way they show "Forums" in the detail display.
 
 NB. ============= Database ===============
 dbFile =: jpath '~temp/cache.db'
@@ -57,7 +48,10 @@ wd      'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
-wd      'cc urlBox edit;'
+wd     'bin h;'
+wd       'cc history combolist;'
+wd       'cc launch button; cn Launch Browser;'
+wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
@@ -70,12 +64,13 @@ winH =: h - 20
 controlHeight =. 30
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
-wd 'set urlBox maxwh ' , (": <. (winW * 0.5) , controlHeight) , ';'
+wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": <. (winW * 0.08) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
 DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
-NB. wd 'timer 250'
+wd 'timer 250'
 )
 
 vizform_default =: 3 : 0
@@ -103,7 +98,6 @@ clearSearches ''
 
 vizform_vocContext_mmove =: 3 : 0
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
-queueLoadPage DefaultUrl
 invalidateDisplay ''
 )
 
@@ -115,7 +109,6 @@ vizform_vocContext_mwheel =: 3 : 0
 sysdata =. ". > 1 { 13 { wdq
 direction =. * 11 { sysdata
 smoutput 'mwheel' ; direction
-NB. previewBrowserMouseWheel direction
 )
 
 vizform_vocContext_mblup =: 3 : 0
@@ -129,13 +122,20 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , LastUrlLoaded , '"' end.
 )
 
 vizform_searchBox_button =: 3 : 0
-NB. wd 'set categoryList select 0'
 search searchBox
 wd 'set searchBox text ""'
 )
 
+vizform_history_select =: 3 : 0
+queueLoadPage s =. (". history_select) { HistoryMenu
+)
+
+vizform_launch_button =: 3 : 0
+if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
+)
+
 sys_timer_z_ =: 3 : 0
-NB. wd 'set vocContext invalid'
+resetHistoryMenu_base_ ''
 )
 
 wd 'timer 0'
@@ -145,15 +145,13 @@ try.
 'w h' =. ". wd 'get vocContext wh'
 if. (w > 300) *. h > 300 do.
 	scheduleBackgroundRender ''
-	clearLoadPageQueue ''
-	queueLoadPage DefaultPage
+NB.	queueLoadPage DefaultPage
  	glfill 255 255 255 255
 	drawVoc ''
  	drawToc ''
 	drawFrameRate ''
 	backgroundRenderComplete ''
 NB.	manageMouseMove VocMouseXY
-	loadQueuedPage ''
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
@@ -267,39 +265,12 @@ invalidateDisplay ''
 
 search =: 3 : 0
 NB. y A search string.
-NB. https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=500&offset=0&profile=default&search=complex
-NB. Do a web search and set the highlights to the results.
-NB. curl  "https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=Pied%20Piper&num=50" 
-NB. curl  "https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=site%3Acode.jsoftware.com%20OR%20www.jsoftware.com%20socket&num=100" 
 addSearchToToc y
 searchWiki y
 searchForums y
 updateSearchTotals ''
 return.
-SearchResultsTable =: ''
-query =. urlencode y
-smoutput 'Searching for ' , query
-logFile =: appDir , '/curl.log'
-NB. (2!:0) 'curl -o "' , SearchResultsFilename , '" --stderr "' , logFile , '" https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&blk=50&pos=0&for=complex'
-NB. (2!:1) 'open -a Safari "file:/' , SearchResultsFilename , '"'
-k =: (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&blk=50&pos=0&for=complex"'
-	NB. if. IFUNIX do.
-NB. (2!:1) 'curl -o ' , SearchResultsFilename , ' "https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=site%3Acode.jsoftware.com%20' , query , '&num=100"'
-NB.	(2!:0) 'curl -H "blk:500" -H "pos:0" -o ' , SearchResultsFilename , ' --stderr ' , logFile , ' https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&blk=500&pos=0&for=' , query
-NB. request =: 'https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=site%3Acode.jsoftware.com%20OR%20www.jsoftware.com%20' , query
-NB. (2!:0) 'curl --stderr ' , logFile , ' -o ' , SearchResultsFilename , ' -H "num:100" ' , request
-NB. end.
-NB. s =. (' -H apikey:' , 'a9f7c2d0-bc41-11ed-9f40-21b580af7851') gethttp 'https://app.zenserp.com/api/v2/search?q=' , query
-NB. request =. 'https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=site%3Acode.jsoftware.com%20OR%20www.jsoftware.com%20' , query , '&num=100'
-NB. request =. 'https://app.zenserp.com/api/v2/search?q=site%3Acode.jsoftware.com%20' , query , '&num=100&start=0'
-NB. ('-o ' , SearchResultsFilename , ' --stderr /Users/edgottsman/Documents/gethttp.log -H "num:100" -H "apikey:' , 'a9f7c2d0-bc41-11ed-9f40-21b580af7851"') gethttp request
 )
-NB. curl  "https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=Pied%20Piper&num=100" 
-NB. curl  "https://app.zenserp.com/api/v2/search?apikey=a9f7c2d0-bc41-11ed-9f40-21b580af7851&q=Pied%20Piper&num=100&start=0" 
-NB. --stderr ',jpath '~temp/gethttp.log
-NB. zenserpKey =: 0 : 0
-NB. a9f7c2d0-bc41-11ed-9f40-21b580af7851
-
 
 NB. ======================================================
 
@@ -475,29 +446,40 @@ if. LastUrlLoaded -: '' do. loadPage DefaultUrl end.
 )
 
 queueLoadPage =: 3 : 0
-QueuedLoadUrl =: y
+NB. y Url ; Optional title
+if. 6 < # y do. entry =. (< y) , a: else. entry =. y end.
+loadPage entry
 )
  
-clearLoadPageQueue =: 3 : 0
-QueuedLoadUrl =: ''
-)
-NB. https://code.jsoftware.com/wiki/User:Andrew_Nikitin
-loadQueuedPage =: 3 : 0
-NB. loadPage QueuedLoadUrl
-if. -. QueuedLoadUrl -: '' do. loadPage QueuedLoadUrl else. loadPage DefaultUrl end.
+resetHistoryMenu =: 3 : 0
+NB. Possibly prepend the current page to the history menu.
+NB. Called from the timer.
+if. (1.5 < ((6!:1) '') - CurrentHistoryLoadTime) *. -. '' -: CurrentHistoryEntry do.
+	if. HistoryMenu -: '' do. HistoryMenu =: ,: CurrentHistoryEntry else. HistoryMenu =: ~. CurrentHistoryEntry , HistoryMenu end.
+	s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
+	wd 'set history items *' , s
+	wd 'set history select 0'
+	CurrentHistoryEntry =: ''
+end.
 )
 
+HistoryMenu =: '' NB. Table of Title ; Link
+CurrentHistoryEntry =: '' NB. Title ; Link
+CurrentHistoryLoadTime =: 0 NB. The time at which this entry was first loaded.
+
 loadPage =: 3 : 0
-NB. y A url
-url =. y
-if. url -: '' do. url =. DefaultUrl end.
+NB. y A url, possibly unqualified ; A title
+if. 0 = # y do. return. end.
+url =. > {. y
+if. url -: '' do. return. end.
 url =. ('User_' ; 'User:') rxrplc url
-if. 0 = # url do. return. end.
 if. -. 'http' -: 4 {. url do.
 	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/wiki/' , url
 end.
 if. LastUrlLoaded -: url do. return. end.
 wd 'set browser url *' , url 
+CurrentHistoryEntry =: y
+CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
 )
 
@@ -508,7 +490,7 @@ ReversibleSelections =: '' NB. Table of rect
 
 registerRectLink =: 4 : 0
 NB. x xx yy width height
-NB. y A url or * to be evaluated.
+NB. y A url or * to be evaluated ; an optional title
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
@@ -557,7 +539,7 @@ if. sectionFlag do.
 	glfont TocFont
 else.
 	(xx , yy) drawStringAt name
-	(xx , yy , maxWidth , TocLineHeight) registerRectLink link
+	(xx , yy , maxWidth , TocLineHeight) registerRectLink link ; name
 end.
 0
 )
@@ -631,7 +613,7 @@ else.
 end.
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
-adjRect registerRectLink command
+adjRect registerRectLink command ; name
 0
 )
 
@@ -733,7 +715,7 @@ glfont TocFont
 leftRects =. leftOrigins ,"1 1 > ,&TocLineHeight &. > {.@glqextent &. > leftSubjects
 (<"1 leftRects) registerRectLink &. > '*setTocEntryForumSubjectIndex '&, &. > ": &. > (<"0 i. # leftRects)
 (TocEntryForumSubjectIndex { leftRects) drawHighlight SelectionColor
-subject =. 2 { TocEntryForumSubjectIndex { ForumCacheTable
+subject =. TocEntryForumSubjectIndex { subjects
 authorEntries =. entries #~ ({."1 entries) = TocEntryForumSubjectIndex { subjects
 authors =. 1 {"1 authorEntries
 authorHeight =. TocLineHeight * # authors
@@ -743,10 +725,12 @@ glclip 0 0 , (_5 + 0 { 0 { leftRects) , height
 (<"1 authorOrigins) drawStringAt &. > authors
 authorRects =. authorOrigins ,"1 1 (> {.@glqextent &. > authors) ,. TocLineHeight
 (<"1 authorRects) registerRectLink &. > '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authorRects
+TocEntryForumAuthorIndex =: TocEntryForumAuthorIndex <. <: # authors
 (TocEntryForumAuthorIndex { authorRects) drawHighlight SelectionColor
 glclip 0 0 10000 100000
+title =. LF -.~ (> TocEntryForumAuthorIndex { authors) , ' * ' , (> subject)
 selectedAuthorEntry =. TocEntryForumAuthorIndex { authorEntries
-queueLoadPage 'https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 2 { selectedAuthorEntry
+queueLoadPage ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 2 { selectedAuthorEntry) ; title
 )
 
 setTocEntryChildCategory =: 4 : 0
@@ -891,11 +875,11 @@ gltextcolor ''
 if. railIndex = TocOutlineRailSelectedIndex do. 
 	if. isShrunken do.
 		entryRect drawHighlight SelectionColor
-		entryRect registerRectLink link
+		entryRect registerRectLink link ; indentedCategory
 	else.
 		(entryX , entryY) drawStringAt indentedCategory
 		entryRect drawHighlight SelectionColor
-		entryRect registerRectLink link
+		entryRect registerRectLink link ; indentedCategory
 	end.
 else.
 	if. isShrunken do.
@@ -957,7 +941,7 @@ glrect xx , yy , width , height
 glcursor IDC_ARROW
 if. VocMouseXY pointInRect xx , yy , 70 , height do. glcursor IDC_SIZEVER end.
 if. VocMouseXY pointInRect (xx + 70) , yy , (width - 70) , height do. glcursor IDC_POINTINGHAND end.
-if. VocMouseXY pointInRect xx , yy , 70 , height do. glrgb 220 220 255 else. glrgb ScrollColor end.
+if. VocMouseXY pointInRect xx , yy , 70 , height do. glrgb 150 150 255 else. glrgb ScrollColor end.
 glbrush ''
 glpen 0
 glrect xx , yy , stripeWidth , height
@@ -1062,7 +1046,7 @@ NB.	glrgba 0 0 0 0
 NB.	glbrush''
 NB.	glrect (leftX - 4) , (yy - 5) , (width + 8) , 20
 	((leftX - 4) , (yy - 1) , (width + 8) , 20) drawHighlight SelectionColor
-	queueLoadPage > {: x
+	queueLoadPage link ; label
 end.
 0
 )
@@ -1169,24 +1153,6 @@ if. (0 < # g) do.
 end.
 225 30 drawVocSections 0 1 2 3 4 5
 510 30 drawVocSections 6 7 8 9 10 11
-)
-
-drawButton =: 4 : 0
-NB. x rect
-NB. y Label ; Link/Command
-'label link' =. y
-rect =. x
-glrgb 255 255 255
-glbrush ''
-glrgb 0 0 0
-glpen 1
-glrect rect
-glfont 'arial bold 18'
-glrgb HighlightColor
-gltextcolor ''
-xx =. (0 { rect) + <. -: (2 { rect) - {. glqextent label
-(xx , 1 { rect) drawStringAt label
-rect registerRectLink link
 )
 
 FrameTimeStamps =: ''

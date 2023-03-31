@@ -487,7 +487,7 @@ setupTempDirectory ''
 setupDb ''
 loadVoc ''
 loadForum &. > ;: 'chat database general source programming beta'
-NB. downloadWiki ''
+downloadWiki ''
 processCategoryFile &. > {."1 (1!:0) (wikiDir , '/Category_*.html')
 finishTables ''
 )
