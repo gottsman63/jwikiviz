@@ -8,7 +8,8 @@ NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Can we ensure that forum posts are in order?  Add a sequence number as you parse each post (we don't have the dates).
 NB. Some of the category links in the search results aren't working/specified properly.
 NB. Fix the category order in the detail area (add the sortkey to it).
-NB. Darken the text lines so they're closer to the text letters.
+NB. The detail area subcategories of Archived Pages have bad titles and fail to load the corresponding category pages.
+NB. Look into putting an index on child category--it would be used by "getLinkForCategory."
 
 NB. B Items
 NB. Support parallel download of forum posts.
@@ -481,6 +482,7 @@ wd 'set browser url *' , url
 CurrentHistoryEntry =: y
 CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
+smoutput 'Loaded ' , url
 )
 
 NB. ======================== Cached Drawing ===========================
@@ -495,10 +497,11 @@ NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
 if. -. VocMouseXY pointInRect x do. return. end.
-if. '*' = {. y do. 
-	". }. y 
+if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. y ; '----' end.
+if. '*' = {. urlCommand do.
+	". }. urlCommand
 else. 
-	queueLoadPage y 
+	queueLoadPage urlCommand ; name
 end.
 x drawReversibleSelection SelectionColor
 )
@@ -737,7 +740,7 @@ setTocEntryChildCategory =: 4 : 0
 NB. x The link for the subtree node
 NB. y Choose the subtree node whose children should be displayed.
 TocEntryChildCategory =: y
-queueLoadPage x
+queueLoadPage x ; y
 )
 
 TocEntryChildCategory =: ''
@@ -772,7 +775,7 @@ cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 childCategories
 commandLinks =. ''''&, &. > ,&'''' &. > getLinkForCategory &. > cleanCategories
 commandCategories =. ,&'''' &. > ''''&, &. > cleanCategories
 commands =. '*'&, &. > commandLinks , &. > ' setTocEntryChildCategory '&, &. > commandCategories 
-categoryEntryList =. (<"0 catHighlightFlags) ,. (< 1) ,.~ indentedCategoryColumn ,. commands  NB. Depth ; Title ; Link ; Heading Flag
+categoryEntryList =. (<"0 catHighlightFlags) ,. (< 1) ,.~ indentedCategoryColumn ,. commands  NB. HighlightFlag ; Title ; Link ; Heading Flag
 displayChildTable =. childTable #~ (2 {"1 childTable) = < TocEntryChildCategory  NB. Title ; Category ; Full Path ; Link
 entryList =. (< 0) ,.~ 0 1 3 {"1 displayChildTable  NB. HighlightFlag ; Title ; Link ; Heading Flag
 rowCount =. <. height % TocLineHeight
@@ -883,7 +886,7 @@ if. railIndex = TocOutlineRailSelectedIndex do.
 	end.
 else.
 	if. isShrunken do.
-		glrgba 127 127 127 50
+		glrgba 0 0 0 200
 		glbrush ''
 		glpen 0
 		glrect entryRect
