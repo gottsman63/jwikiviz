@@ -6,11 +6,9 @@ coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Can we ensure that forum posts are in order?  Add a sequence number as you parse each post (we don't have the dates).
-NB. Some of the category links in the search results aren't working/specified properly.
 NB. Fix the category order in the detail area (add the sortkey to it).
-NB. The detail area subcategories of Archived Pages have bad titles and fail to load the corresponding category pages.
 NB. Look into putting an index on child category--it would be used by "getLinkForCategory."
-NB. The book chapters are all out of order.  How can I order them?
+NB. At some point, change Notices N to Announcements A.
 
 NB. B Items
 NB. Support parallel download of forum posts.

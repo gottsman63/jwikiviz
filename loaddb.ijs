@@ -362,8 +362,12 @@ if. 0 < # offsetLengths do.
 	links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 html
 	titleOffsetLengths =. 1 {"2 offsetLengths
 	titles =. (<"0 {:"1 titleOffsetLengths) {. &. > ({."1 titleOffsetLengths) <@}."0 1 html
-	cols =. ;: 'category title link'
-	data =. ((# titles) # parentCategory) ; titles ; <links
+	if. 'Category:' -: 9 {. > {: titles do. NB. There's sometimes a stray "Category:" link at the bottom.
+		links =. }: links
+		titles =. }: titles
+	end.
+	cols =. ;: 'category title link sortkey'
+	data =. ((# titles) # parentCategory) ; titles ; links ; < ": &. > <"0 i. # links
 	sqlinsert__db 'wiki' ; cols ; <data
 end.
 if. +./ 'Category_Home' E. y do.
@@ -401,7 +405,6 @@ finishTables =: 3 : 0
 NB. Add level, count, sort and path information to the category table.
 NB. Add count information to the wiki table.
 sqlcmd__db 'begin transaction'
-smoutput 'finishTables!'
 for_category. > {: sqlreadm__db 'select child from categories' do.
 	depth =. _1
 	parent =. , > category
@@ -477,7 +480,7 @@ setupDb =: 3 : 0
 try. (1!:55) < dbFile catch. end.
 db =: sqlcreate_psqlite_ dbFile
 sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
-sqlcmd__db 'CREATE TABLE wiki (level INTEGER, title TEXT, category TEXT, fullpath TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE wiki (level INTEGER, title TEXT, category TEXT, fullpath TEXT, link TEXT, sortkey TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parent TEXT, child TEXT, fullpath TEXT PRIMARY KEY, count INTEGER, link TEXT, sortkey TEXT)' 
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 )
@@ -486,8 +489,8 @@ setup =: 3 : 0
 setupTempDirectory ''
 setupDb ''
 loadVoc ''
-loadForum &. > ;: 'chat database general source programming beta'
-downloadWiki ''
+NB. loadForum &. > ;: 'chat database general source programming beta'
+NB. downloadWiki ''
 processCategoryFile &. > {."1 (1!:0) (wikiDir , '/Category_*.html')
 finishTables ''
 )
