@@ -70,7 +70,7 @@ wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
 DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
-wd 'timer 50'
+NB. wd 'timer 200'
 )
 
 vizform_default =: 3 : 0
@@ -102,7 +102,7 @@ vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
 if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
-NB. invalidateDisplay ''
+invalidateDisplay ''
 )
 
 vizform_vocContext_mblup =: 3 : 0
@@ -458,6 +458,7 @@ loadPage entry
 )
 
 addToHistoryMenu =: 3 : 0
+if. CurrentHistoryEntry -: '' do. return. end.
 if. HistoryMenu -: '' do. HistoryMenu =: ,: CurrentHistoryEntry else. HistoryMenu =: ~. CurrentHistoryEntry , HistoryMenu end.
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
@@ -908,6 +909,7 @@ if. level < <: maxDepth do. count =. 0 end.
 glclip 0 0 10000 10000
 if.  '*NuVoc' -: > 1 { TocOutlineRailSelectedIndex { getTocOutlineRailEntries 3 do.
 	DisplayMode =: 'V'
+	''
 	return.
 end.
 if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
