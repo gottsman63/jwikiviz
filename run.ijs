@@ -5,12 +5,12 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
-NB. Can we ensure that forum posts are in order?  Add a sequence number as you parse each post (we don't have the dates).
-NB. Fix the category order in the detail area (add the sortkey to it).
 NB. Look into putting an index on child category--it would be used by "getLinkForCategory."
-NB. At some point, change Notices N to Announcements A.
+NB. To handle the frame interaction lag (possibly my imagination), try generating a few more frames after each mouse move...?
+NB. ...or switch to a timer animation model @, say, 20 fps.
 
 NB. B Items
+NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
 NB. Support parallel download of forum posts.
 NB. Animate scroll rather than jumping when the travel is too high.
 NB. Saved pages mechanism.  "Save" button next to the url field?
@@ -70,7 +70,7 @@ wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
 DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
-wd 'timer 250'
+wd 'timer 50'
 )
 
 vizform_default =: 3 : 0
@@ -98,7 +98,7 @@ clearSearches ''
 
 vizform_vocContext_mmove =: 3 : 0
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
-invalidateDisplay ''
+NB. invalidateDisplay ''
 )
 
 vizform_vocContext_paint =: 3 : 0
@@ -130,6 +130,7 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
 
 sys_timer_z_ =: 3 : 0
 resetHistoryMenu_base_ ''
+invalidateDisplay_base_ ''
 )
 
 wd 'timer 0'
@@ -670,9 +671,10 @@ NB. y xx yy width height
 NB. Display the contents of the forum
 'xx yy width height' =. y
 if. -. ForumCurrentName -: x do. 
-	ForumCacheTable =: > {: sqlreadm__db 'select year, month, subject, author, link from forums where forumname = "' , x , '" order by year, month, subject'
+	result =. > {: sqlreadm__db 'select year, month, subject, author, link, rowid from forums where forumname = "' , x , '" order by year desc, month asc, rowid asc'
+	ForumCacheTable =: 0 1 2 3 4 {"1 result
 	ForumCurrentName =: x
-	TocEntryForumYear =: 2019
+	TocEntryForumYear =: 2023
 	TocEntryForumSubjectIndex =: 0
 	TocEntryForumMonthIndex =: 0
 end.

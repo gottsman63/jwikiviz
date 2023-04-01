@@ -372,7 +372,7 @@ if. 0 < # offsetLengths do.
 end.
 if. +./ 'Category_Home' E. y do.
 	parentCategory =. < 'Home'
-	childCategories =. 'Notices N' ; 'Newcomers N' ; 'Developers D' ; 'Reference R' ; 'Community C' ; 'J Playground P' ; 'Wiki W'
+	childCategories =. 'Announcements A' ; 'Newcomers N' ; 'Developers D' ; 'Reference R' ; 'Community C' ; 'J Playground P' ; 'Wiki W'
 else.
 	cats =. emptySubcategories , fullSubcategories
 	childCategories =. ('&#039;' ; '''')&rxrplc &. > cats
@@ -490,8 +490,8 @@ setup =: 3 : 0
 setupTempDirectory ''
 setupDb ''
 loadVoc ''
-NB. loadForum &. > ;: 'chat database general source programming beta'
-NB. downloadWiki ''
+loadForum &. > ;: 'chat database general source programming beta'
+downloadWiki ''
 processCategoryFile &. > {."1 (1!:0) (wikiDir , '/Category_*.html')
 finishTables ''
 )
