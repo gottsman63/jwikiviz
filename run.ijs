@@ -14,10 +14,10 @@ NB. B Items
 NB. Support parallel download of forum posts.
 NB. Animate scroll rather than jumping when the travel is too high.
 NB. Saved pages mechanism.  "Save" button next to the url field?
-NB. Can we present user-defined categories?
+NB. Can we present user-defined categories?  (Are we already?  Devon's "Poker" category appears...)
 NB. Add a "Search" label.
 NB. Crawl the category pages--don't download the site archive.  (It's nearly 10k pages)
-NB. Sometimes there's a stray category link at the end of a category's pages.
+NB. Get rid of the hard-coded top-level categories in the loaddb.ijs code.
 NB. The search results should show "Wiki" in the same way they show "Forums" in the detail display.
 
 NB. ============= Database ===============
@@ -330,10 +330,11 @@ CachedTocPartialPath =: ''
 
 getTocChildren =: 3 : 0
 NB. y A partial path (unboxed)
-NB. Return all of the toc entries that match the partial path.
+NB. Return all of the Wiki entries that match the partial path.
 NB. Level ; Title ; Category ; Full Path ; Link 
 if. -. y -: CachedTocPartialPath do.
-	CachedTocChildren =: > 1 { sqlreadm__db 'select level, title, category, fullpath, link from wiki where fullpath like "' , y , '%" order by fullpath asc'
+	result =. > 1 { sqlreadm__db 'select level, title, category, fullpath, link, sortkey, rowid from wiki where fullpath like "' , y , '%" order by sortkey asc, rowid asc'
+	CachedTocChildren =: 0 1 2 3 4 {"1 result
 end.
 CachedTocChildren
 )

@@ -366,8 +366,8 @@ if. 0 < # offsetLengths do.
 		links =. }: links
 		titles =. }: titles
 	end.
-	cols =. ;: 'category title link sortkey'
-	data =. ((# titles) # parentCategory) ; titles ; links ; < ": &. > <"0 i. # links
+	cols =. ;: 'category title link'
+	data =. ((# titles) # parentCategory) ; titles ; < links
 	sqlinsert__db 'wiki' ; cols ; <data
 end.
 if. +./ 'Category_Home' E. y do.
@@ -402,8 +402,8 @@ NB. y Category with . components.  Normalize the numbers with leading zeros.
 )
 
 finishTables =: 3 : 0
-NB. Add level, count, sort and path information to the category table.
-NB. Add count information to the wiki table.
+NB. Add level, count, sortke and path information to the category table.
+NB. Add count and sortkey information to the wiki table.
 sqlcmd__db 'begin transaction'
 for_category. > {: sqlreadm__db 'select child from categories' do.
 	depth =. _1
@@ -424,10 +424,10 @@ for_category. > {: sqlreadm__db 'select child from categories' do.
 end.
 sqlcmd__db 'commit transaction'
 sqlcmd__db 'begin transaction'
-childPaths =. > 1 { sqlreadm__db 'select child, fullpath, level from categories'
+childPaths =. > 1 { sqlreadm__db 'select child, fullpath, level, sortkey from categories'
 for_pathEntry. childPaths do.
-	'child fullpath level' =. pathEntry
-	parms =. 'wiki'; ('category ="' , child , '"') ; (, 'fullpath' ; 'level') ; , < , fullpath ; level
+	'child fullpath level sortkey' =. pathEntry
+	parms =. 'wiki'; ('category ="' , child , '"') ; (, 'fullpath' ; 'level' ; 'sortkey') ; , < , fullpath ; level ; sortkey
 	sqlupdate__db parms
 end.
 sqlcmd__db 'commit transaction'
@@ -442,7 +442,7 @@ end.
 sqlcmd__db 'commit transaction'
 sqlcmd__db 'begin transaction'
 for_pathEntry. childPaths do.
-	'child fullpath level' =. pathEntry
+	'child fullpath level sortkey' =. pathEntry
 	pathcount =. > 1 { sqlreadm__db 'select count(*) from wiki where fullpath like "' , fullpath , '%"'
 	parms =. 'categories'; ('child ="' , child , '"') ; (, < 'count') ; , pathcount
 	sqlupdate__db parms
@@ -470,6 +470,7 @@ sqlinsert__db 'categories';cols;<data
 parms =. 'categories' ; cols; < 0 ; (< '') ; (< '*Forums') ; (< '/*Forums') ; 0 ; << 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db parms
 sqlcmd__db 'commit transaction'
+
 )
 
 dbOpenDb =: 3 : 0
