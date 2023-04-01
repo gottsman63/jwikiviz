@@ -5,9 +5,8 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
-NB. Look into putting an index on child category--it would be used by "getLinkForCategory."
-NB. To handle the frame interaction lag (possibly my imagination), try generating a few more frames after each mouse move...?
-NB. ...or switch to a timer animation model @, say, 20 fps.
+NB. Vocabulary glyph hover should open the first valence link.
+NB. Lose the "geometry" implementation for NuVoc mouse handling.  Switch to registerRectLink.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -19,6 +18,7 @@ NB. Add a "Search" label.
 NB. Crawl the category pages--don't download the site archive.  (It's nearly 10k pages)
 NB. Get rid of the hard-coded top-level categories in the loaddb.ijs code.
 NB. The search results should show "Wiki" in the same way they show "Forums" in the detail display.
+NB. Fix the extra "quotes in NuVoc
 
 NB. ============= Database ===============
 dbFile =: jpath '~temp/cache.db'
@@ -96,9 +96,18 @@ vizform_clearSearches_button =: 3 : 0
 clearSearches ''
 )
 
+SuppressMouseHandlingStart =: 0
+
 vizform_vocContext_mmove =: 3 : 0
+NB. Give the user the chance to get the mouse over to the webview without activating another link.
+if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 NB. invalidateDisplay ''
+)
+
+vizform_vocContext_mblup =: 3 : 0
+SuppressMouseHandlingStart =: (6!:1) ''
+addToHistoryMenu ''
 )
 
 vizform_vocContext_paint =: 3 : 0
@@ -111,9 +120,9 @@ direction =. * 11 { sysdata
 smoutput 'mwheel' ; direction
 )
 
-vizform_vocContext_mbldbl =: 3 : 0
-if. IFUNIX do. (2!:1) 'open -a Safari "' , > 0 { 0 { HistoryMenu , '"' end.
-)
+NB. vizform_vocContext_mbldbl =: 3 : 0
+NB. if. IFUNIX do. (2!:1) 'open -a Safari "' , > 0 { 0 { HistoryMenu , '"' end.
+NB. )
 
 vizform_searchBox_button =: 3 : 0
 search searchBox
@@ -122,6 +131,7 @@ wd 'set searchBox text ""'
 
 vizform_history_select =: 3 : 0
 queueLoadPage s =. (". history_select) { HistoryMenu
+LastUrlLoaded =: '' NB. Make sure selecting the top item in the History menu will still load that page.
 )
 
 vizform_launch_button =: 3 : 0
@@ -129,7 +139,7 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
 )
 
 sys_timer_z_ =: 3 : 0
-resetHistoryMenu_base_ ''
+checkHistoryMenu_base_ ''
 invalidateDisplay_base_ ''
 )
 
@@ -446,18 +456,22 @@ NB. y Url ; Optional title
 if. 6 < # y do. entry =. (< y) , a: else. entry =. y end.
 loadPage entry
 )
+
+addToHistoryMenu =: 3 : 0
+if. HistoryMenu -: '' do. HistoryMenu =: ,: CurrentHistoryEntry else. HistoryMenu =: ~. CurrentHistoryEntry , HistoryMenu end.
+s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
+wd 'set history items *' , s
+wd 'set history select 0'
+CurrentHistoryEntry =: ''
+HistoryMenu =: (20 <. # HistoryMenu) {. HistoryMenu
+)
  
-resetHistoryMenu =: 3 : 0
+checkHistoryMenu =: 3 : 0
 NB. Possibly prepend the current page to the history menu.
 NB. Called from the timer.
 if. (1.5 < ((6!:1) '') - CurrentHistoryLoadTime) *. -. '' -: CurrentHistoryEntry do.
-	if. HistoryMenu -: '' do. HistoryMenu =: ,: CurrentHistoryEntry else. HistoryMenu =: ~. CurrentHistoryEntry , HistoryMenu end.
-	s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
-	wd 'set history items *' , s
-	wd 'set history select 0'
-	CurrentHistoryEntry =: ''
+	addToHistoryMenu ''
 end.
-HistoryMenu =: (20 <. # HistoryMenu) {. HistoryMenu
 )
 
 HistoryMenu =: '' NB. Table of Title ; Link
