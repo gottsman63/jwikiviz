@@ -1051,9 +1051,9 @@ glfont 'arial 16'
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
-if. categoryTest link do.
-	((leftX - 4) , (yy - 2) , (width + 8) , 20) drawHighlight HighlightColor
-end.
+NB. if. categoryTest link do.
+NB. 	((leftX - 4) , (yy - 2) , (width + 8) , 20) drawHighlight HighlightColor
+NB. end.
 if. VocMouseXY pointInRect leftX , yy , width , 20 do.
 NB.	glrgb 255 0 0
 NB.	glpen 4
@@ -1104,6 +1104,7 @@ if. categoryGlyphTest glyph do.
 	m =. 2
 	((xStart + m) , (yStart + m) , (width - 2 * m) , (height - 2 * m)) drawHighlight HighlightColor
 end.
+registerRectLink 
 NewVocGeometry =: NewVocGeometry , glyph ; xStart ; yStart ; width ; height
 ''
 )
@@ -1125,7 +1126,8 @@ if. 0 < +/ > selected do.
 	entries =. VocTable #~ > VocSelectedGlyph&-: &. > 3 {"1 VocTable  NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 	coords =. (xx + <. -: availableWidth) ,. yStart + height + 10 + entryLineHeight * i. # entries
 	entries drawVocEntry"1 1 coords
-	VocSelectionGeometry =: (<"0 coords) ,. (< availableWidth) ,. (<entryLineHeight) ,. 7 {"1 entries
+	(coords ,"1 1 availableWidth , entryLineHeight) registerRectLink"(1 1) 7 {"1 entries
+NB.	VocSelectionGeometry =: (<"0 coords) ,. (< availableWidth) ,. (<entryLineHeight) ,. 7 {"1 entries
 	selectionPadding =. entryLineHeight * >: # entries
 end.
 yStart + selectionPadding + height
