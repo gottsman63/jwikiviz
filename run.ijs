@@ -7,6 +7,8 @@ NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Vocabulary glyph hover should open the first valence link.
 NB. Lose the "geometry" implementation for NuVoc mouse handling.  Switch to registerRectLink.
+NB. Fix sorting.
+NB. Put delay-based addition to the History Menu back in.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -1104,7 +1106,6 @@ if. categoryGlyphTest glyph do.
 	m =. 2
 	((xStart + m) , (yStart + m) , (width - 2 * m) , (height - 2 * m)) drawHighlight HighlightColor
 end.
-registerRectLink 
 NewVocGeometry =: NewVocGeometry , glyph ; xStart ; yStart ; width ; height
 ''
 )
