@@ -368,7 +368,7 @@ while. 0 < # pairsToVisit do.
 	if. 0 < # suffixDropIndex =. I. 'id="mw-hidden-catlinks"' E. shortenedHtml do. shortenedHtml =. suffixDropIndex {. shortenedHtml end.
 	offsetLengths =. ,/ }."2 patSubcategories rxmatches shortenedHtml
 	categories =. ('_' ; ' ')&rxrplc &. > (<"0 {:"1 offsetLengths) {. &. > ({."1 offsetLengths) <@}."0 1 shortenedHtml
-	categories =. categories -. (<'Hidden categories (page does not exist)')
+	categories =. categories -. (<'Hidden categories (page does not exist)') , <'Home'
 	patPageLink =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
 	offsetLengths =. }."2 patPageLink rxmatches shortenedHtml
 	viewSourceHtml =. gethttp '"https://code.jsoftware.com/mediawiki/index.php?title=Category:' , catWithUnderscores , '&action=edit"'

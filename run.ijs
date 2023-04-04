@@ -8,7 +8,7 @@ NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Vocabulary glyph hover should open the first valence link.
 NB. Lose the "geometry" implementation for NuVoc mouse handling.  Switch to registerRectLink.
 NB. Fix sorting.
-NB. Put delay-based addition to the History Menu back in.
+NB. Put delay-based addition to the History Menu back in.  Also, add mouse detection to the browser.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -287,64 +287,11 @@ updateSearchTotals ''
 return.
 )
 
-NB. ==============================================================================
-normalizeUrl =: 3 : 0
-NB. y A url
-NB. If necessary, add the https://... prefix.
-if. -. 'http' -: 4 {. y do.
-	'https://code.jsoftware.com' , y
-else.
-	y
-end.
-)
-
-CachedTocChildren =: ''
-CachedTocPartialPath =: ''
-
-CachedTocSortKey =: ''
-
-getSortKeyForPath =: 3 : 0
-NB. y A partial path (unboxed)
-NB. Return the sortKey that corresponds to that path.
-NB. Note that category components are supposed to be unique, but it's by no means guaranteed since the user can enter searches.
-pairs =. 2 <\ (< '') , a: -.~ <;._2 y , '/'
-for_pair. pairs do.
-	parent =. 0 {:: > pair
-	child =. 1 {:: > pair
-	sortKey =. , > > {: sqlreadm__db 'select sortkey from categories where parent = "' , parent , '" and child = "' , child , '"'
-end.
-sortKey
-)
-
-getTocChildren =: 3 : 0
-NB. y A sortKey
-NB. Return a table of level ; title ; category ; link ; sortKey
-if. -. y -: CachedTocSortKey do.
-	result =. > 1 { sqlreadm__db 'select level, title, category, link, sortkey from wiki where sortkey like "' , y , '%" order by sortkey asc'
-	CachedTocChildren =: 0 1 2 3 4 {"1 result
-end.
-CachedTocChildren
-)
-
-getTocChildrenOld =: 3 : 0
-NB. y A sortKey
-NB. Return all of the Wiki entries that match the sortKey
-NB. Level ; Title ; Category ; Full Path ; Link 
-if. -. y -: CachedTocPartialPath do.
-	sortKey =. (getSortKeyForPath y) , '.'
-	result =. > 1 { sqlreadm__db 'select level, title, category, link, sortkey from wiki where sortkey like "' , sortKey , '%" order by sortkey asc'
-	CachedTocChildren =: 0 1 2 3 4 {"1 result
-end.
-CachedTocChildren
-)
-
 getLinkForCategory =: 3 : 0
 NB. y The name of a category from the "categories" table
 NB. Return the corresponding link.
 , > > 1 { sqlreadm__db 'select link from categories where child ="' , y , '"'
 )
-
-
 
 NB. ================== Drawing ====================
 MaxCellWidth =: 100
@@ -602,7 +549,7 @@ CachedTocChildrenImage =: ''
 NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
-NB. y HighlightFlag ; Name ; Link/Command ; HeadingFlag
+NB. y Highlight Flag ; Name ; Link/Command ; HeadingFlag
 'xx yy maxWidth height' =. x
 'highlightFlag name command headingFlag' =. y
 if. headingFlag do. 
@@ -619,12 +566,11 @@ end.
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
 adjRect registerRectLink command ; name
-0
 )
 
 drawTocEntryChildrenColumn =: 4 : 0
 NB. x xx yy width height
-NB. y Table of HighlightFlag ; Name ; Link/Command ; HeadingFlag
+NB. y Table of Name ; Link/Command ; HeadingFlag
 NB. Render the column in black, with headings in SectionColor
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
@@ -739,14 +685,14 @@ selectedAuthorEntry =. TocEntryForumAuthorIndex { authorEntries
 queueLoadPage ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 2 { selectedAuthorEntry) ; title
 )
 
-setTocEntryChildCategory =: 4 : 0
-NB. x The link for the subtree node
-NB. y Choose the subtree node whose children should be displayed.
-TocEntryChildCategory =: y
-queueLoadPage x ; y
+setTocEntryChildCategoryIndex =: 3 : 0
+NB. y Index of the category whose children should be displayed.
+TocEntryChildCategoryIndex =: y
+queueLoadPage (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
 
-TocEntryChildCategory =: ''
+TocEntryChildCategoryIndex =: '' NB. The index of the currenty-selected child category in the tree.
+TocEntryChildCategoryEntries =: '' NB. Table of Title ; Link
 
 drawTocEntryChildrenWithTree =: 4 : 0
 NB. x maxDepth
@@ -754,34 +700,27 @@ NB. y xx yy width height entryY
 NB. Render the descendants of the TocSelectedTopCategory in xx yy width height.
 NB. This is used when the child count is too high.  It renders a tree in the first column
 NB. and the children of each node in the subsequent columns.
-NB. getTocChildren: Return a table of level ; title ; category ; link ; sortKey
+NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
 maxDepth =. x
 'xx yy width height' =. y
-'level category count link sortKey' =. TocOutlineRailSelectedIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; count ; link ; sortKey
+'level parent category parentSeq count link' =. TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth
+tocWikiDocs =. getTocWikiDocs category NB. Table of level parent category parentSeq count link ; (table of title ; link)
+if. 0 = # tocWikiDocs do. '' return. end.
 margin =. 5
-glrgb 0 0 0
-glpen 1
-glrgb 255 255 255
-glbrush ''
-glrect xx , yy , width , height
-childTable =. (< 0) ,. 1 2 3 {"1 getTocChildren sortKey  NB. childTable HighlightFlag ; Title ; Category ; Link ; HeadlingFlag
-if. 0 = # childTable do. '' return. end.
-childCategories =: getTocOutlineSubcategories sortKey  NB. Level ; Category
-indents =. (2 * > 0 {"1 childCategories) <@#"0 ' '
-indentedCategoryColumn =. indents , &. > 1 {"1 childCategories
-if. (# childCategories) <: index =. (1 {"1 childCategories) i. < TocEntryChildCategory do. 
-	TocEntryChildCategory =: > {. 1 {"1 childCategories 
-else.
-	TocEntryChildCategory =: > index { 1 {"1 childCategories 
-end.
-catHighlightFlags =. (< TocEntryChildCategory) = 1 {"1 childCategories
-cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 childCategories
-commandLinks =. ''''&, &. > ,&'''' &. > getLinkForCategory &. > cleanCategories
+categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent category parentSeq count link
+catTitles =. 2 {"1 categoryEntries
+catLevels =. 0 {"1 categoryEntries
+catLinks =. 5 {"1 categoryEntries
+catHighlightFlags =. (< TocEntryChildCategory) = catTitles
+cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 catTitles
+commandLinks =. ''''&, &. > ,&'''' &. > catLinks
 commandCategories =. ,&'''' &. > ''''&, &. > cleanCategories
-commands =. '*'&, &. > commandLinks , &. > ' setTocEntryChildCategory '&, &. > commandCategories 
-categoryEntryList =. (<"0 catHighlightFlags) ,. (< 1) ,.~ indentedCategoryColumn ,. commands  NB. HighlightFlag ; Title ; Link ; Heading Flag
-displayChildTable =. childTable #~ (2 {"1 childTable) = < TocEntryChildCategory  NB. Title ; Category ; Full Path ; Link
-entryList =. (< 0) ,.~ 0 1 3 {"1 displayChildTable  NB. HighlightFlag ; Title ; Link ; Heading Flag
+commands =. '*setTocEntryChildCategoryIndex '&, &. > <@":"0 i. # catLinks
+categoryEntryList =. (<"0 catHighlightFlags) ,. catTitles ,. commands ,. <1 NB. Table of Highlight Flag ; Category ; Command ; Heading Flag
+TocEntryChildCategoryIndex =: TocEntryChildCategoryIndex <. <: # catLinks
+displayChildTable =. > TocEntryChildCategoryIndex { 1 {"1 tocWikiDocs  NB. Table of Title ; Link
+TocEntryChildCategoryEntries =: catTitles ,. catLinks
+entryList =. (< 0) ,. displayChildTable ,. <0
 rowCount =. <. height % TocLineHeight
 columnGroups =. (< categoryEntryList) , (-rowCount) <\ entryList
 selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - xx) % width) * # columnGroups
@@ -790,6 +729,11 @@ colWidth =. <. width % fullSizeColCount
 compressedColWidth =. <. (width - colWidth) % <: # columnGroups
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =: <"1 <. (xx + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
+glrgb 0 0 0
+glpen 1
+glrgb 255 255 255
+glbrush ''
+glrect xx , yy , width , height
 if. fullSizeColCount < # columnRects do.
 	glrgb ScrollColor
 	glbrush ''
@@ -806,23 +750,23 @@ NB. x maxDepth
 NB. y xx yy width height
 NB. Render the descendants of the TocOutlineRailSelectedIndex category in xx yy width height.
 NB. Use multiple columns if necessary.  If there are too many columns, invoke drawTocEntryChildrenWithTree.
-NB. getTocChildren: Return a table of level ; title ; category ; link ; sortKey
+NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
 maxDepth =. x
 'xx yy width height' =. y
-'level category count link sortKey' =. TocOutlineRailSelectedIndex { getTocOutlineRailEntries maxDepth NB. level ; category  ; count ; link ; sortKeh
+'level parent category parentSeq count link' =. TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth
 margin =. 5
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect xx , yy , width , height
-childTable =. (< 0) ,. 1 2 3 {"1 getTocChildren sortKey  NB. childTable: HighlightFlag ; Title ; Category ; Link ; sortKey
-if. 0 = # childTable do. '' return. end.
-childCategories =. ~. 2 {"1 childTable
-links =. getLinkForCategory &. > childCategories
-childGroups =. (2 {"1 childTable) </. (< 0) ,.~ 0 1 3 {"1 childTable NB. Level ; Title ; Link ; Heading Flag
-categoryLinks =. (< 1) ,.~ (< 0) ,. childCategories ,. links
-entryList =. ; (<"1 categoryLinks) , &. > childGroups         NB. Category/Title ; Link
+tocWikiDocs =. getTocWikiDocs category NB. Table of tocOutlineEntry ; (table of title ; link)
+if. 0 = # tocWikiDocs do. '' return. end.
+categoryEntries =. > {."1 tocWikiDocs
+catLinkFlag =. (2 5 {"1 categoryEntries) ,. <1 NB. Category ; Link ; Heading Flag
+documentTables =. {:"1 tocWikiDocs
+titleLinkFlag =. ,.&(<0) &. > documentTables NB. Title ; Link ; Heading Flag
+entryList =. (<0) ,. ; (<"1 catLinkFlag) , &. > titleLinkFlag
 rowCount =. <. height % TocLineHeight
 columnGroups =. (-rowCount) <\ entryList
 selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - xx) % width) * # columnGroups
@@ -856,7 +800,7 @@ NB. y max depth , TocOutline rail index
 NB. Draw the category name in the rail and then call drawTocEntryChildren to render the kids.
 'entryX entryY entryHeight railX railY railWidth railHeight' =. x
 'maxDepth railIndex' =. y
-'level category count link sortkey' =. railIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; count ; link ; sortKey
+'level parent category parentSeq count link' =. railIndex { '' getTocOutlineRailEntries maxDepth NB. level ; parent ; category ; parentseq ; count ; link
 margin =. 5
 isShrunken =. entryHeight < TocLineHeight
 isSelected =. VocMouseXY pointInRect (entryX + 70) , entryY , (railWidth - 70) , TocLineHeight
@@ -901,14 +845,14 @@ else.
 end.
 if. level < <: maxDepth do. count =. 0 end.
 glclip 0 0 10000 10000
-if.  '*NuVoc' -: > 1 { TocOutlineRailSelectedIndex { getTocOutlineRailEntries 3 do.
+if.  '*NuVoc' -: > 1 { TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries 3 do.
 	DisplayMode =: 'V'
 	''
 	return.
 end.
 if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
-	if. '/*Forums/' -: 9 {. > 2 { railIndex { getTocOutlineRailEntries 3 do.
-		(> 1 { railIndex { getTocOutlineRailEntries 3) drawTocEntryForum DisplayDetailRect
+	if. '/*Forums/' -: 9 {. > 2 { railIndex { '' getTocOutlineRailEntries 3 do.
+		(> 1 { railIndex { '' getTocOutlineRailEntries 3) drawTocEntryForum DisplayDetailRect
 NB.	elseif. '*Search' -: 7 {. > 1 { railIndex { TocOutlineRailEntries do.
 NB.		maxDepth drawTocEntryChildrenWithTree DisplayDetailRect
 	else.
@@ -928,10 +872,7 @@ if. VocMouseXY pointInRect xx , yy , width , height do. setDisplayMode 'T' end.
 margin =. 5
 stripeWidth =. 70
 window =. 20
-entries =. getTocOutlineRailEntries y NB. level ; category ; count ; link ; sortKey
-NB. entries =. e #~ ~: 1 {"1 e =. TocOutline #~ > <&y &. > {."1 TocOutline
-NB. if. 0 < # SearchString do. s =. '*Search in progress...' else. s =. '*Search (' , (": # SearchResultsTable) , ')' end.
-NB. TocOutlineRailEntries =: (0 ; s ; '/') , (0 ; '*NuVoc' ; '/') , entries NB. level ; path component ; full path
+entries =. '' getTocOutlineRailEntries y NB. level ; parent ; category ; parentseq ; count ; link
 if. ({. VocMouseXY) < xx + stripeWidth do.
 	TocScrollIndex =: 0 >. (<: # entries) <. <. ((({: VocMouseXY) - yy) % height) * # entries
 end.
@@ -963,38 +904,65 @@ DisplayListRect drawTocRail 3
 NB. (10 30 150 , height) drawTocRail topCategories
 )
 
-TocOutlineRailEntries =: ''
+NB. ======================= Table of Contents =====================
+TocOutlineRailEntriesCache =: ,: a: , a:
+WikiDocsCache =: ,: a: , a:
 
-NB. ======================= Database Caching =====================
-resetTocOutlineRailEntries =: 3 : 0
-TocOutlineRailEntries =: ''
+TocWikiDocsCategory =: ''
+TocWikiDocsEntries =: ''
+
+visitedRailEntries =: ''
+
+recurseGetTocOutlineRailEntries =: 4 : 0
+NB. x A parent category
+NB. y A depth.  
+NB. Terminate cycles.
+if. y = 0 do. '' return. end.
+if. (# visitedRailEntries) > visitedRailEntries i. (< x) do. '' return. end.  NB. Terminate cycles.
+visitedRailEntries =: visitedRailEntries , < x
+entries =. > {: sqlreadm__db 'select level, parent, child, parentseq, count, link from categories where parent = "' , x , '" order by parentseq'
+children =. 2 {"1 entries
+; (<"0<"1 entries) , &. > recurseGetTocOutlineRailEntries&(<: y) &. > children
 )
 
-getTocOutlineRailEntries =: 3 : 0
+getTocOutlineRailEntries =: 4 : 0
+NB. x A parent category
 NB. y Depth to which to go in the TOC hierarchy
-NB. Return level ; category ; count ; link ; sortkey
-if. TocOutlineRailEntries -: '' do.
-	TocOutlineRailEntries =: > 1 { sqlreadm__db 'select level, child, count, link, sortkey from categories order by sortkey asc'
+NB. Return level ; parent ; category ; parentseq ; count ; link
+NB. Take account of the parentseq number when ordering the entries.
+NB. Terminate cycles.
+key =. < x , 'DDD' , ": y
+if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache) i. key do.
+	result =. > index { 1 {"1 TocOutlineRailEntriesCache
+else.
+	visitedRailEntries =: ''
+	result =. > x recurseGetTocOutlineRailEntries y
+	TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < result
 end.
-TocOutlineRailEntries #~ y > > 0 {"1 TocOutlineRailEntries
+result
 )
 
-getTocOutlineSubcategories =: 3 : 0
-NB. y A sortKey
-NB. Return all of the categories beneath that path, with levels (and including the sortKey)
-NB. To put it another way, return a table of level ; category
-entries =. getTocOutlineRailEntries 100  NB. level ; category ; count ; link ; sortKey
-0 1 {"1 entries #~ sieve =. {."1 > (< y) E. &. > 4 {"1 entries
-)
-
-WikiCachedPartialPath =: ''
-WikiCachedTable =: ''
-
-getWikiTable =: 3 : 0
-NB. y Partial path
-if. y -: WikiCachedPartialPath do. WikiCachedTable return. end.
-WikiCachedPartialPath =: y
-WikiCachedTable =: > 1 { sqlreadm__db 'select level, title, category, fullpath, link from wiki where fullpath like "' , y , '%" order by fullpath asc'
+getTocWikiDocs =: 3 : 0
+NB. y A category.
+NB. Return the subtree TOC from the categories table with a set of wiki documents for each entry.
+NB. Return table of (level parent category parentSeq count link) ; table of title ; link
+key =. < y
+if. (# WikiDocsCache) > index =. (0 {"1 WikiDocsCache) i. key do.
+	result =. > index {1 {"1 WikiDocsCache
+else.
+	entries =. y getTocOutlineRailEntries 100
+	if. 0 = # entries do.
+		NB. The category is not a parent.
+		entry =. > {: sqlreadm__db 'select level, parent, child, parentseq, count, link from categories where child = "' , y , '"'
+		wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where category = "' , y , '"'
+		result =. (< entry) , < wikiDocs
+	else.
+		categories =. 2 {"1 entries
+		result =. (<"1 entries) ,. >@{: &. > sqlreadm__db &. >  ,&'"' &. > 'select title, link from wiki where category = "'&, &. > categories
+	end.
+	WikiDocsCache =: WikiDocsCache , key , < result
+end.
+result
 )
 NB. ==================== End Database Caching ====================
 
