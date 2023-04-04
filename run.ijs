@@ -152,7 +152,6 @@ try.
 'w h' =. ". wd 'get vocContext wh'
 if. (w > 300) *. h > 300 do.
 	scheduleBackgroundRender ''
-NB.	queueLoadPage DefaultPage
  	glfill 255 255 255 255
 	drawVoc ''
  	drawToc ''
@@ -175,8 +174,10 @@ NB. ======================================================
 
 NB. =================== Search ===========================
 clearSearches =: 3 : 0
-sqlcmd__db 'delete from categories where fullpath like "/*Search/%"'
-sqlcmd__db 'delete from wiki where fullpath like "/*Search/%"'
+return.
+sortKey =. (getSortKeyForPath '/*Search') , '.'
+sqlcmd__db 'delete from categories where fullpath like "' , sortKey , '%"'
+sqlcmd__db 'delete from wiki where fullpath like "' , sortKey , '%"'
 resetTocOutlineRailEntries ''
 invalidateDisplay ''
 )
@@ -184,15 +185,22 @@ invalidateDisplay ''
 addSearchToToc =: 3 : 0
 NB. y A search string
 NB. sqlcmd__db 'begin transaction'
+NB. Save parent ; child.  
 term =. y
+time =. ": (6!:1) ''
+searchSortKey =. getSortKeyForPath '/*Search.' , term , '.'
+searchWikiSortKey =. searchSortKey , 
+searchForumSortKey =. getSortKeyForPath '/*Search/Forum'
 sortfragment =. '*Search.' , (": (6!:1) '') , '.' , term , '.'
-cols =. ;: 'level parent child fullpath count link sortkey'
+
+cols =. ;: 'level parent child count link sortkey'
+sqlupsert__db 'categories' ; 'sortkey' ; cols ; < 2 ; '*Search' ; term ; 0 ; '' ; searchSortKey
+
 sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 1 ; '*Search' ; y ; ('/*Search/' , term) ; 0 ; '' ; sortfragment
 sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Wiki' ; ('/*Search/' , term , '/Wiki') ; _1 ; 'Special:JwikiSearch' ; sortfragment , 'Wiki'
 sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Forums' ; ('/*Search/' , term , '/Forums') ; _1 ; 'https://www.jsoftware.com/forumsearch.htm' ; sortfragment , 'Forums'
 resetTocOutlineRailEntries ''
 invalidateDisplay ''
-return.
 )
 
 updateSearchTotals =: 3 : 0
@@ -279,55 +287,7 @@ updateSearchTotals ''
 return.
 )
 
-NB. ======================================================
-
-NB. ================== Categories ========================
-categoryTest =: 3 : 0
-NB. y A full url, including https://...
-NB. Return 1 if this url is in the current category (which includes search results)
-if. 0 = # y do. 0 return. end.
-urls =. {:"1 HighlightUrls
-r1 =. (# urls) > urls i. <y
-r2 =. (# urls) > urls i. < (y i. '#') {. y  NB. Drop any # anchors.
-r1 +. r2
-)
-
-categoryGlyphTest =: 3 : 0
-NB. y a Glyph
-NB. Return 1 if any of the glyph's valence links is in the current category.
-entries =. VocTable #~ (< y) -:"(0 0) 3 {"1 VocTable NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
-links =. 7 {"1 entries
-+./ > categoryTest &. > links
-)
-NB. ======================================================
-
-
 NB. ==============================================================================
-foo =: 3 : 0
-UrlsToAvoid =: ''
-cacheLinks =: 3 : 0
-dbOpenDb ''
-cols =. ;: 'url html'
-allUrls =. (7 {"1 VocTable) , 2 {"1 getToc ''
-currentCache =. > {: sqlreadm__db 'select url from page_cache'
-urls =. allUrls -. currentCache
-urls =. urls -. UrlsToAvoid
-smoutput 'Skipping ' ; (# currentCache) ; 'Loading' ; # urls
-try.
-for_url. urls do.
-	openUrl =. > url
-	html =. gethttp openUrl
-	sqlinsert__db 'page_cache';cols;<openUrl;html
-end.
-catch.
-	smoutput (13!:12) ''
-	smoutput 'Failed with ' , openUrl
-	UrlsToAvoid =: UrlsToAvoid , <openUrl
-	smoutput dbError ''
-	cacheLinks ''
-end.
-)
-
 normalizeUrl =: 3 : 0
 NB. y A url
 NB. If necessary, add the https://... prefix.
@@ -341,12 +301,38 @@ end.
 CachedTocChildren =: ''
 CachedTocPartialPath =: ''
 
-getTocChildren =: 3 : 0
+CachedTocSortKey =: ''
+
+getSortKeyForPath =: 3 : 0
 NB. y A partial path (unboxed)
-NB. Return all of the Wiki entries that match the partial path.
+NB. Return the sortKey that corresponds to that path.
+NB. Note that category components are supposed to be unique, but it's by no means guaranteed since the user can enter searches.
+pairs =. 2 <\ (< '') , a: -.~ <;._2 y , '/'
+for_pair. pairs do.
+	parent =. 0 {:: > pair
+	child =. 1 {:: > pair
+	sortKey =. , > > {: sqlreadm__db 'select sortkey from categories where parent = "' , parent , '" and child = "' , child , '"'
+end.
+sortKey
+)
+
+getTocChildren =: 3 : 0
+NB. y A sortKey
+NB. Return a table of level ; title ; category ; link ; sortKey
+if. -. y -: CachedTocSortKey do.
+	result =. > 1 { sqlreadm__db 'select level, title, category, link, sortkey from wiki where sortkey like "' , y , '%" order by sortkey asc'
+	CachedTocChildren =: 0 1 2 3 4 {"1 result
+end.
+CachedTocChildren
+)
+
+getTocChildrenOld =: 3 : 0
+NB. y A sortKey
+NB. Return all of the Wiki entries that match the sortKey
 NB. Level ; Title ; Category ; Full Path ; Link 
 if. -. y -: CachedTocPartialPath do.
-	result =. > 1 { sqlreadm__db 'select level, title, category, fullpath, link, sortkey, rowid from wiki where fullpath like "' , y , '%" order by sortkey asc, rowid asc'
+	sortKey =. (getSortKeyForPath y) , '.'
+	result =. > 1 { sqlreadm__db 'select level, title, category, link, sortkey from wiki where sortkey like "' , sortKey , '%" order by sortkey asc'
 	CachedTocChildren =: 0 1 2 3 4 {"1 result
 end.
 CachedTocChildren
@@ -357,6 +343,8 @@ NB. y The name of a category from the "categories" table
 NB. Return the corresponding link.
 , > > 1 { sqlreadm__db 'select link from categories where child ="' , y , '"'
 )
+
+
 
 NB. ================== Drawing ====================
 MaxCellWidth =: 100
@@ -487,8 +475,10 @@ if. 0 = # y do. return. end.
 url =. > {. y
 if. url -: '' do. return. end.
 url =. ('User_' ; 'User:') rxrplc url
-if. -. 'http' -: 4 {. url do.
-	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/wiki/' , url
+if. 'Category:' -: 9 {. url do.
+	url =. 'https://code.jsoftware.com/wiki/' , url
+elseif. -. 'http' -: 4 {. url do.
+	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/' , url
 end.
 if. LastUrlLoaded -: url do. return. end.
 wd 'set browser url *' , url 
@@ -612,7 +602,7 @@ CachedTocChildrenImage =: ''
 NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
-NB. y HighlightFlag ; Name ; Command ; HeadingFlag
+NB. y HighlightFlag ; Name ; Link/Command ; HeadingFlag
 'xx yy maxWidth height' =. x
 'highlightFlag name command headingFlag' =. y
 if. headingFlag do. 
@@ -764,18 +754,19 @@ NB. y xx yy width height entryY
 NB. Render the descendants of the TocSelectedTopCategory in xx yy width height.
 NB. This is used when the child count is too high.  It renders a tree in the first column
 NB. and the children of each node in the subsequent columns.
+NB. getTocChildren: Return a table of level ; title ; category ; link ; sortKey
 maxDepth =. x
 'xx yy width height' =. y
-'level category fullPath count link sortkey' =. TocOutlineRailSelectedIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; full path ; count ; link
+'level category count link sortKey' =. TocOutlineRailSelectedIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; count ; link ; sortKey
 margin =. 5
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect xx , yy , width , height
-childTable =. (< 0) ,. 1 2 4 {"1 getTocChildren fullPath  NB. Title ; Category ; Link ; HeadlingFlag
+childTable =. (< 0) ,. 1 2 3 {"1 getTocChildren sortKey  NB. childTable HighlightFlag ; Title ; Category ; Link ; HeadlingFlag
 if. 0 = # childTable do. '' return. end.
-childCategories =: getTocOutlineSubcategories fullPath  NB. Level ; Category
+childCategories =: getTocOutlineSubcategories sortKey  NB. Level ; Category
 indents =. (2 * > 0 {"1 childCategories) <@#"0 ' '
 indentedCategoryColumn =. indents , &. > 1 {"1 childCategories
 if. (# childCategories) <: index =. (1 {"1 childCategories) i. < TocEntryChildCategory do. 
@@ -815,20 +806,21 @@ NB. x maxDepth
 NB. y xx yy width height
 NB. Render the descendants of the TocOutlineRailSelectedIndex category in xx yy width height.
 NB. Use multiple columns if necessary.  If there are too many columns, invoke drawTocEntryChildrenWithTree.
+NB. getTocChildren: Return a table of level ; title ; category ; link ; sortKey
 maxDepth =. x
 'xx yy width height' =. y
-'level category fullPath count link sortkey' =. TocOutlineRailSelectedIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; full path ; count ; link
+'level category count link sortKey' =. TocOutlineRailSelectedIndex { getTocOutlineRailEntries maxDepth NB. level ; category  ; count ; link ; sortKeh
 margin =. 5
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect xx , yy , width , height
-childTable =. (< 0) ,. 1 2 3 4 {"1 getTocChildren fullPath  NB. HighlightFlag ; Title ; Category ; Full Path ; Link
+childTable =. (< 0) ,. 1 2 3 {"1 getTocChildren sortKey  NB. childTable: HighlightFlag ; Title ; Category ; Link ; sortKey
 if. 0 = # childTable do. '' return. end.
 childCategories =. ~. 2 {"1 childTable
 links =. getLinkForCategory &. > childCategories
-childGroups =. (2 {"1 childTable) </. (< 0) ,.~ 0 1 4 {"1 childTable NB. Level ; Title ; Link ; Heading Flag
+childGroups =. (2 {"1 childTable) </. (< 0) ,.~ 0 1 3 {"1 childTable NB. Level ; Title ; Link ; Heading Flag
 categoryLinks =. (< 1) ,.~ (< 0) ,. childCategories ,. links
 entryList =. ; (<"1 categoryLinks) , &. > childGroups         NB. Category/Title ; Link
 rowCount =. <. height % TocLineHeight
@@ -864,7 +856,7 @@ NB. y max depth , TocOutline rail index
 NB. Draw the category name in the rail and then call drawTocEntryChildren to render the kids.
 'entryX entryY entryHeight railX railY railWidth railHeight' =. x
 'maxDepth railIndex' =. y
-'level category fullPath count link sortkey' =. railIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; full path ; count ; link
+'level category count link sortkey' =. railIndex { getTocOutlineRailEntries maxDepth NB. level ; category ; count ; link ; sortKey
 margin =. 5
 isShrunken =. entryHeight < TocLineHeight
 isSelected =. VocMouseXY pointInRect (entryX + 70) , entryY , (railWidth - 70) , TocLineHeight
@@ -883,10 +875,10 @@ if. 0 < countPercent =. 1 <. count % 1000 do.
 end.
 glfont TocFont
 if. count < 0 do. glrgba 0 0 0 64 else. glrgb 0 0 0 end.
-if. ('/*Search' -: 8 {. fullPath) *. level = 1 do. 
-	glrgb 0 0 255 
-	glfont TocBoldFont
-end.
+NB. if. ('/*Search' -: 8 {. fullPath) *. level = 1 do. 
+NB. 	glrgb 0 0 255 
+NB. 	glfont TocBoldFont
+NB. end.
 gltextcolor ''
 if. railIndex = TocOutlineRailSelectedIndex do. 
 	if. isShrunken do.
@@ -936,7 +928,7 @@ if. VocMouseXY pointInRect xx , yy , width , height do. setDisplayMode 'T' end.
 margin =. 5
 stripeWidth =. 70
 window =. 20
-entries =. getTocOutlineRailEntries y NB. level ; category ; full path ; count ; link
+entries =. getTocOutlineRailEntries y NB. level ; category ; count ; link ; sortKey
 NB. entries =. e #~ ~: 1 {"1 e =. TocOutline #~ > <&y &. > {."1 TocOutline
 NB. if. 0 < # SearchString do. s =. '*Search in progress...' else. s =. '*Search (' , (": # SearchResultsTable) , ')' end.
 NB. TocOutlineRailEntries =: (0 ; s ; '/') , (0 ; '*NuVoc' ; '/') , entries NB. level ; path component ; full path
@@ -980,19 +972,19 @@ TocOutlineRailEntries =: ''
 
 getTocOutlineRailEntries =: 3 : 0
 NB. y Depth to which to go in the TOC hierarchy
-NB. Return level ; category ; full path ; count ; link ; sortkey
+NB. Return level ; category ; count ; link ; sortkey
 if. TocOutlineRailEntries -: '' do.
-	TocOutlineRailEntries =: > 1 { sqlreadm__db 'select level, child, fullpath, count, link, sortkey from categories order by sortkey asc, fullpath asc'
+	TocOutlineRailEntries =: > 1 { sqlreadm__db 'select level, child, count, link, sortkey from categories order by sortkey asc'
 end.
 TocOutlineRailEntries #~ y > > 0 {"1 TocOutlineRailEntries
 )
 
 getTocOutlineSubcategories =: 3 : 0
-NB. y A partial path
-NB. Return all of the categories beneath that path, with levels (and including the partial path y)
+NB. y A sortKey
+NB. Return all of the categories beneath that path, with levels (and including the sortKey)
 NB. To put it another way, return a table of level ; category
-entries =. getTocOutlineRailEntries 100  NB. level ; category ; full path ; count ; link
-0 1 {"1 entries #~ sieve =. {."1 > (< y) E. &. > 2 {"1 entries
+entries =. getTocOutlineRailEntries 100  NB. level ; category ; count ; link ; sortKey
+0 1 {"1 entries #~ sieve =. {."1 > (< y) E. &. > 4 {"1 entries
 )
 
 WikiCachedPartialPath =: ''
@@ -1053,9 +1045,6 @@ glfont 'arial 16'
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
-NB. if. categoryTest link do.
-NB. 	((leftX - 4) , (yy - 2) , (width + 8) , 20) drawHighlight HighlightColor
-NB. end.
 if. VocMouseXY pointInRect leftX , yy , width , 20 do.
 NB.	glrgb 255 0 0
 NB.	glpen 4
@@ -1102,10 +1091,6 @@ if. selected do.
 	(xStart, yStart, width, height) drawHighlight SelectionColor
 end.
 coords drawStringAt &. > ; &. > lineTokens
-if. categoryGlyphTest glyph do.
-	m =. 2
-	((xStart + m) , (yStart + m) , (width - 2 * m) , (height - 2 * m)) drawHighlight HighlightColor
-end.
 NewVocGeometry =: NewVocGeometry , glyph ; xStart ; yStart ; width ; height
 ''
 )

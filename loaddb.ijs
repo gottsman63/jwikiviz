@@ -298,6 +298,10 @@ loadForumHtml =: 3 : 0
 NB. Using the data in the forums SQLITE table, load the HTML for each forum post and store it in the table.
 )
 
+createThreads =: 3 : 0
+while. (1 T. '') < <: {: 8 T. '' do. 0 T. '' end.
+)
+
 extractField =: 4 : 0
 NB. x Pattern string (assumes a parenthesized subpattern match)
 NB. y String
@@ -338,64 +342,70 @@ end.
 sqlcmd__db 'commit transaction'
 )
 
-visitedCategories =: ''
+visitedPairs =: ,: a: , a:
+visitedChildren =: ''
+pairsToVisit =: ,:  0 ; '' ; 'Home'
 emergencySeq =: 500
 
-processCategory =: 4 : 0
+processCategory =: 3 : 0
 NB. x Name of a parent category
-NB. y Name of a category. 
+NB. y Name of a child category. 
 NB. Retrieve and processs the HTML.  Recurse to handle any child categories.
-if. (visitedCategories i. < y) < # visitedCategories do. smoutput 'Skipping' ; y return. end.
-visitedCategories =: visitedCategories , < y
-catWithUnderscores =. (' ';'_') rxrplc y
-url =. 'https://code.jsoftware.com/wiki/Category:' , ('\)' ; '\\\)') rxrplc ('\(' ; '\\\(') rxrplc ('''' ; '\''') rxrplc urlencode catWithUnderscores
-html =. gethttp url
-parentCategory =. x
-patSubcategories =. rxcomp 'title="Category:([^"]+)"'
-if. 0 < # dropCount =. I. 'mw-subcategories' E. html do.
-	shortenedHtml =. dropCount }. html
-	if. 0 < # suffixDropIndex =. I. 'title="Special:Categories"' E. shortenedHtml do. shortenedHtml =. suffixDropIndex {. shortenedHtml end.
+while. 0 < # pairsToVisit do.
+	'level parentCategory childCategory' =. {. pairsToVisit
+	pairsToVisit =: }. pairsToVisit
+	if. parentCategory -: childCategory do. smoutput 'Skipping (identical)' ; parentCategory ; childCategory continue. end.
+	if. (# visitedPairs) > visitedPairs i. (parentCategory ; childCategory) do. smoutput 'Skipping' ; parentCategory ; childCategory continue. end.
+	visitedPairs =: visitedPairs , (parentCategory ; childCategory)
+	smoutput 'Processing category pair' ; parentCategory ; childCategory
+	wd 'msgs'
+	catWithUnderscores =. (' ';'_') rxrplc childCategory
+	url =. 'https://code.jsoftware.com/wiki/Category:' , ('\)' ; '\\\)') rxrplc ('\(' ; '\\\(') rxrplc ('''' ; '\''') rxrplc urlencode catWithUnderscores
+	html =. gethttp url
+	patSubcategories =. rxcomp 'title="Category:([^"]+)"'
+	shortenedHtml =. html
+	if. 0 < # dropCount =. I. 'mw-subcategories' E. html do. shortenedHtml =. dropCount }. html end.
+	if. 0 < # suffixDropIndex =. I. 'id="mw-hidden-catlinks"' E. shortenedHtml do. shortenedHtml =. suffixDropIndex {. shortenedHtml end.
 	offsetLengths =. ,/ }."2 patSubcategories rxmatches shortenedHtml
 	categories =. ('_' ; ' ')&rxrplc &. > (<"0 {:"1 offsetLengths) {. &. > ({."1 offsetLengths) <@}."0 1 shortenedHtml
-	categories =. categories -. (<'Hidden categories (page does not exist)') , (<'Home') , (<y)
-else.
-	shortenedHtml =. html
-	categories =. ''
-end.
-patPageLink =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
-offsetLengths =. }."2 patPageLink rxmatches shortenedHtml
-viewSourceHtml =. gethttp '"https://code.jsoftware.com/mediawiki/index.php?title=Category:' , catWithUnderscores , '&action=edit"'
-ol =. {: ((rxcomp '\|(\d+)\]\]') rxmatch viewSourceHtml)
-if. _1 = {. {. ol do.
-	parentSeq =. emergencySeq
-	emergencySeq =: >: emergencySeq
-else.
-	parentSeq =. ". ({: ol) {. ({. ol) }. viewSourceHtml 
-end.
-parms =.'categories';('child = "' , y , '"');('parent' ; 'child' ; 'parentseq'); < parentCategory ; y ; parentSeq 
-sqlupdate__db parms
-sqlcmd__db 'begin transaction'
-if. 0 < # offsetLengths do.
-	linkOffsetLengths =. 0 {"2 offsetLengths
-	links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 shortenedHtml
-	titleOffsetLengths =. 1 {"2 offsetLengths
-	titles =. (<"0 {:"1 titleOffsetLengths) {. &. > ({."1 titleOffsetLengths) <@}."0 1 shortenedHtml
-	if. 'Category:' -: 9 {. > {: titles do. NB. There's sometimes a stray "Category:" link at the bottom.
-		links =. }: links
-		titles =. }: titles
+	categories =. categories -. (<'Hidden categories (page does not exist)')
+	patPageLink =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
+	offsetLengths =. }."2 patPageLink rxmatches shortenedHtml
+	viewSourceHtml =. gethttp '"https://code.jsoftware.com/mediawiki/index.php?title=Category:' , catWithUnderscores , '&action=edit"'
+	ol =. {: ((rxcomp '\|(\d+)\]\]') rxmatch viewSourceHtml)
+	if. _1 = {. {. ol do.
+		parentSeq =. emergencySeq
+		emergencySeq =: >: emergencySeq
+	else.
+		parentSeq =. ". ({: ol) {. ({. ol) }. viewSourceHtml 
 	end.
-	cols =. ;: 'category title link'
-	data =. ((# titles) # < y) ; titles ; < links
-	sqlinsert__db 'wiki' ; cols ; <data
+	count =. 0
+	if. ((# visitedChildren) = visitedChildren i. < childCategory) *. 0 < # offsetLengths do.
+		sqlcmd__db 'begin transaction'
+		linkOffsetLengths =. 0 {"2 offsetLengths
+		links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 shortenedHtml
+		titleOffsetLengths =. 1 {"2 offsetLengths
+		titles =. (<"0 {:"1 titleOffsetLengths) {. &. > ({."1 titleOffsetLengths) <@}."0 1 shortenedHtml
+		count =. # titles
+		if. 'Category:' -: 9 {. > {: titles do. NB. There's sometimes a stray "Category:" link at the bottom.
+			links =. }: links
+			titles =. }: titles
+		end.
+		cols =. ;: 'category title link'
+		data =. ((# titles) # < childCategory) ; titles ; < links
+		sqlinsert__db 'wiki' ; cols ; <data
+		sqlcmd__db 'commit transaction'
+	end.
+	parms =.'categories' ; (;: 'level parent child parentseq count link') ; < (level + 1) ; parentCategory ; childCategory ; parentSeq ; count ; ('Category:' , childCategory)
+	sqlinsert__db parms
+	childCategories =. ('&#039;' ; '''')&rxrplc &. > categories
+NB.	childCategories =. childCategories -. visitedChildren
+NB.	if. 0 < # childCategories do.
+NB.		links =. 'Category:'&, &. > childCategories
+NB.	end.
+	visitedChildren =: visitedChildren , < childCategory
+	pairsToVisit =: pairsToVisit , (< level + 1) ,. (< childCategory) ,. childCategories
 end.
-childCategories =: ('&#039;' ; '''')&rxrplc &. > categories
-if. 0 < # childCategories do.
-	links =. 'Category:'&, &. > childCategories
-	parentChildParms =. ('categories' ; 'child' ; < ;: 'parent child link') ,"1 0 <"1 (< y) ,. childCategories ,. links
-	sqlupsert__db"1 parentChildParms
-end.
-sqlcmd__db 'commit transaction'
-(< y) processCategory &. > childCategories
 )
 
 downloadWiki =: 3 : 0
@@ -417,64 +427,15 @@ NB. y Category with . components.  Normalize the numbers with leading zeros.
 finishTables =: 3 : 0
 NB. Add level, count, sortke and path information to the category table.
 NB. Add count and sortkey information to the wiki table.
-parms =. 'categories' ; (;: 'level parent child parentseq link') ; < 0 ; '' ; '*NuVoc' ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-sqlinsert__db parms
-parms =. 'categories' ; (;: 'level parent child parentseq link') ; < 0 ; '' ; '*Search' ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-sqlinsert__db parms
-parms =. 'categories' ; (;: 'level parent child parentseq link') ; < 0 ; '' ; '*Forums' ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
-sqlinsert__db parms
-parms =. 'categories' ; (;: 'level parent child parentseq link') ; < 0 ; '' ; 'Home' ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db parms
+sqlinsert__db 'categories' ; (;: 'level parent child parentseq link') ; < 1 ; '' ; '*NuVoc' ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
+sqlinsert__db 'categories' ; (;: 'level parent child parentseq link') ; < 1 ; '' ; '*Search' ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; (;: 'level parent child parentseq link') ; < 1 ; '' ; '*Forums' ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
 cols =. ;: 'level parent child parentseq count link'
 parentSeqs =. i. # links
 data =. (< 1 #~ # forumNames) , (< (#forumNames) # < '*Forums') , (< , forumNames) , (< parentSeqs) , (< 0 #~ # forumNames) , < , links
 sqlinsert__db 'categories';cols;<data
-NB. sqlcmd__db 'begin transaction'
-smoutput 'About to for_category'
-for_category. > {: sqlreadm__db 'select child from categories' do.
-	level =. _1
-	parent =. , > category
-	sortKey =. ''
-	while. 1 do. 
-		parms =. 'select parent, parentseq from categories where child = "' , parent , '"'
-		result =. , > {: sqlreadm__db parms
-		if. 0 = # result do. break. end.
-		'parent parentSeq' =. result
-		sortKey =. (_3 {. '000' , ": parentSeq) , '.' , sortKey
-		level =. >: level
-	end.
-	parms =. 'categories' ; ('child = "' , (, > category) , '"') ; (, 'level' ; 'sortkey') ; , < level ; }: sortKey
-	sqlupdate__db  parms
-end.
-NB. sqlcmd__db 'commit transaction'
-smoutput 'About to for_pathEntry.'
-sqlcmd__db 'begin transaction'
-childPaths =. > 1 { sqlreadm__db 'select child, level, sortkey from categories'
-for_pathEntry. childPaths do.
-	'child level sortkey' =. pathEntry
-	parms =. 'wiki'; ('category ="' , child , '"') ; (, 'level' ; 'sortkey') ; , < , level ; sortkey
-	sqlupdate__db parms
-end.
-sqlcmd__db 'commit transaction'
-NB. sqlcmd__db 'begin transaction'
-NB. rootEntries =. table #~ (<'NULL') = 0 {"1 table =. > 1 { sqlreadm__db 'select distinct fullpath, category from wiki'
-NB. for_rootEntry. rootEntries do.
-NB.	parms =. 'wiki' ; ('category = "' , (> 1 { rootEntry) , '"') ; (;: 'level fullpath category') ; < 0 ; ('/' , > 1 { rootEntry) ; > 1 { rootEntry
-NB.	sqlupdate__db parms
-NB.	parms2 =. 'categories' ; 'child' ; (;: 'level parent child fullpath count') ; < 0 ; '' ; (> 1 { rootEntry) ; ('/' , > 1 { rootEntry) ; 1
-NB.	sqlupsert__db parms2
-NB. end.
-NB. sqlcmd__db 'commit transaction'
-sqlcmd__db 'begin transaction'
-for_pathEntry. childPaths do.
-	'child level sortkey' =. pathEntry
-	pathcount =. > 1 { sqlreadm__db 'select count(*) from wiki where sortkey like "' , sortkey , '%"'
-	parms =. 'categories'; ('child ="' , child , '"') ; (, < 'count') ; , pathcount
-	sqlupdate__db parms
-end.
-sqlcmd__db 'commit transaction'
 )
 
 dbOpenDb =: 3 : 0
@@ -485,8 +446,8 @@ setupDb =: 3 : 0
 try. (1!:55) < dbFile catch. end.
 db =: sqlcreate_psqlite_ dbFile
 sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
-sqlcmd__db 'CREATE TABLE wiki (level INTEGER, title TEXT, category TEXT, link TEXT, sortkey TEXT)'
-sqlcmd__db 'CREATE TABLE categories (level INTEGER, parent TEXT, child TEXT, parentseq INTEGER, count INTEGER, link TEXT, sortkey TEXT PRIMARY KEY)' 
+sqlcmd__db 'CREATE TABLE wiki (title TEXT, category TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE categories (level INTEGER, parent TEXT, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 )
 
@@ -494,8 +455,8 @@ setup =: 3 : 0
 setupTempDirectory ''
 setupDb ''
 loadVoc ''
+NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 NB. loadForum &. > ;: 'chat database general source programming beta'
-NB. downloadWiki ''
-'' processCategory 'Home'
-finishTables ''
+processCategory ''
+NB. finishTables ''
 )
