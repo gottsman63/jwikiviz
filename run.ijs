@@ -72,7 +72,7 @@ wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
 DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
-NB. wd 'timer 200'
+wd 'timer 200'
 )
 
 vizform_default =: 3 : 0
@@ -142,7 +142,7 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
 
 sys_timer_z_ =: 3 : 0
 checkHistoryMenu_base_ ''
-invalidateDisplay_base_ ''
+NB. invalidateDisplay_base_ ''
 )
 
 wd 'timer 0'
@@ -775,7 +775,7 @@ colWidth =. <. width % fullSizeColCount
 compressedColWidth =. <. (width - colWidth) % <: # columnGroups
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =. <"1 <. (xx + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
-if. (# columnRects) > 2 * fullSizeColCount do. 
+if. (1 < # categoryEntries) *. (# columnRects) > 2 * fullSizeColCount do. 
 	maxDepth drawTocEntryChildrenWithTree xx , yy , width , height
 	''
 	return.
