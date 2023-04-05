@@ -7,6 +7,7 @@ NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Reimplement search.
 NB. Fix use of curl for search
+NB. Clear out the search results from the wiki table (wiki and forums results).
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -213,10 +214,9 @@ NB. Perform the search, parse the results, and update the "categories" and "wiki
 html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y) , '"'
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
-categoriesCols =. ;: 'rowid count'
 wikiId =. ((1 getCategoryId '*Search') getCategoryId y) getCategoryId 'Wiki'
 if. 0 = # offsetLengths do.
-	sqlupsert__db 'categories' ; 'rowid' ; categoriesCols ; < wikiId ; 0
+	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
 else.
 	ol =. 1 2 {"2 offsetLengths
 	linkOffsets =. 0 {"(1) 0 {"2 ol
@@ -228,7 +228,7 @@ else.
 	wikiCols =. ;: 'title categoryid link'
 	data =. titles ; (wikiId #~ # titles) ; < links
 	sqlinsert__db 'wiki';wikiCols;<data
-	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; categoriesCols ; < wikiId ; # titles
+	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
 end.
 clearCache ''
 invalidateDisplay ''
@@ -237,13 +237,13 @@ invalidateDisplay ''
 searchForums =: 3 : 0
 NB. y Search term
 NB. Perform the search, parse the results, and update the "categories" and "wiki" table.
-categoriesCols =. ;: 'level parent child fullpath count link'
-wikiCols =. ;: 'level title category fullpath link'
+wikiCols =. ;: 'title categoryid link'
 html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =.  pat rxmatches html
+forumsId =. ((1 getCategoryId '*Search') getCategoryId y) getCategoryId 'Forums'
 if. 0 = # offsetLengths do.
-	sqlupsert__db 'categories' ; 'fullpath' ; categoriesCols ; < 2 ; y ; 'Forum' ; ('/*Search/' , y , '/Forums') ; 0 ; ''
+	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < 0 ; 3
 else.
 	ol =. 1 2 3 {"2 offsetLengths
 	linkOffsets =. 0 {"(1) 0 {"2 ol
@@ -258,19 +258,20 @@ else.
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
 	titleGroups =. forums </. titles
 	linkGroups =. forums </. links
-	fullpath =. '/*Search/' , y , '/Forums'
-	sqlcmd__db 'delete from wiki where fullpath = "' , fullpath , '"'
-	sqlupsert__db 'categories' ; 'fullpath' ; categoriesCols ; < 2 ; y ; 'Forums' ; ('/*Search/' , y , '/Forums') ; (# titles) ; ''
+	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < (# titles) ; 3
 	for_index. i. # titleGroups do.
 		fname =. > index { ~. forums
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
-		data =. (3 #~ # forumTitles) ; forumTitles ; ((# forumTitles) # < fname) ; ((<'/*Search/' , y , '/Forums/' , fname) #~ # forumTitles) ; < forumLinks
+		cols =. (;: 'level parentid child parentseq count link')
+		data =. 4 ; forumsId ; fname ; index ; (# forumLinks) ; 'https://www.jsoftware.com/forumsearch.htm'
+		sqlinsert__db 'categories' ; cols ; < data
+		forumId =. forumsId getCategoryId fname
+		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
 		sqlinsert__db 'wiki';wikiCols;<data
-		sqlupsert__db 'categories' ; 'fullpath' ; categoriesCols ; < 3 ; y ; 'Forums' ; ('/*Search/' , y , '/Forums/' , fname) ; (# forumLinks) ; 'https://www.jsoftware.com/forumsearch.htm'
 	end.
 end.
-resetTocOutlineRailEntries ''
+clearCache ''
 invalidateDisplay ''
 )
 
@@ -278,7 +279,7 @@ search =: 3 : 0
 NB. y A search string.
 addSearchToToc y
 searchWiki y
-NB. searchForums y
+searchForums y
 NB. updateSearchTotals ''
 return.
 )
