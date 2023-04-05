@@ -438,7 +438,7 @@ NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
 if. -. VocMouseXY pointInRect x do. return. end.
-if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. y ; '----' end.
+if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. (; y) ; '----' end.
 if. '*' = {. urlCommand do.
 	". }. urlCommand
 else. 
@@ -703,7 +703,7 @@ categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level paren
 catTitles =. 2 {"1 categoryEntries
 catLevels =. 0 {"1 categoryEntries
 catLinks =. 5 {"1 categoryEntries
-catHighlightFlags =. (< TocEntryChildCategory) = catTitles
+catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
 cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 catTitles
 commandLinks =. ''''&, &. > ,&'''' &. > catLinks
 commandCategories =. ,&'''' &. > ''''&, &. > cleanCategories
@@ -837,7 +837,7 @@ else.
 end.
 if. level < <: maxDepth do. count =. 0 end.
 glclip 0 0 10000 10000
-if.  '*NuVoc' -: > 1 { TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth do.
+if.  +./ '*NuVoc' E. > 2 { TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth do.
 	DisplayMode =: 'V'
 	''
 	return.
@@ -912,8 +912,11 @@ NB. Terminate cycles.
 if. y = 0 do. '' return. end.
 if. (# visitedRailEntries) > visitedRailEntries i. (< x) do. '' return. end.  NB. Terminate cycles.
 visitedRailEntries =: visitedRailEntries , < x
-entries =. > {: sqlreadm__db 'select level, parent, child, parentseq, count, link from categories where parent = "' , x , '" order by parentseq'
+parentId =. getCategoryIdNoParent x
+entries =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where parentid = ' , (": parentId) , ' order by parentseq'
 children =. 2 {"1 entries
+parents =. getCategory &. > 1 {"1 entries
+entries =. ({."1 entries) ,. parents ,. 2 3 4 5 {"1 entries
 ; (<"0<"1 entries) , &. > recurseGetTocOutlineRailEntries&(<: y) &. > children
 )
 
@@ -945,12 +948,14 @@ else.
 	entries =. y getTocOutlineRailEntries 100
 	if. 0 = # entries do.
 		NB. The category is not a parent.
-		entry =. > {: sqlreadm__db 'select level, parent, child, parentseq, count, link from categories where child = "' , y , '"'
-		wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where category = "' , y , '"'
+		categoryId =. getCategoryIdNoParent y
+		entry =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where child = "' , y , '"'
+		wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": categoryId
 		result =. (< entry) , < wikiDocs
 	else.
 		categories =. 2 {"1 entries
-		result =. (<"1 entries) ,. >@{: &. > sqlreadm__db &. >  ,&'"' &. > 'select title, link from wiki where category = "'&, &. > categories
+		categoryIds =. getCategoryIdNoParent &. > categories
+		result =. (<"1 entries) ,. >@{: &. > sqlreadm__db &. > 'select title, link from wiki where categoryid = '&, &. > ": &. > categoryIds
 	end.
 	WikiDocsCache =: WikiDocsCache , key , < result
 end.
@@ -961,7 +966,35 @@ clearCache =: 3 : 0
 TocOutlineRailEntriesCache =: ,: a: , a:
 WikiDocsCache =: ,: a: , a:
 )
-NB. ==================== End Database Caching ====================
+
+getCategory =: 3 : 0
+NB. y Category Id
+NB. Return the category string, empty string if none.
+result =. > {: sqlreadm__db 'select child from categories where rowid = ' , ": y
+if. 0 = # result do. '' else. > , > result end.
+)
+
+getCategoryIdNoParent =: 3 : 0
+NB. y Category string
+NB. Return the id or _1.
+result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '"'
+if. 0 = # result do. _1 else. > , > result end.
+)
+
+getCategoryId =: 4 : 0
+NB. x Parent id
+NB. y Category name (category names are guaranteed to be unique)
+NB. Return the rowid of the category
+result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" and parentid = ' , ": x
+if. 0 = # result do. _1 else. , > result end.
+)
+
+getParentId =: 3 : 0
+NB. y Category id
+NB. Return the rowid of the category's parent.
+, > , > {: sqlreadm__db 'select parentid from categories where rowid = ' , ": y
+)
+NB. ==================== End Table of Contents ====================
 
 NB. ====================== NuVoc ========================
 loadVoc =: 3 : 0
@@ -990,13 +1023,13 @@ dimensions =. > calcCellDimensions &. > y
 (>./ {:"1 dimensions) , {."1 dimensions
 )
 
-getVocGeometryForMouseXY =: 3 : 0
-, CurrentVocGeometry #~ VocMouseXY pointInRect"1 1 > 1 2 3 4 {"1 CurrentVocGeometry
-)
+NB. getVocGeometryForMouseXY =: 3 : 0
+NB. , CurrentVocGeometry #~ VocMouseXY pointInRect"1 1 > 1 2 3 4 {"1 CurrentVocGeometry
+NB. )
 
-getVocEntryGeometryForMouseXY =: 3 : 0
-, VocSelectionGeometry #~ VocMouseXY pointInRect"1 1 > 4 {."1 VocSelectionGeometry
-)
+NB. getVocEntryGeometryForMouseXY =: 3 : 0
+NB. , VocSelectionGeometry #~ VocMouseXY pointInRect"1 1 > 4 {."1 VocSelectionGeometry
+NB. )
 
 drawVocEntry =: 4 : 0
 NB. x An entry from VocTable: Group POS Row Glyph MonadicRank Label DyadicRank Link
@@ -1010,15 +1043,8 @@ glfont 'arial 16'
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
-if. VocMouseXY pointInRect leftX , yy , width , 20 do.
-NB.	glrgb 255 0 0
-NB.	glpen 4
-NB.	glrgba 0 0 0 0
-NB.	glbrush''
-NB.	glrect (leftX - 4) , (yy - 5) , (width + 8) , 20
-	((leftX - 4) , (yy - 1) , (width + 8) , 20) drawHighlight SelectionColor
-	queueLoadPage link ; label
-end.
+((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label
+NB. end.
 0
 )
 
@@ -1056,7 +1082,7 @@ if. selected do.
 	(xStart, yStart, width, height) drawHighlight SelectionColor
 end.
 coords drawStringAt &. > ; &. > lineTokens
-NewVocGeometry =: NewVocGeometry , glyph ; xStart ; yStart ; width ; height
+(xStart , yStart , width , height) registerRectLink '*selectVocGlyph ''' , glyph , ''''
 ''
 )
 
@@ -1077,8 +1103,6 @@ if. 0 < +/ > selected do.
 	entries =. VocTable #~ > VocSelectedGlyph&-: &. > 3 {"1 VocTable  NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 	coords =. (xx + <. -: availableWidth) ,. yStart + height + 10 + entryLineHeight * i. # entries
 	entries drawVocEntry"1 1 coords
-	(coords ,"1 1 availableWidth , entryLineHeight) registerRectLink"(1 1) 7 {"1 entries
-NB.	VocSelectionGeometry =: (<"0 coords) ,. (< availableWidth) ,. (<entryLineHeight) ,. 7 {"1 entries
 	selectionPadding =. entryLineHeight * >: # entries
 end.
 yStart + selectionPadding + height
@@ -1108,20 +1132,21 @@ end.
 runningY
 )
 
+selectVocGlyph =: 3 : 0
+NB. y A glyph
+VocSelectedGlyph =: , y
+invalidateDisplay ''
+)
+
 drawVoc =: 3 : 0
 if. -. DisplayMode -: 'V' do. return. end.
 glrgb 255 255 255
 glbrush ''
 glrect 0 0 2000 2000
-CurrentVocGeometry =: NewVocGeometry
-NewVocGeometry =: ,: '' ; _1 ; 0 ; 0 ; 0
-g =. getVocGeometryForMouseXY ''
-if. (0 < # g) do.
-	VocSelectedGlyph =: > 0 { g
-end.
 225 30 drawVocSections 0 1 2 3 4 5
 510 30 drawVocSections 6 7 8 9 10 11
 )
+NB. ============================= End Voc ===============================
 
 FrameTimeStamps =: ''
 

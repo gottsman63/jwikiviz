@@ -345,7 +345,7 @@ sqlcmd__db 'commit transaction'
 
 visitedPairs =: ,: a: , a:
 visitedChildren =: ''
-pairsToVisit =: ,:  1 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.  Note that rowid begins numbering at 1.
+pairsToVisit =: ,:  0 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.  Note that rowid begins numbering at 1.
 emergencySeq =: 500
 
 processCategory =: 3 : 0
@@ -417,9 +417,9 @@ end.
 finishTables =: 3 : 0
 NB. Add level, count, sortke and path information to the category table.
 NB. Add count and sortkey information to the wiki table.
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 0 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 0 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 0 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
 forumId =. 0 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
@@ -474,8 +474,8 @@ setupTempDirectory ''
 setupDb ''
 loadVoc ''
 NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
-NB. loadForum &. > ;: 'chat database general source programming beta'
 sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
 processCategory ''
+NB. loadForum &. > ;: 'chat database general source programming beta'
 finishTables ''
 )
