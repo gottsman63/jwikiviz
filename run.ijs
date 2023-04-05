@@ -186,7 +186,7 @@ addSearchToToc =: 3 : 0
 NB. y A search string
 NB. Save parent ; child.  
 term =.  y
-searchId =. 0 getCategoryId '*Search'
+searchId =. 1 getCategoryId '*Search'
 cols =. ;: 'level parentid child count parentseq link'
 sqlinsert__db 'categories' ; cols ; < 2 ; searchId ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
 sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'Special:JwikiSearch'
@@ -701,8 +701,8 @@ tocWikiDocs =. getTocWikiDocs categoryId NB. Table of level parent category pare
 if. 0 = # tocWikiDocs do. '' return. end.
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent category parentSeq count link
-catTitles =. 2 {"1 categoryEntries
-catLevels =. 0 {"1 categoryEntries
+indents =. #&'  ' &. > 0 {"1 categoryEntries
+catTitles =. indents , &. > 2 {"1 categoryEntries
 catLinks =. 5 {"1 categoryEntries
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
 cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 catTitles
@@ -892,9 +892,7 @@ glrect xx , yy , stripeWidth , height
 )
 
 drawToc =: 3 : 0
-NB. height =. 1010
 DisplayListRect drawTocRail 4
-NB. (10 30 150 , height) drawTocRail topCategories
 )
 
 NB. ======================= Table of Contents =====================
@@ -932,6 +930,7 @@ if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache)
 else.
 	visitedRailEntries =: ''
 	result =. > x recurseGetTocOutlineRailEntries y
+	if. x = 0 do. result =. }. result end.
 	TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < result
 end.
 result
