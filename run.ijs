@@ -5,10 +5,7 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
-NB. Vocabulary glyph hover should open the first valence link.
-NB. Lose the "geometry" implementation for NuVoc mouse handling.  Switch to registerRectLink.
-NB. Fix sorting.
-NB. Put delay-based addition to the History Menu back in.  Also, add mouse detection to the browser.
+NB. Reimplement search.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -122,10 +119,6 @@ direction =. * 11 { sysdata
 smoutput 'mwheel' ; direction
 )
 
-NB. vizform_vocContext_mbldbl =: 3 : 0
-NB. if. IFUNIX do. (2!:1) 'open -a Safari "' , > 0 { 0 { HistoryMenu , '"' end.
-NB. )
-
 vizform_searchBox_button =: 3 : 0
 search searchBox
 wd 'set searchBox text ""'
@@ -174,23 +167,30 @@ NB. ======================================================
 
 NB. =================== Search ===========================
 clearSearches =: 3 : 0
-return.
-sortKey =. (getSortKeyForPath '/*Search') , '.'
-sqlcmd__db 'delete from categories where fullpath like "' , sortKey , '%"'
-sqlcmd__db 'delete from wiki where fullpath like "' , sortKey , '%"'
-resetTocOutlineRailEntries ''
+terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId '*Search'
+clearSearch &. > terms
+clearCache ''
 invalidateDisplay ''
+)
+
+clearSearch =: 3 : 0
+NB. y A search string
+NB. Remove the search records from the TOC.
+searchId =. 1 getCategoryId '*Search'
+termId =. searchId getCategoryId y
+sqlcmd__db 'delete from categories where parentid = ' , (": searchId) , ' and child = "' , y , '"'
+sqlcmd__db 'delete from categories where parentid = ' , ": termId
 )
 
 addSearchToToc =: 3 : 0
 NB. y A search string
-NB. sqlcmd__db 'begin transaction'
 NB. Save parent ; child.  
-term =. '*' , y , '*'
-cols =. ;: 'level parent child count parentseq link'
-sqlinsert__db 'categories' ; cols ; < 2 ; (< '*Search') ; (< term) ; 0 ; 0 ; ''
-sqlinsert__db 'categories' ; cols ; < 3 ; (< term) ; (< 'Wiki') ; 0 ; 0 ; 'Special:JwikiSearch'
-sqlinsert__db 'categories' ; cols ; < 3 ; (< term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
+term =.  y
+searchId =. 0 getCategoryId '*Search'
+cols =. ;: 'level parentid child count parentseq link'
+sqlinsert__db 'categories' ; cols ; < 2 ; searchId ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'Special:JwikiSearch'
+sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 clearCache ''
 invalidateDisplay ''
 )
@@ -695,8 +695,9 @@ NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
 maxDepth =. x
 'xx yy width height' =. y
-'level parent category parentSeq count link' =. TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth
-tocWikiDocs =. getTocWikiDocs category NB. Table of level parent category parentSeq count link ; (table of title ; link)
+'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
+categoryId =. parentId getCategoryId category
+tocWikiDocs =. getTocWikiDocs categoryId NB. Table of level parent category parentSeq count link ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent category parentSeq count link
@@ -742,17 +743,17 @@ NB. x maxDepth
 NB. y xx yy width height
 NB. Render the descendants of the TocOutlineRailSelectedIndex category in xx yy width height.
 NB. Use multiple columns if necessary.  If there are too many columns, invoke drawTocEntryChildrenWithTree.
-NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
+NB. getTocOutlineRailEntries returns table of level ; parentid ; category ; parentseq ; count ; link
 maxDepth =. x
 'xx yy width height' =. y
-'level parent category parentSeq count link' =. TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth
+'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
 margin =. 5
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect xx , yy , width , height
-tocWikiDocs =. getTocWikiDocs category NB. Table of tocOutlineEntry ; (table of title ; link)
+tocWikiDocs =. getTocWikiDocs parentId getCategoryId category NB. Table of tocOutlineEntry ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
 categoryEntries =. > {."1 tocWikiDocs
 catLinkFlag =. (2 5 {"1 categoryEntries) ,. <1 NB. Category ; Link ; Heading Flag
@@ -792,7 +793,7 @@ NB. y max depth , TocOutline rail index
 NB. Draw the category name in the rail and then call drawTocEntryChildren to render the kids.
 'entryX entryY entryHeight railX railY railWidth railHeight' =. x
 'maxDepth railIndex' =. y
-'level parent category parentSeq count link' =. railIndex { '' getTocOutlineRailEntries maxDepth NB. level ; parent ; category ; parentseq ; count ; link
+'level parentid category parentSeq count link' =. railIndex { 0 getTocOutlineRailEntries maxDepth NB. level ; parent ; category ; parentseq ; count ; link
 margin =. 5
 isShrunken =. entryHeight < TocLineHeight
 isSelected =. VocMouseXY pointInRect (entryX + 70) , entryY , (railWidth - 70) , TocLineHeight
@@ -837,14 +838,14 @@ else.
 end.
 if. level < <: maxDepth do. count =. 0 end.
 glclip 0 0 10000 10000
-if.  +./ '*NuVoc' E. > 2 { TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth do.
+if.  +./ '*NuVoc' E. > 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth do.
 	DisplayMode =: 'V'
 	''
 	return.
 end.
 if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
-	if. '*Forums' -: 7 {. > 1 { railIndex { '' getTocOutlineRailEntries maxDepth do.
-		(> 2 { railIndex { '' getTocOutlineRailEntries maxDepth) drawTocEntryForum DisplayDetailRect
+	if. '*Forums' -: 7 {. > 1 { railIndex { 0 getTocOutlineRailEntries maxDepth do.
+		(> 2 { railIndex { 0 getTocOutlineRailEntries maxDepth) drawTocEntryForum DisplayDetailRect
 NB.	elseif. '*Search' -: 7 {. > 1 { railIndex { TocOutlineRailEntries do.
 NB.		maxDepth drawTocEntryChildrenWithTree DisplayDetailRect
 	else.
@@ -864,7 +865,7 @@ if. VocMouseXY pointInRect xx , yy , width , height do. setDisplayMode 'T' end.
 margin =. 5
 stripeWidth =. 70
 window =. 20
-entries =. '' getTocOutlineRailEntries y NB. level ; parent ; category ; parentseq ; count ; link
+entries =. 0 getTocOutlineRailEntries y NB. level ; parent ; category ; parentseq ; count ; link
 if. ({. VocMouseXY) < xx + stripeWidth do.
 	TocScrollIndex =: 0 >. (<: # entries) <. <. ((({: VocMouseXY) - yy) % height) * # entries
 end.
@@ -892,7 +893,7 @@ glrect xx , yy , stripeWidth , height
 
 drawToc =: 3 : 0
 NB. height =. 1010
-DisplayListRect drawTocRail 3
+DisplayListRect drawTocRail 4
 NB. (10 30 150 , height) drawTocRail topCategories
 )
 
@@ -903,30 +904,29 @@ WikiDocsCache =: ,: a: , a:
 TocWikiDocsCategory =: ''
 TocWikiDocsEntries =: ''
 
-visitedRailEntries =: ''
+visitedRailEntries =: '' NB. Boxed IDs.
 
 recurseGetTocOutlineRailEntries =: 4 : 0
-NB. x A parent category
+NB. x A parent id
 NB. y A depth.  
 NB. Terminate cycles.
 if. y = 0 do. '' return. end.
 if. (# visitedRailEntries) > visitedRailEntries i. (< x) do. '' return. end.  NB. Terminate cycles.
 visitedRailEntries =: visitedRailEntries , < x
-parentId =. getCategoryIdNoParent x
+parentId =. x
 entries =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where parentid = ' , (": parentId) , ' order by parentseq'
-children =. 2 {"1 entries
-parents =. getCategory &. > 1 {"1 entries
-entries =. ({."1 entries) ,. parents ,. 2 3 4 5 {"1 entries
-; (<"0<"1 entries) , &. > recurseGetTocOutlineRailEntries&(<: y) &. > children
+childIds =. parentId&getCategoryId &. > 2 {"1 entries
+NB. entries =. ({."1 entries) ,. parents ,. 2 3 4 5 {"1 entries
+; (<"0<"1 entries) , &. > recurseGetTocOutlineRailEntries&(<: y) &. > childIds
 )
 
 getTocOutlineRailEntries =: 4 : 0
-NB. x A parent category
+NB. x A parent category id
 NB. y Depth to which to go in the TOC hierarchy
-NB. Return level ; parent ; category ; parentseq ; count ; link
+NB. Return level ; parentid ; category ; parentseq ; count ; link
 NB. Take account of the parentseq number when ordering the entries.
 NB. Terminate cycles.
-key =. < x , 'DDD' , ": y
+key =. < (": x) , 'DDD' , ": y
 if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache) i. key do.
 	result =. > index { 1 {"1 TocOutlineRailEntriesCache
 else.
@@ -938,7 +938,7 @@ result
 )
 
 getTocWikiDocs =: 3 : 0
-NB. y A category.
+NB. y A category id
 NB. Return the subtree TOC from the categories table with a set of wiki documents for each entry.
 NB. Return table of (level parent category parentSeq count link) ; table of title ; link
 key =. < y
@@ -948,13 +948,13 @@ else.
 	entries =. y getTocOutlineRailEntries 100
 	if. 0 = # entries do.
 		NB. The category is not a parent.
-		categoryId =. getCategoryIdNoParent y
-		entry =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where child = "' , y , '"'
-		wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": categoryId
+		entry =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where rowid = ' , (": y)
+		wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": y
 		result =. (< entry) , < wikiDocs
 	else.
 		categories =. 2 {"1 entries
-		categoryIds =. getCategoryIdNoParent &. > categories
+		parentIds =. 1 {"1 entries
+		categoryIds =. parentIds getCategoryId &. > categories
 		result =. (<"1 entries) ,. >@{: &. > sqlreadm__db &. > 'select title, link from wiki where categoryid = '&, &. > ": &. > categoryIds
 	end.
 	WikiDocsCache =: WikiDocsCache , key , < result
@@ -1022,14 +1022,6 @@ NB. Return the height and column widths of the row.
 dimensions =. > calcCellDimensions &. > y
 (>./ {:"1 dimensions) , {."1 dimensions
 )
-
-NB. getVocGeometryForMouseXY =: 3 : 0
-NB. , CurrentVocGeometry #~ VocMouseXY pointInRect"1 1 > 1 2 3 4 {"1 CurrentVocGeometry
-NB. )
-
-NB. getVocEntryGeometryForMouseXY =: 3 : 0
-NB. , VocSelectionGeometry #~ VocMouseXY pointInRect"1 1 > 4 {."1 VocSelectionGeometry
-NB. )
 
 drawVocEntry =: 4 : 0
 NB. x An entry from VocTable: Group POS Row Glyph MonadicRank Label DyadicRank Link
