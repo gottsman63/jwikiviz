@@ -181,8 +181,18 @@ NB. Remove the search records from the TOC.
 searchId =. 1 getCategoryId '*Search'
 sqlcmd__db 'delete from categories where parentid = ' , (": searchId) , ' and child = "' , y , '"'
 termId =. searchId getCategoryId y
-if. termId >: 0 do.
-	sqlcmd__db 'delete from categories where parentid = ' , ": termId
+if. termId >: 0 do. 
+	sqlcmd__db 'delete from categories where parentid = ' , ": termId 
+	wikiId =. termId getCategoryId 'Wiki'
+	if. wikiId >: 0 do. sqlcmd__db 'delete from wiki where categoryid = ' , ": wikiId end.
+	forumsId =. termId getCategoryId 'Forums'
+	if. forumsId >: 0 do.
+		smoutput 'About to select rowid...'
+		forumIds =. > {: sqlreadm__db 'select rowid from categories where parentid = ' , ": forumsId
+		smoutput 'forumIds' ; forumIds
+		sqlcmd__db &. > 'delete from wiki where categoryid = '&, &. > forumIds
+		sqlcmd__db 'delete from categories where parentid = ' , ": forumsId
+	end.
 end.
 )
 
