@@ -6,6 +6,7 @@ coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Reimplement search.
+NB. Fix use of curl for search
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -177,15 +178,18 @@ clearSearch =: 3 : 0
 NB. y A search string
 NB. Remove the search records from the TOC.
 searchId =. 1 getCategoryId '*Search'
-termId =. searchId getCategoryId y
 sqlcmd__db 'delete from categories where parentid = ' , (": searchId) , ' and child = "' , y , '"'
-sqlcmd__db 'delete from categories where parentid = ' , ": termId
+termId =. searchId getCategoryId y
+if. termId >: 0 do.
+	sqlcmd__db 'delete from categories where parentid = ' , ": termId
+end.
 )
 
 addSearchToToc =: 3 : 0
 NB. y A search string
 NB. Save parent ; child.  
 term =.  y
+clearSearch term
 searchId =. 1 getCategoryId '*Search'
 cols =. ;: 'level parentid child count parentseq link'
 sqlinsert__db 'categories' ; cols ; < 2 ; searchId ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
@@ -209,9 +213,10 @@ NB. Perform the search, parse the results, and update the "categories" and "wiki
 html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y) , '"'
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
-categoriesCols =. ;: 'level parent child fullpath count link'
+categoriesCols =. ;: 'rowid count'
+wikiId =. ((1 getCategoryId '*Search') getCategoryId y) getCategoryId 'Wiki'
 if. 0 = # offsetLengths do.
-	sqlupsert__db 'categories' ; 'fullpath' ; categoriesCols ; < 2 ; y ; 'Wiki' ; ('/*Search/' , y , '/Wiki') ; 0 ; ''
+	sqlupsert__db 'categories' ; 'rowid' ; categoriesCols ; < wikiId ; 0
 else.
 	ol =. 1 2 {"2 offsetLengths
 	linkOffsets =. 0 {"(1) 0 {"2 ol
@@ -220,13 +225,12 @@ else.
 	titleLengths =. 1 {"(1) 1 {"2 ol
 	links =. 'https://code.jsoftware.com'&, &. > linkLengths <@{."0 1 linkOffsets }."0 1 html
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
-	wikiCols =. ;: 'level title category fullpath link'
-	data =. (2 #~ # titles) ; titles ; ((# titles) # < y) ; ((< fullpath =. '/*Search/' , y , '/Wiki') #~ # titles) ; < links
-	sqlcmd__db 'delete from wiki where fullpath = "' , fullpath , '"'
+	wikiCols =. ;: 'title categoryid link'
+	data =. titles ; (wikiId #~ # titles) ; < links
 	sqlinsert__db 'wiki';wikiCols;<data
-	sqlupsert__db 'categories' ; 'fullpath' ; categoriesCols ; < 2 ; y ; 'Wiki' ; ('/*Search/' , y , '/Wiki') ; (# titles) ; 'Special:JwikiSearch'
+	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; categoriesCols ; < wikiId ; # titles
 end.
-resetTocOutlineRailEntries ''
+clearCache ''
 invalidateDisplay ''
 )
 
@@ -273,7 +277,7 @@ invalidateDisplay ''
 search =: 3 : 0
 NB. y A search string.
 addSearchToToc y
-NB. searchWiki y
+searchWiki y
 NB. searchForums y
 NB. updateSearchTotals ''
 return.
