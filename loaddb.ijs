@@ -313,7 +313,8 @@ ol =. {: (rxcomp x) rxmatch y
 loadForum =: 3 : 0
 NB. y Forum name (path component)
 NB. Retrieve the forum archive files and add them to the forums table.
-forumName 
+smoutput 'loadForum' ; y
+wd 'msgs'
 mainPageHtml =: gethttp 'https://www.jsoftware.com/pipermail/' , y , '/'
 ol =: {:"2 (rxcomp 'href="([^\"]+subject.html)"') rxmatches mainPageHtml
 offsets =. {."1 ol
@@ -344,20 +345,20 @@ sqlcmd__db 'commit transaction'
 
 visitedPairs =: ,: a: , a:
 visitedChildren =: ''
-pairsToVisit =: ,:  0 ; '' ; 'Home'
+pairsToVisit =: ,:  1 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.  Note that rowid begins numbering at 1.
 emergencySeq =: 500
 
 processCategory =: 3 : 0
-NB. x Name of a parent category
 NB. y Name of a child category. 
 NB. Retrieve and processs the HTML.  Recurse to handle any child categories.
 while. 0 < # pairsToVisit do.
-	'level parentCategory childCategory' =. {. pairsToVisit
+	'level parentId childCategory' =. {. pairsToVisit
 	pairsToVisit =: }. pairsToVisit
-	if. parentCategory -: childCategory do. smoutput 'Skipping (identical)' ; parentCategory ; childCategory continue. end.
-	if. (# visitedPairs) > visitedPairs i. (parentCategory ; childCategory) do. smoutput 'Skipping' ; parentCategory ; childCategory continue. end.
-	visitedPairs =: visitedPairs , (parentCategory ; childCategory)
-	smoutput 'Processing category pair' ; parentCategory ; childCategory
+	if. (# visitedPairs) > visitedPairs i. (parentId ; childCategory) do. smoutput 'Skipping--visited.' ; parentId ; childCategory continue. end.
+	if. 0 <: getCategoryIdNoParent childCategory do. smoutput 'Skipping--already in the db.' ; parentId ; childCategory continue. end.
+	if. childCategory -: parentCategory =. getCategory parentId do. smoutput 'Skipping--parent=child' ; parentCategory ; childCategory continue. end.
+	visitedPairs =: visitedPairs , (parentId ; childCategory)
+	smoutput 'Processing category pair' ; parentId ; childCategory
 	wd 'msgs'
 	catWithUnderscores =. (' ';'_') rxrplc childCategory
 	url =. 'https://code.jsoftware.com/wiki/Category:' , ('\)' ; '\\\)') rxrplc ('\(' ; '\\\(') rxrplc ('''' ; '\''') rxrplc urlencode catWithUnderscores
@@ -379,7 +380,11 @@ while. 0 < # pairsToVisit do.
 	else.
 		parentSeq =. ". ({: ol) {. ({. ol) }. viewSourceHtml 
 	end.
+	parms =.'categories' ; (;: 'level parentid child parentseq link') ; < (level + 1) ; parentId ; childCategory ; parentSeq ; ('Category:' , childCategory)
+	sqlinsert__db parms
 	count =. 0
+	categoryId =. parentId getCategoryId childCategory
+	smoutput categoryId ; $ categoryId
 	if. ((# visitedChildren) = visitedChildren i. < childCategory) *. 0 < # offsetLengths do.
 		sqlcmd__db 'begin transaction'
 		linkOffsetLengths =. 0 {"2 offsetLengths
@@ -391,51 +396,64 @@ while. 0 < # pairsToVisit do.
 			links =. }: links
 			titles =. }: titles
 		end.
-		cols =. ;: 'category title link'
-		data =. ((# titles) # < childCategory) ; titles ; < links
+		cols =. ;: 'categoryid title link'
+		data =. ((# titles) # categoryId) ; titles ; < links
 		sqlinsert__db 'wiki' ; cols ; <data
 		sqlcmd__db 'commit transaction'
 	end.
-	parms =.'categories' ; (;: 'level parent child parentseq count link') ; < (level + 1) ; parentCategory ; childCategory ; parentSeq ; count ; ('Category:' , childCategory)
-	sqlinsert__db parms
+	smoutput 'parentId childCategory' ; parentId ; childCategory
+	parms =.'categories' ; ('rowid = ' , ": categoryId) ; (;: 'count') ; < count
+	sqlupdate__db parms
 	childCategories =. ('&#039;' ; '''')&rxrplc &. > categories
 NB.	childCategories =. childCategories -. visitedChildren
 NB.	if. 0 < # childCategories do.
 NB.		links =. 'Category:'&, &. > childCategories
 NB.	end.
 	visitedChildren =: visitedChildren , < childCategory
-	pairsToVisit =: pairsToVisit , (< level + 1) ,. (< childCategory) ,. childCategories
+	pairsToVisit =: pairsToVisit , (< level + 1) ,. (< categoryId) ,. childCategories
 end.
-)
-
-downloadWiki =: 3 : 0
-zipFullPath =. appDir , '/jwiki.zip'
-logFullPath =. appDir , '/gethttp.log'
-('-o ' , zipFullPath , ' --stderr ' , logFullPath) gethttp 'http://code.jsoftware.com/files/jwiki.zip'
-smoutput (1!:1) <logFullPath
-try.
-	(2!:0) 'unzip ' , zipFullPath , ' -d ' , appDir
-catch.
-end.
-)
-
-getSortKey =: 3 : 0
-NB. y Category with . components.  Normalize the numbers with leading zeros.
-}: ; (<'.') ,.~ ({. c2) , _2&{. &. > '0'&, &. > }. c2 =. <;._2 ,&'.' > {: components =. <;._2 y , ' '
 )
 
 finishTables =: 3 : 0
 NB. Add level, count, sortke and path information to the category table.
 NB. Add count and sortkey information to the wiki table.
-sqlinsert__db 'categories' ; (;: 'level parent child parentseq link') ; < 1 ; '' ; '*NuVoc' ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-sqlinsert__db 'categories' ; (;: 'level parent child parentseq link') ; < 1 ; '' ; '*Search' ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-sqlinsert__db 'categories' ; (;: 'level parent child parentseq link') ; < 1 ; '' ; '*Forums' ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 0 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 0 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 0 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
+forumId =. 0 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
-cols =. ;: 'level parent child parentseq count link'
-parentSeqs =. i. # links
-data =. (< 1 #~ # forumNames) , (< (#forumNames) # < '*Forums') , (< , forumNames) , (< parentSeqs) , (< 0 #~ # forumNames) , < , links
+cols =. ;: 'level parentid child parentseq count link'
+data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< , forumNames) , (< i. # links) , (< 0 #~ # forumNames) , < links
 sqlinsert__db 'categories';cols;<data
+)
+
+getCategory =: 3 : 0
+NB. y Category Id
+NB. Return the category string, empty string if none.
+result =. > {: sqlreadm__db 'select child from categories where rowid = ' , ": y
+if. 0 = # result do. '' else. > , > result end.
+)
+
+getCategoryIdNoParent =: 3 : 0
+NB. y Category string
+NB. Return the id or _1.
+result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '"'
+if. 0 = # result do. _1 else. > , > result end.
+)
+
+getCategoryId =: 4 : 0
+NB. x Parent id
+NB. y Category name (category names are guaranteed to be unique)
+NB. Return the rowid of the category
+result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" and parentid = ' , ": x
+if. 0 = # result do. _1 else. , > result end.
+)
+
+getParentId =: 3 : 0
+NB. y Category id
+NB. Return the rowid of the category's parent.
+, > , > {: sqlreadm__db 'select parentid from categories where rowid = ' , ": y
 )
 
 dbOpenDb =: 3 : 0
@@ -446,8 +464,8 @@ setupDb =: 3 : 0
 try. (1!:55) < dbFile catch. end.
 db =: sqlcreate_psqlite_ dbFile
 sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
-sqlcmd__db 'CREATE TABLE wiki (title TEXT, category TEXT, link TEXT)'
-sqlcmd__db 'CREATE TABLE categories (level INTEGER, parent TEXT, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
+sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
+sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 )
 
@@ -457,6 +475,7 @@ setupDb ''
 loadVoc ''
 NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 NB. loadForum &. > ;: 'chat database general source programming beta'
+sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
 processCategory ''
-NB. finishTables ''
+finishTables ''
 )

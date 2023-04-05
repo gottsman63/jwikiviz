@@ -186,20 +186,12 @@ addSearchToToc =: 3 : 0
 NB. y A search string
 NB. sqlcmd__db 'begin transaction'
 NB. Save parent ; child.  
-term =. y
-time =. ": (6!:1) ''
-searchSortKey =. getSortKeyForPath '/*Search.' , term , '.'
-searchWikiSortKey =. searchSortKey , 
-searchForumSortKey =. getSortKeyForPath '/*Search/Forum'
-sortfragment =. '*Search.' , (": (6!:1) '') , '.' , term , '.'
-
-cols =. ;: 'level parent child count link sortkey'
-sqlupsert__db 'categories' ; 'sortkey' ; cols ; < 2 ; '*Search' ; term ; 0 ; '' ; searchSortKey
-
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 1 ; '*Search' ; y ; ('/*Search/' , term) ; 0 ; '' ; sortfragment
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Wiki' ; ('/*Search/' , term , '/Wiki') ; _1 ; 'Special:JwikiSearch' ; sortfragment , 'Wiki'
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 2 ; y ; 'Forums' ; ('/*Search/' , term , '/Forums') ; _1 ; 'https://www.jsoftware.com/forumsearch.htm' ; sortfragment , 'Forums'
-resetTocOutlineRailEntries ''
+term =. '*' , y , '*'
+cols =. ;: 'level parent child count parentseq link'
+sqlinsert__db 'categories' ; cols ; < 2 ; (< '*Search') ; (< term) ; 0 ; 0 ; ''
+sqlinsert__db 'categories' ; cols ; < 3 ; (< term) ; (< 'Wiki') ; 0 ; 0 ; 'Special:JwikiSearch'
+sqlinsert__db 'categories' ; cols ; < 3 ; (< term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
+clearCache ''
 invalidateDisplay ''
 )
 
@@ -281,9 +273,9 @@ invalidateDisplay ''
 search =: 3 : 0
 NB. y A search string.
 addSearchToToc y
-searchWiki y
-searchForums y
-updateSearchTotals ''
+NB. searchWiki y
+NB. searchForums y
+NB. updateSearchTotals ''
 return.
 )
 
@@ -845,14 +837,14 @@ else.
 end.
 if. level < <: maxDepth do. count =. 0 end.
 glclip 0 0 10000 10000
-if.  '*NuVoc' -: > 1 { TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries 3 do.
+if.  '*NuVoc' -: > 1 { TocOutlineRailSelectedIndex { '' getTocOutlineRailEntries maxDepth do.
 	DisplayMode =: 'V'
 	''
 	return.
 end.
 if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
-	if. '/*Forums/' -: 9 {. > 2 { railIndex { '' getTocOutlineRailEntries 3 do.
-		(> 1 { railIndex { '' getTocOutlineRailEntries 3) drawTocEntryForum DisplayDetailRect
+	if. '*Forums' -: 7 {. > 1 { railIndex { '' getTocOutlineRailEntries maxDepth do.
+		(> 2 { railIndex { '' getTocOutlineRailEntries maxDepth) drawTocEntryForum DisplayDetailRect
 NB.	elseif. '*Search' -: 7 {. > 1 { railIndex { TocOutlineRailEntries do.
 NB.		maxDepth drawTocEntryChildrenWithTree DisplayDetailRect
 	else.
@@ -963,6 +955,11 @@ else.
 	WikiDocsCache =: WikiDocsCache , key , < result
 end.
 result
+)
+
+clearCache =: 3 : 0
+TocOutlineRailEntriesCache =: ,: a: , a:
+WikiDocsCache =: ,: a: , a:
 )
 NB. ==================== End Database Caching ====================
 
