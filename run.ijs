@@ -486,29 +486,21 @@ backgroundRenderComplete =: 3 : 0
 BackgroundRenderRequired =: 0
 )
 
-NB. ============================== Hits Drawing ===============================
-drawHitEntryChild =: 4 : 0
-NB. x xx yy maxWidth sectionFlag
-NB. y Path/Docname ; Link/''
-'xx yy maxWidth sectionFlag' =. x
-'name link' =. y
-if. sectionFlag do. 
-	if. 1 = # components =. <;._2 name , '/' do. newComponents =. components else. newComponents =. }. components end.
-	adjustedName =. }: ; newComponents ,. <'/'
-	glrgb SectionColor
-	gltextcolor ''
-	glfont TocFont
-	(xx , yy) drawStringAt adjustedName
-	glrgb 0 0 0
-	gltextcolor ''
-	glfont TocFont
-else.
-	(xx , yy) drawStringAt name
-	(xx , yy , maxWidth , TocLineHeight) registerRectLink link ; name
-end.
-0
+NB. ============================== Scroller Field ===============================
+drawScrollerField =: 3 : 0
+NB. y Structure: x y width height ; strings ; links ; scrollOffset ; selectedIndex
+NB. Draw the strings and registerRectLink to highlight them and load pages.
+NB. Use VocMouseXY to update scrollOffset and selectedIndex.
+NB. Return the entire structure.
+'rect strings links scrollOffset selectedIndex' =. y
+'xx yy w h' =. rect
+window =. 20
+glclip xx , yy ,  w , h
+lineOverage =. 0 >. (# strings) - <. lineCapacity =. (# strings) % TocLineHeight 
+squishedLineHeight =. lineOverage %~ h - TocLineHeight * window 
+scrollRect =. xx 
+glclip 0 0 10000 100000
 )
-
 NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
