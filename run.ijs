@@ -6,9 +6,8 @@ coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Fix use of curl for search
-NB. User-defined categories?  Bob, where are they stored?
+NB. User-defined categories?
 NB. Spider the Vocabulary--don't use the spreadsheet.
-NB. Log table for prod.  Clear out entries > 1000.  Log activity (page loads, ...?)
 NB. Standalone application.
 
 NB. B Items
@@ -404,7 +403,7 @@ s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
 CurrentHistoryEntry =: ''
-HistoryMenu =: (30 <. # HistoryMenu) {. HistoryMenu
+HistoryMenu =: (60 <. # HistoryMenu) {. HistoryMenu
 sqlcmd__db 'delete from history'
 sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 HistoryMenu
 )
@@ -848,7 +847,7 @@ glrect xx , yy , width , height
 glcursor IDC_ARROW
 if. VocMouseXY pointInRect xx , yy , 70 , height do. glcursor IDC_SIZEVER end.
 if. VocMouseXY pointInRect (xx + 70) , yy , (width - 70) , height do. glcursor IDC_POINTINGHAND end.
-if. VocMouseXY pointInRect xx , yy , 70 , height do. glrgb 150 150 255 else. glrgb ScrollColor end.
+if. VocMouseXY pointInRect xx , yy , 70 , height do. glrgb 180 180 255 else. glrgb ScrollColor end.
 glbrush ''
 glpen 0
 glrect xx , yy , stripeWidth , height
