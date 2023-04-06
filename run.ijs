@@ -84,10 +84,6 @@ if. eventType -: 'close' do. wd 'pclose ;' end.
 (> {: 5 { wdq) (1!:2) 2
 )
 
-NB. vizform_mmove =: 3 : 0
-NB. FormMouseXY =: 0 1 { ". > 1 { 13 { wdq
-NB. )
-
 vizform_resize =: 3 : 0
 layoutForm ''
 )
@@ -112,12 +108,6 @@ vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
-NB. vizform_vocContext_mwheel =: 3 : 0
-NB. sysdata =. ". > 1 { 13 { wdq
-NB. direction =. * 11 { sysdata
-NB. smoutput 'mwheel' ; direction
-NB. )
-
 vizform_searchBox_button =: 3 : 0
 try.
 	search searchBox
@@ -134,7 +124,13 @@ LastUrlLoaded =: '' NB. Make sure selecting the top item in the History menu wil
 )
 
 vizform_launch_button =: 3 : 0
+log 'vizform_launch_button ' , ": > 0 { 0 { HistoryMenu
 if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
+)
+
+vizform_wctrl_fkey =: 3 : 0
+wd 'timer 0'
+wd 'pclose'
 )
 
 sys_timer_z_ =: 3 : 0
@@ -171,7 +167,6 @@ end.
 
 invalidateDisplay =: 3 : 0
 wd 'set vocContext invalid'
-NB. wd 'msgs'
 )
 NB. ======================================================
 
