@@ -33,8 +33,10 @@ db =: sqlopen_psqlite_ dbFile
 
 log =: 3 : 0
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm ss') ; y
-max =. , > > {: sqlreadm__db 'select max(rowid) from log'
-sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
+if. 0 = ? 100 do.
+	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
+	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
+end.
 )
 NB. =======================================
 
