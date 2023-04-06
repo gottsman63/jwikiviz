@@ -39,7 +39,7 @@ sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
 NB. =======================================
 
 NB. ==================== Form =====================
-FormMouseXY =: 0 0
+NB. FormMouseXY =: 0 0
 VocMouseXY =: 0 0
 
 buildForm =: 3 : 0 
@@ -84,9 +84,9 @@ if. eventType -: 'close' do. wd 'pclose ;' end.
 (> {: 5 { wdq) (1!:2) 2
 )
 
-vizform_mmove =: 3 : 0
-FormMouseXY =: 0 1 { ". > 1 { 13 { wdq
-)
+NB. vizform_mmove =: 3 : 0
+NB. FormMouseXY =: 0 1 { ". > 1 { 13 { wdq
+NB. )
 
 vizform_resize =: 3 : 0
 layoutForm ''
@@ -112,11 +112,11 @@ vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
-vizform_vocContext_mwheel =: 3 : 0
-sysdata =. ". > 1 { 13 { wdq
-direction =. * 11 { sysdata
+NB. vizform_vocContext_mwheel =: 3 : 0
+NB. sysdata =. ". > 1 { 13 { wdq
+NB. direction =. * 11 { sysdata
 NB. smoutput 'mwheel' ; direction
-)
+NB. )
 
 vizform_searchBox_button =: 3 : 0
 try.
@@ -171,12 +171,13 @@ end.
 
 invalidateDisplay =: 3 : 0
 wd 'set vocContext invalid'
-wd 'msgs'
+NB. wd 'msgs'
 )
 NB. ======================================================
 
 NB. =================== Search ===========================
 clearSearches =: 3 : 0
+log 'clearSearches'
 terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId SearchCatString
 clearSearch &. > terms
 clearCache ''
@@ -186,6 +187,7 @@ invalidateDisplay ''
 clearSearch =: 3 : 0
 NB. y A search string
 NB. Remove the search records from the TOC.
+log 'clearSearch ' , y
 searchId =. 1 getCategoryId SearchCatString
 termId =. searchId getCategoryId y
 if. termId >: 0 do. 
@@ -285,10 +287,14 @@ invalidateDisplay ''
 
 search =: 3 : 0
 NB. y A search string.
-addSearchToToc y
-searchWiki y
-searchForums y
-return.
+try.
+	log 'Searching for ' , y
+	addSearchToToc y
+	searchWiki y
+	searchForums y
+catch.
+	log (13!:12) ''
+end.
 )
 
 NB. ================== Drawing ====================
@@ -506,56 +512,6 @@ end.
 0
 )
 
-drawHitEntryChildrenColumn =: 4 : 0
-NB. x xx yy width height
-NB. y Table of Path/Docname ; Link/''
-NB. Render the column in black, with paths in SectionColor
-'xx yy width height' =. x
-glclip xx , yy , (width - 10) , height
-glrgb 0 0 0
-gltextcolor ''
-glfont TocFont
-margin =. 5
-sectionFlags =. -. * > # &. > 1 {"1 y
-left =. (margin + xx) ,. (margin + yy + TocLineHeight * i. # y) ,"0 1 width ,. sectionFlags
-left drawHitEntryChild"1 1 y
-glclip 0 0 10000 10000
-)
-
-drawHits =: 3 : 0
-if. -. DisplayMode -: 'H' do. return. end.
-'xx yy width height' =. DetailRect
-margin =. 5
-glrgb 0 0 0
-glpen 1
-glrgb 255 255 255
-glbrush ''
-glrect xx , yy , width , height
-if. 0 = # HighlightUrls do. return. end.
-toc =. getToc ''
-hitToc =. toc #~ (2 {"1 toc) e. {:"1 HighlightUrls
-childGroups =. ({."1 hitToc) </. 1 2 {"1 hitToc NB. DocName ; Link
-pathNub =. a: ,.~ ~. {."1 hitToc NB. Path ; ''	
-entryList =. ; (<"1 pathNub) , &. > childGroups NB. Path/Docname ; Link/''
-rowCount =. <. height % TocLineHeight
-columnGroups =. (-rowCount) <\ entryList
-selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - xx) % width) * # columnGroups
-colWidth =. 200
-compressedColWidth =. <. (width - colWidth) % <: # columnGroups
-columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
-columnRects =. <"1 (xx + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
-if. 3 < # columnRects do.
-	glrgb ScrollColor
-	glbrush ''
-	glpen 0
-	w =. width % # columnRects
-	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
-end.
-columnRects drawHitEntryChildrenColumn &. > columnGroups
-)
-
-CachedTocChildrenImage =: ''
-
 NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
@@ -632,6 +588,7 @@ drawTocEntryForum =: 4 : 0
 NB. x The name of the forum
 NB. y xx yy width height
 NB. Display the contents of the forum
+log 'drawTocEntryForum ' , x
 'xx yy width height' =. y
 if. -. ForumCurrentName -: x do. 
 	result =. > {: sqlreadm__db 'select year, month, subject, author, link, rowid from forums where forumname = "' , x , '" order by year desc, month asc, rowid asc'
@@ -714,7 +671,7 @@ NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parent
 maxDepth =. x
 'xx yy width height' =. y
 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
-log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
+log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
 categoryId =. parentId getCategoryId category
 tocWikiDocs =. getTocWikiDocs categoryId NB. Table of level parent category parentSeq count link ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
@@ -913,7 +870,7 @@ drawToc =: 3 : 0
 DisplayListRect drawTocRail 4
 )
 
-NB. ======================= Table of Contents =====================
+NB. ======================= Table of Contents Data Management =====================
 TocOutlineRailEntriesCache =: ,: a: , a:
 WikiDocsCache =: ,: a: , a:
 
