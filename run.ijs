@@ -33,7 +33,8 @@ db =: sqlopen_psqlite_ dbFile
 
 log =: 3 : 0
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm ss') ; y
-smoutput y
+max =. , > > {: sqlreadm__db 'select max(rowid) from log'
+sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
 )
 NB. =======================================
 
@@ -137,7 +138,12 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
 )
 
 sys_timer_z_ =: 3 : 0
-checkHistoryMenu_base_ ''
+try.
+	checkHistoryMenu_base_ ''
+catch.
+	log (13!:12) ''
+	log dbError ''
+end.
 NB. invalidateDisplay_base_ ''
 )
 
@@ -431,6 +437,7 @@ elseif. -. 'http' -: 4 {. url do.
 	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/' , url
 end.
 if. LastUrlLoaded -: url do. return. end.
+log 'Loading url ' , url
 wd 'set browser url *' , url 
 CurrentHistoryEntry =: url ; 1 { y
 CurrentHistoryLoadTime =: (6!:1) ''
@@ -707,6 +714,7 @@ NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parent
 maxDepth =. x
 'xx yy width height' =. y
 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
+log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
 categoryId =. parentId getCategoryId category
 tocWikiDocs =. getTocWikiDocs categoryId NB. Table of level parent category parentSeq count link ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
@@ -758,6 +766,7 @@ NB. getTocOutlineRailEntries returns table of level ; parentid ; category ; pare
 maxDepth =. x
 'xx yy width height' =. y
 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
+log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
 margin =. 5
 glrgb 0 0 0
 glpen 1
