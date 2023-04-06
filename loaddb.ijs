@@ -467,6 +467,8 @@ sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, su
 sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
+sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 )
 
 setup =: 3 : 0

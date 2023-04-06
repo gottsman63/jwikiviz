@@ -6,17 +6,17 @@ coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Fix use of curl for search
+NB. User-defined categories?  Bob, where are they stored?
+NB. Spider the Vocabulary--don't use the spreadsheet.
+NB. Log table for prod.  Clear out entries > 1000.  Log activity (page loads, ...?)
+NB. Standalone application.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
 NB. Support parallel download of forum posts.
 NB. Animate scroll rather than jumping when the travel is too high.
 NB. Saved pages mechanism.  "Save" button next to the url field?
-NB. Can we present user-defined categories?  (Are we already?  Devon's "Poker" category appears...)
 NB. Add a "Search" label.
-NB. Crawl the category pages--don't download the site archive.  (It's nearly 10k pages)
-NB. Get rid of the hard-coded top-level categories in the loaddb.ijs code.
-NB. The search results should show "Wiki" in the same way they show "Forums" in the detail display.
 NB. Fix the extra "quotes in NuVoc
 
 NB. ============= Database ===============
@@ -29,6 +29,11 @@ sqlerror__db ''
 
 dbOpenDb =: 3 : 0
 db =: sqlopen_psqlite_ dbFile
+)
+
+log =: 3 : 0
+sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm ss') ; y
+smoutput y
 )
 NB. =======================================
 
@@ -95,19 +100,12 @@ vizform_clearSearches_button =: 3 : 0
 clearSearches ''
 )
 
-SuppressMouseHandlingStart =: 0
-
 vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
-if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
+NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 invalidateDisplay ''
 )
-
-NB. vizform_vocContext_mblup =: 3 : 0
-NB. SuppressMouseHandlingStart =: (6!:1) ''
-NB. addToHistoryMenu ''
-NB. )
 
 vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
@@ -116,12 +114,17 @@ trigger_paint ''
 vizform_vocContext_mwheel =: 3 : 0
 sysdata =. ". > 1 { 13 { wdq
 direction =. * 11 { sysdata
-smoutput 'mwheel' ; direction
+NB. smoutput 'mwheel' ; direction
 )
 
 vizform_searchBox_button =: 3 : 0
-search searchBox
-wd 'set searchBox text ""'
+try.
+	search searchBox
+	wd 'set searchBox text ""'
+catch.
+	log (13!:12) ''
+	log dbError ''
+end.
 )
 
 vizform_history_select =: 3 : 0
@@ -155,7 +158,8 @@ end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
 catch.
-smoutput (13!:12) ''
+log (13!:12) ''
+log dbError ''
 end.
 )
 
@@ -167,7 +171,7 @@ NB. ======================================================
 
 NB. =================== Search ===========================
 clearSearches =: 3 : 0
-terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId '*Search'
+terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId SearchCatString
 clearSearch &. > terms
 clearCache ''
 invalidateDisplay ''
@@ -176,7 +180,7 @@ invalidateDisplay ''
 clearSearch =: 3 : 0
 NB. y A search string
 NB. Remove the search records from the TOC.
-searchId =. 1 getCategoryId '*Search'
+searchId =. 1 getCategoryId SearchCatString
 termId =. searchId getCategoryId y
 if. termId >: 0 do. 
 	wikiId =. termId getCategoryId 'Wiki'
@@ -197,7 +201,7 @@ NB. y A search string
 NB. Save parent ; child.  
 term =.  y
 clearSearch term
-searchId =. 1 getCategoryId '*Search'
+searchId =. 1 getCategoryId SearchCatString
 cols =. ;: 'level parentid child count parentseq link'
 sqlinsert__db 'categories' ; cols ; < 2 ; searchId ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
 sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
@@ -212,7 +216,7 @@ NB. Perform the search, parse the results, and update the "categories" and "wiki
 html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y) , '"'
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
-wikiId =. ((1 getCategoryId '*Search') getCategoryId y) getCategoryId 'Wiki'
+wikiId =. ((1 getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
 if. 0 = # offsetLengths do.
 	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
 else.
@@ -239,7 +243,7 @@ wikiCols =. ;: 'title categoryid link'
 html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =.  pat rxmatches html
-forumsId =. ((1 getCategoryId '*Search') getCategoryId y) getCategoryId 'Forums'
+forumsId =. ((1 getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Forums'
 if. 0 = # offsetLengths do.
 	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < 0 ; 3
 else.
@@ -262,7 +266,7 @@ else.
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
 		cols =. (;: 'level parentid child parentseq count link')
-		data =. 4 ; forumsId ; fname ; index ; (# forumLinks) ; 'https://www.jsoftware.com/forumsearch.htm'
+		data =. 4 ; forumsId ; fname ; index ; (# forumLinks) ; 'http://www.jsoftware.com/mailman/listinfo/' , }. fname
 		sqlinsert__db 'categories' ; cols ; < data
 		forumId =. forumsId getCategoryId fname
 		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
@@ -279,12 +283,6 @@ addSearchToToc y
 searchWiki y
 searchForums y
 return.
-)
-
-getLinkForCategory =: 3 : 0
-NB. y The name of a category from the "categories" table
-NB. Return the corresponding link.
-, > > 1 { sqlreadm__db 'select link from categories where child ="' , y , '"'
 )
 
 NB. ================== Drawing ====================
@@ -316,8 +314,8 @@ SelectionColor =: 0 0 192
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
 DefaultUrl =: '' NB. 'https://www.jsoftware.com' NB. The URL to load when no link is being hovered over. 
 LastUrlLoaded =: ''
-Toc =: '' NB. path ; doc name ; document link
-TocOutline =: '' NB. level ; path component ; full path
+NB. Toc =: '' NB. path ; doc name ; document link
+NB. TocOutline =: '' NB. level ; path component ; full path
 TocFont =: 'arial 16'
 TocBoldFont =: 'arial bold 16'
 TocItalicFont =: 'arial italic 16'
@@ -326,13 +324,15 @@ TocLineHeight =: 21
 TocSelectedTopCategory =: '*NuVoc'
 TocScrollIndex =: 0
 ScrollColor =: 230 230 230
-DisplayMode =: 'V' NB. Values are (V)oc, (C)ategories, (T)ree, (S)aved
+DisplayMode =: 'V' NB. Values are (V)oc, (T)ree
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
 UseHtmlCache =: 0
 SearchString =: ''
 SearchResultsTable =: '' NB. Path ; doc name ; document link
 Months =: ;:'January February March April May June July August September October November December'
+ForumsCatString =: '*Forums'
+SearchCatString =: '*Search'
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -395,7 +395,16 @@ s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
 CurrentHistoryEntry =: ''
-HistoryMenu =: (20 <. # HistoryMenu) {. HistoryMenu
+HistoryMenu =: (30 <. # HistoryMenu) {. HistoryMenu
+sqlcmd__db 'delete from history'
+sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 HistoryMenu
+)
+
+loadHistoryMenu =: 3 : 0
+HistoryMenu =: > {: sqlreadm__db 'select link, label from history'
+s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
+wd 'set history items *' , s
+wd 'set history select 0'
 )
  
 checkHistoryMenu =: 3 : 0
@@ -423,7 +432,7 @@ elseif. -. 'http' -: 4 {. url do.
 end.
 if. LastUrlLoaded -: url do. return. end.
 wd 'set browser url *' , url 
-CurrentHistoryEntry =: y
+CurrentHistoryEntry =: url ; 1 { y
 CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
 )
@@ -814,7 +823,7 @@ if. 0 < countPercent =. 1 <. count % 1000 do.
 end.
 glfont TocFont
 if. count < 0 do. glrgba 0 0 0 64 else. glrgb 0 0 0 end.
-if. parentId = 1 getCategoryId '*Search' do. 
+if. parentId = 1 getCategoryId SearchCatString do. 
 	glrgb 0 0 255 
 	glfont TocBoldFont
 end.
@@ -846,7 +855,7 @@ if.  +./ '*NuVoc' E. > 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntr
 	return.
 end.
 if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
-	if. (1 getCategoryId '*Forums') = > 1 { railIndex { 0 getTocOutlineRailEntries maxDepth do. NB. level ; parent ; category ; parentseq ; count ; link
+	if. (1 getCategoryId ForumsCatString) = > 1 { railIndex { 0 getTocOutlineRailEntries maxDepth do. NB. level ; parent ; category ; parentseq ; count ; link
 		(> 2 { railIndex { 0 getTocOutlineRailEntries maxDepth) drawTocEntryForum DisplayDetailRect
 	else.
 		maxDepth drawTocEntryChildren DisplayDetailRect
@@ -1155,5 +1164,6 @@ dbOpenDb ''
 loadVoc ''
 buildForm ''
 layoutForm ''
+loadHistoryMenu ''
 wd 'pshow'
 )
