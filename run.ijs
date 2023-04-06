@@ -1118,6 +1118,7 @@ glfont 'arial bold 24'
 glrgb HighlightColor
 gltextcolor ''
 10 0 drawStringAt (": fps) , ' fps'
+log 'drawFrameRate ' , ": fps
 )
 
 go =: 3 : 0
