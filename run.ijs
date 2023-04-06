@@ -5,9 +5,7 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
-NB. Reimplement search.
 NB. Fix use of curl for search
-NB. Clear out the search results from the wiki table (wiki and forums results).
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -106,10 +104,10 @@ VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 invalidateDisplay ''
 )
 
-vizform_vocContext_mblup =: 3 : 0
-SuppressMouseHandlingStart =: (6!:1) ''
-addToHistoryMenu ''
-)
+NB. vizform_vocContext_mblup =: 3 : 0
+NB. SuppressMouseHandlingStart =: (6!:1) ''
+NB. addToHistoryMenu ''
+NB. )
 
 vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
@@ -179,21 +177,19 @@ clearSearch =: 3 : 0
 NB. y A search string
 NB. Remove the search records from the TOC.
 searchId =. 1 getCategoryId '*Search'
-sqlcmd__db 'delete from categories where parentid = ' , (": searchId) , ' and child = "' , y , '"'
 termId =. searchId getCategoryId y
 if. termId >: 0 do. 
-	sqlcmd__db 'delete from categories where parentid = ' , ": termId 
 	wikiId =. termId getCategoryId 'Wiki'
 	if. wikiId >: 0 do. sqlcmd__db 'delete from wiki where categoryid = ' , ": wikiId end.
 	forumsId =. termId getCategoryId 'Forums'
 	if. forumsId >: 0 do.
-		smoutput 'About to select rowid...'
 		forumIds =. > {: sqlreadm__db 'select rowid from categories where parentid = ' , ": forumsId
-		smoutput 'forumIds' ; forumIds
-		sqlcmd__db &. > 'delete from wiki where categoryid = '&, &. > forumIds
+		sqlcmd__db &. > 'delete from wiki where categoryid = '&, &. > ": &. > forumIds
 		sqlcmd__db 'delete from categories where parentid = ' , ": forumsId
 	end.
+	sqlcmd__db 'delete from categories where parentid = ' , ": termId 
 end.
+sqlcmd__db 'delete from categories where parentid = ' , (": searchId) , ' and child = "' , y , '"'
 )
 
 addSearchToToc =: 3 : 0
@@ -204,18 +200,10 @@ clearSearch term
 searchId =. 1 getCategoryId '*Search'
 cols =. ;: 'level parentid child count parentseq link'
 sqlinsert__db 'categories' ; cols ; < 2 ; searchId ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'Special:JwikiSearch'
+sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 clearCache ''
 invalidateDisplay ''
-)
-
-updateSearchTotals =: 3 : 0
-NB. y A search term
-NB. Determine the total number of hits for y (across the wiki and the forums) and update the corresponding Categories row.
-cols =. ;: 'level parent child fullpath count link'
-count =.  sqlreadm__db 'select count (*) from wiki where fullpath like "/*Search/' , y , '/%"'
-sqlupsert__db 'categories' ; 'fullpath' ; cols ; < 1 ; '*Search' ; y ; ('/*Search/' , y) ; count ; ''
 )
 
 searchWiki =: 3 : 0
@@ -290,7 +278,6 @@ NB. y A search string.
 addSearchToToc y
 searchWiki y
 searchForums y
-NB. updateSearchTotals ''
 return.
 )
 
@@ -808,7 +795,7 @@ NB. y max depth , TocOutline rail index
 NB. Draw the category name in the rail and then call drawTocEntryChildren to render the kids.
 'entryX entryY entryHeight railX railY railWidth railHeight' =. x
 'maxDepth railIndex' =. y
-'level parentid category parentSeq count link' =. railIndex { 0 getTocOutlineRailEntries maxDepth NB. level ; parent ; category ; parentseq ; count ; link
+'level parentId category parentSeq count link' =. railIndex { 0 getTocOutlineRailEntries maxDepth NB. level ; parent ; category ; parentseq ; count ; link
 margin =. 5
 isShrunken =. entryHeight < TocLineHeight
 isSelected =. VocMouseXY pointInRect (entryX + 70) , entryY , (railWidth - 70) , TocLineHeight
@@ -827,10 +814,10 @@ if. 0 < countPercent =. 1 <. count % 1000 do.
 end.
 glfont TocFont
 if. count < 0 do. glrgba 0 0 0 64 else. glrgb 0 0 0 end.
-NB. if. ('/*Search' -: 8 {. fullPath) *. level = 1 do. 
-NB. 	glrgb 0 0 255 
-NB. 	glfont TocBoldFont
-NB. end.
+if. parentId = 1 getCategoryId '*Search' do. 
+	glrgb 0 0 255 
+	glfont TocBoldFont
+end.
 gltextcolor ''
 if. railIndex = TocOutlineRailSelectedIndex do. 
 	if. isShrunken do.
@@ -859,10 +846,8 @@ if.  +./ '*NuVoc' E. > 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntr
 	return.
 end.
 if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
-	if. '*Forums' -: 7 {. > 1 { railIndex { 0 getTocOutlineRailEntries maxDepth do.
+	if. (1 getCategoryId '*Forums') = > 1 { railIndex { 0 getTocOutlineRailEntries maxDepth do. NB. level ; parent ; category ; parentseq ; count ; link
 		(> 2 { railIndex { 0 getTocOutlineRailEntries maxDepth) drawTocEntryForum DisplayDetailRect
-NB.	elseif. '*Search' -: 7 {. > 1 { railIndex { TocOutlineRailEntries do.
-NB.		maxDepth drawTocEntryChildrenWithTree DisplayDetailRect
 	else.
 		maxDepth drawTocEntryChildren DisplayDetailRect
 	end.

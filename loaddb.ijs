@@ -421,10 +421,10 @@ sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; 
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
-forumId =. 0 getCategoryId '*Forums'
+forumId =. 1 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
 cols =. ;: 'level parentid child parentseq count link'
-data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< , forumNames) , (< i. # links) , (< 0 #~ # forumNames) , < links
+data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< , forumNames) , (< i. # links) , (< 0 #~ # forumNames) , < , links
 sqlinsert__db 'categories';cols;<data
 )
 
@@ -476,6 +476,6 @@ loadVoc ''
 NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
 processCategory ''
-NB. loadForum &. > ;: 'chat database general source programming beta'
+loadForum &. > ;: 'chat database general source programming beta'
 finishTables ''
 )
