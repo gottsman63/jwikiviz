@@ -498,13 +498,17 @@ NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
 'rect strings links ratios headingFlags selectedIndex scrollIndex' =. y
 'xx yy w h' =. rect
-glclip xx , yy ,  w , h
 window =. <. TocLineHeight %~ -: h
+maxLineCount =. <. h % TocLineHeight
 margin =. 5
 stripeWidth =. 70
 glfont TocFont
-if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-	scrollIndex =. 0 >. (<: # strings) <. <. ((({: VocMouseXY) - yy) % h) * # strings
+if. maxLineCount < # strings do.
+	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
+		scrollIndex =. 0 >. (<: # strings) <. <. ((({: VocMouseXY) - yy) % h) * # strings
+	end.
+else.
+	scrollIndex =. 0
 end.
 windowStartIndex =. <. 0 >. (window -~ # strings) <. 0 >. scrollIndex - -: window
 squishedLineHeight =. (window -~ # strings) %~ h - window * TocLineHeight
@@ -518,15 +522,17 @@ glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect rect
-if. VocMouseXY pointInRect rect do.
-	glcursor IDC_ARROW
-	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glcursor IDC_SIZEVER end.
-	if. VocMouseXY pointInRect (xx + stripeWidth) , yy , (w - stripeWidth) , h do. glcursor IDC_POINTINGHAND end.
+if. maxLineCount < # strings do.
+	if. VocMouseXY pointInRect rect do.
+		glcursor IDC_ARROW
+		if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glcursor IDC_SIZEVER end.
+		if. VocMouseXY pointInRect (xx + stripeWidth) , yy , (w - stripeWidth) , h do. glcursor IDC_POINTINGHAND end.
+	end.
+	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb 180 180 255 else. glrgb ScrollColor end.
+	glbrush ''
+	glpen 0
+	glrect xx , yy , stripeWidth , h
 end.
-if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb 180 180 255 else. glrgb ScrollColor end.
-glbrush ''
-glpen 0
-glrect xx , yy , stripeWidth , h
 for_i. i. # strings do.
 	lineHeight =. i { heights
 	origin =. > i { origins
@@ -543,6 +549,7 @@ for_i. i. # strings do.
 	end.
 	glbrush ''
 	gltextcolor''
+	glclip xx , yy ,  w , h
 	if. lineHeight > squishedLineHeight do.
 		(> i { origins) drawStringAt > i { strings
 	else.
@@ -641,6 +648,7 @@ if. -. ForumCurrentName -: x do.
 	TocEntryForumSubjectIndex =: 0
 	TocEntryForumMonthIndex =: 0
 end.
+glclip 0 0 10000 100000
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
@@ -701,16 +709,18 @@ TocEntryChildCategoryIndex =: y
 queueLoadPage (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
 
-TocEntryChildCategoryIndex =: '' NB. The index of the currenty-selected child category in the tree.
+TocEntryChildScrollIndex =: 0
+TocEntryChildCategoryIndex =: 0 NB. The index of the currenty-selected child category in the tree.
 TocEntryChildCategoryEntries =: '' NB. Table of Title ; Link
 
 drawTocEntryChildrenWithTree =: 4 : 0
 NB. x maxDepth
 NB. y xx yy width height entryY
 NB. Render the descendants of the TocSelectedTopCategory in xx yy width height.
-NB. This is used when the child count is too high.  It renders a tree in the first column
+NB. This is used when the child count is too high.  It renders a tree in the first column (drawaScrollerField)
 NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
+NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 maxDepth =. x
 'xx yy width height' =. y
 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
@@ -720,7 +730,7 @@ tocWikiDocs =. getTocWikiDocs categoryId NB. Table of level parent category pare
 if. 0 = # tocWikiDocs do. '' return. end.
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent category parentSeq count link
-indents =. #&'  ' &. > 0 {"1 categoryEntries
+indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
 catTitles =. indents , &. > 2 {"1 categoryEntries
 catLinks =. 5 {"1 categoryEntries
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
@@ -753,7 +763,10 @@ if. fullSizeColCount < # columnRects do.
 	w =. width % # columnRects
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
-columnRects drawTocEntryChildrenColumn &. > columnGroups
+headerColumn =. > {. columnGroups
+parms =. (> {. columnRects) ; (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ((# headerColumn) # 0) ; ((# headerColumn) # 1) ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex
+TocEntryChildScrollIndex =: drawScrollerField parms
+(}. columnRects) drawTocEntryChildrenColumn &. > }. columnGroups
 ''
 )
 
@@ -804,75 +817,6 @@ columnRects drawTocEntryChildrenColumn &. > columnGroups
 ''
 )
 
-NB. TocLargestCategoryTotal =: >./ > # &. > getTocChildren &. > (getTocTopPathComponents '') 
-TocLargestCategoryTotal =: 1000
-
-drawTocEntry =: 4 : 0
-NB. x entryX entryY entryHeight railX railY railWidth railHeight
-NB. y max depth , TocOutline rail index
-NB. Draw the category name in the rail and then call drawTocEntryChildren to render the kids.
-'entryX entryY entryHeight railX railY railWidth railHeight' =. x
-'maxDepth railIndex' =. y
-'level parentId category parentSeq count link' =. railIndex { 0 getTocOutlineRailEntries maxDepth NB. level ; parent ; category ; parentseq ; count ; link
-margin =. 5
-isShrunken =. entryHeight < TocLineHeight
-isSelected =. VocMouseXY pointInRect (entryX + 70) , entryY , (railWidth - 70) , TocLineHeight
-indentedCategory =. category ,~ level # '  '
-glclip railX , (entryY - 2) , railWidth , TocLineHeight + 4
-if. isShrunken do. entryRect =. railX, entryY, ({. glqextent indentedCategory) , 1 else. entryRect =. railX , entryY , railWidth , entryHeight end.
-if. isSelected do. 
-	if. railIndex ~: TocOutlineRailSelectedIndex do. scheduleBackgroundRender '' end.
-	TocOutlineRailSelectedIndex =: railIndex 
-end.
-if. 0 < countPercent =. 1 <. count % 1000 do. 
-	glrgb HighlightTocColor
-	glbrush ''
-	glpen 0
-	glrect railX , entryY , (margin + <. countPercent * railWidth - margin) , entryHeight - 4 
-end.
-glfont TocFont
-if. count < 0 do. glrgba 0 0 0 64 else. glrgb 0 0 0 end.
-if. parentId = 1 getCategoryId SearchCatString do. 
-	glrgb 0 0 255 
-	glfont TocBoldFont
-end.
-gltextcolor ''
-if. railIndex = TocOutlineRailSelectedIndex do. 
-	if. isShrunken do.
-		entryRect drawHighlight SelectionColor
-		entryRect registerRectLink link ; indentedCategory
-	else.
-		(entryX , entryY) drawStringAt indentedCategory
-		entryRect drawHighlight SelectionColor
-		entryRect registerRectLink link ; indentedCategory
-	end.
-else.
-	if. isShrunken do.
-		glrgba 0 0 0 200
-		glbrush ''
-		glpen 0
-		glrect entryRect
-	else.
-		(entryX , entryY) drawStringAt indentedCategory
-	end.
-end.
-if. level < <: maxDepth do. count =. 0 end.
-glclip 0 0 10000 10000
-if.  +./ '*NuVoc' E. > 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth do.
-	DisplayMode =: 'V'
-	''
-	return.
-end.
-if. (DisplayMode = 'T') *. railIndex = TocOutlineRailSelectedIndex do.
-	if. (1 getCategoryId ForumsCatString) = > 1 { railIndex { 0 getTocOutlineRailEntries maxDepth do. NB. level ; parent ; category ; parentseq ; count ; link
-		(> 2 { railIndex { 0 getTocOutlineRailEntries maxDepth) drawTocEntryForum DisplayDetailRect
-	else.
-		maxDepth drawTocEntryChildren DisplayDetailRect
-	end.
-end.
-''
-)
-
 TocOutlineRailSelectedIndex =: 0
 TocOutlineRailScrollIndex =: 0
 
@@ -900,6 +844,11 @@ indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 2 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
 parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 4 {"1 entries) ; (0 #~ # entries) ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
 TocOutlineRailScrollIndex =: drawScrollerField parms
+if. (1 getCategoryId ForumsCatString) = > 1 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y do. NB. level ; parent ; category ; parentseq ; count ; link
+	(> 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y) drawTocEntryForum DisplayDetailRect
+else.
+	y drawTocEntryChildren DisplayDetailRect
+end.
 )
 
 drawToc =: 3 : 0
