@@ -155,7 +155,7 @@ try.
 if. (w > 300) *. h > 300 do.
 	scheduleBackgroundRender ''
  	glfill 255 255 255 255
-	drawVoc ''
+NB. 	drawVoc ''
  	drawToc ''
 	drawFrameRate ''
 	backgroundRenderComplete ''
@@ -297,7 +297,6 @@ end.
 )
 
 NB. ================== Drawing ====================
-BarColor =: 255 127 127
 MaxCellWidth =: 100
 MinColWidth =: 200
 CellMargin =: 5
@@ -306,7 +305,7 @@ DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
 DocumentColumnFont =: 'arial 18'
 SectionFont =: 'arial bold 16'
-SectionColor =: 0 180 0
+SectionColor =: 0 128 0
 CurrentVocGeometry =: '' NB. Table of glyph x y width height.
 NewVocGeometry =: ,: '' ; _1 ; 0 ; 0 ; 0
 VocSelectedGlyph =: ''
@@ -337,7 +336,7 @@ TocSelectedTopCategory =: '*NuVoc'
 TocScrollIndex =: 0
 MaxTocDepth =: 4
 ScrollColor =: 230 230 230
-DisplayMode =: 'V' NB. Values are (V)oc, (T)ree
+BarColor =: ScrollColor * 0.75
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
 UseHtmlCache =: 0
@@ -351,13 +350,6 @@ getPosColor =: 3 : 0
 NB. y The boxed name of a pos
 NB. Return the corresponding color.
 POSColors {~ POSNames i. y
-)
-
-setDisplayMode =: 3 : 0
-if. -. DisplayMode -: y do.
-	DisplayMode =: y
-	invalidateDisplay ''
-end.
 )
 
 drawStringAt =: 4 : 0
@@ -511,7 +503,7 @@ else.
 	scrollIndex =. 0
 end.
 windowStartIndex =. <. 0 >. (window -~ # strings) <. 0 >. scrollIndex - -: window
-squishedLineHeight =. (window -~ # strings) %~ h - window * TocLineHeight
+squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
 ys =. <. }: +/\ 0 , heights
 heights =. <. heights
@@ -528,7 +520,7 @@ if. maxLineCount < # strings do.
 		if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glcursor IDC_SIZEVER end.
 		if. VocMouseXY pointInRect (xx + stripeWidth) , yy , (w - stripeWidth) , h do. glcursor IDC_POINTINGHAND end.
 	end.
-	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb 180 180 255 else. glrgb ScrollColor end.
+	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb <. ScrollColor * 0.85 else. glrgb ScrollColor end.
 	glbrush ''
 	glpen 0
 	glrect xx , yy , stripeWidth , h
@@ -539,7 +531,7 @@ for_i. i. # strings do.
 	glrgb BarColor
 	glbrush ''
 	glpen 0
-	if. 0 < i { ratios do. glrect origin , (<. (w - margin) * i { ratios) , lineHeight end.
+	if. 0 < i { ratios do. glrect (origin - margin , 0) , (<. (w - margin) * i { ratios) , lineHeight - 4 end.
 	if. i { headingFlags do. 
 		glrgb SectionColor
 		glfont TocBoldFont
@@ -550,14 +542,14 @@ for_i. i. # strings do.
 	glbrush ''
 	gltextcolor''
 	glclip xx , yy ,  w , h
-	if. lineHeight > squishedLineHeight do.
+	if. lineHeight >: TocLineHeight do.
 		(> i { origins) drawStringAt > i { strings
 	else.
 		glrect origin , ({. glqextent > i { strings) , 2
 	end.
-	if. i = selectedIndex do. (origin , w , lineHeight) drawHighlight SelectionColor end.
-	(origin, w, lineHeight) registerRectLink > i { links
-	glclip xx , yy ,  w , h
+	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
+	((origin - margin , 0), w, lineHeight) registerRectLink > i { links
+NB.	glclip xx , yy ,  w , h
 end.
 glclip 0 0 10000 100000
 scrollIndex
@@ -824,11 +816,6 @@ setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
 entry =. y { 0 getTocOutlineRailEntries MaxTocDepth  NB. level ; parent ; category ; parentseq ; count ; link
-if.  +./ '*NuVoc' E. > 2 { entry do.
-	DisplayMode =: 'V'
-elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
-	(> 2 { entry) drawTocEntryForum DisplayDetailRect
-end.
 queueLoadPage (> 5 { entry) ; > 2 { entry
 )
 
@@ -837,18 +824,25 @@ NB. x xx yy w h
 NB. y A level of the Toc hierarchy to which to display
 NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 'xx yy width height' =. x
-if. VocMouseXY pointInRect xx , yy , width , height do. setDisplayMode 'T' end.
 entries =. 0 getTocOutlineRailEntries y NB. Table of level ; parentId ; category ; parentseq ; count ; link
 maxCount =. >./ > 4 {"1 entries
 indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 2 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
-parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 4 {"1 entries) ; (0 #~ # entries) ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
+parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 4 {"1 entries) ; (1 #~ # entries) ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
 TocOutlineRailScrollIndex =: drawScrollerField parms
-if. (1 getCategoryId ForumsCatString) = > 1 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y do. NB. level ; parent ; category ; parentseq ; count ; link
-	(> 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y) drawTocEntryForum DisplayDetailRect
+entry =. TocOutlineRailSelectedIndex { entries
+if.  +./ '*NuVoc' E. > 2 { entry do.
+	drawVoc ''
+elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
+	(> 2 { entry) drawTocEntryForum DisplayDetailRect
 else.
 	y drawTocEntryChildren DisplayDetailRect
 end.
+NB. if. (1 getCategoryId ForumsCatString) = > 1 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y do. NB. level ; parent ; category ; parentseq ; count ; link
+NB. 	(> 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y) drawTocEntryForum DisplayDetailRect
+NB. else.
+NB. 	y drawTocEntryChildren DisplayDetailRect
+NB. end.
 )
 
 drawToc =: 3 : 0
@@ -1090,10 +1084,9 @@ invalidateDisplay ''
 )
 
 drawVoc =: 3 : 0
-if. -. DisplayMode -: 'V' do. return. end.
 glrgb 255 255 255
 glbrush ''
-glrect 0 0 2000 2000
+glrect DetailRect
 225 30 drawVocSections 0 1 2 3 4 5
 510 30 drawVocSections 6 7 8 9 10 11
 )
