@@ -305,7 +305,7 @@ DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
 DocumentColumnFont =: 'arial 18'
 SectionFont =: 'arial bold 16'
-SectionColor =: 0 128 0
+SectionColor =: 160 0 0
 CurrentVocGeometry =: '' NB. Table of glyph x y width height.
 NewVocGeometry =: ,: '' ; _1 ; 0 ; 0 ; 0
 VocSelectedGlyph =: ''
@@ -336,7 +336,7 @@ TocSelectedTopCategory =: '*NuVoc'
 TocScrollIndex =: 0
 MaxTocDepth =: 4
 ScrollColor =: 230 230 230
-BarColor =: ScrollColor * 0.75
+BarColor =: ScrollColor * 0.7
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
 UseHtmlCache =: 0
@@ -545,7 +545,7 @@ for_i. i. # strings do.
 	if. lineHeight >: TocLineHeight do.
 		(> i { origins) drawStringAt > i { strings
 	else.
-		glrect origin , ({. glqextent > i { strings) , 2
+NB.		glrect origin , ({. glqextent > i { strings) , 2
 	end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
 	((origin - margin , 0), w, lineHeight) registerRectLink > i { links
@@ -563,14 +563,13 @@ NB. y Highlight Flag ; Name ; Link/Command ; HeadingFlag
 if. headingFlag do. 
 	glrgb SectionColor
 	gltextcolor ''
-	glfont TocFont
-	(xx , yy) drawStringAt name
+	glfont TocBoldFont
+else.
 	glrgb 0 0 0
 	gltextcolor ''
 	glfont TocFont
-else.
-	(xx , yy) drawStringAt name
 end.
+(xx , yy) drawStringAt name
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
 adjRect registerRectLink command ; name
@@ -582,9 +581,6 @@ NB. y Table of Name ; Link/Command ; HeadingFlag
 NB. Render the column in black, with headings in SectionColor
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
-glrgb 0 0 0
-gltextcolor ''
-glfont TocFont
 margin =. 5
 rect =. (margin + xx) ,. (margin + yy + TocLineHeight * i. # y) ,"0 1 width , TocLineHeight
 rect drawTocEntryChild"1 1 y
@@ -718,10 +714,12 @@ maxDepth =. x
 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
 log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
 categoryId =. parentId getCategoryId category
-tocWikiDocs =. getTocWikiDocs categoryId NB. Table of level parent category parentSeq count link ; (table of title ; link)
+tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parent category parentSeq count link) ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
+ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent category parentSeq count link
+NB. indents =. #&'  ' &. > &. <"0 levels - <./ levels =. > 0 {"1 categoryEntries
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
 catTitles =. indents , &. > 2 {"1 categoryEntries
 catLinks =. 5 {"1 categoryEntries
@@ -756,7 +754,7 @@ if. fullSizeColCount < # columnRects do.
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
 headerColumn =. > {. columnGroups
-parms =. (> {. columnRects) ; (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ((# headerColumn) # 0) ; ((# headerColumn) # 1) ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex
+parms =. (> {. columnRects) ; (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ratios ; ((# headerColumn) # 1) ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex
 TocEntryChildScrollIndex =: drawScrollerField parms
 (}. columnRects) drawTocEntryChildrenColumn &. > }. columnGroups
 ''
