@@ -345,6 +345,7 @@ SearchResultsTable =: '' NB. Path ; doc name ; document link
 Months =: ;:'January February March April May June July August September October November December'
 ForumsCatString =: '*Forums'
 SearchCatString =: '*Search'
+TagCatString =: '*Tags'
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -438,6 +439,7 @@ end.
 if. LastUrlLoaded -: url do. return. end.
 log 'Loading url ' , url
 wd 'set browser url *' , url 
+smoutput 'Loaded page ' , url
 CurrentHistoryEntry =: url ; 1 { y
 CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
@@ -761,22 +763,22 @@ TocEntryChildScrollIndex =: drawScrollerField parms
 )
 
 drawTocEntryChildren =: 4 : 0
-NB. x maxDepth
+NB. x Category id
 NB. y xx yy width height
 NB. Render the descendants of the TocOutlineRailSelectedIndex category in xx yy width height.
 NB. Use multiple columns if necessary.  If there are too many columns, invoke drawTocEntryChildrenWithTree.
 NB. getTocOutlineRailEntries returns table of level ; parentid ; category ; parentseq ; count ; link
-maxDepth =. x
 'xx yy width height' =. y
-'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
-log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
+NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
+NB. log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
 margin =. 5
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect xx , yy , width , height
-tocWikiDocs =. getTocWikiDocs parentId getCategoryId category NB. Table of tocOutlineEntry ; (table of title ; link)
+'categoryId' ; x
+tocWikiDocs =. getTocWikiDocs x NB. Table of tocOutlineEntry ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
 categoryEntries =. > {."1 tocWikiDocs
 catLinkFlag =. (2 5 {"1 categoryEntries) ,. <1 NB. Category ; Link ; Heading Flag
@@ -833,14 +835,12 @@ if.  +./ '*NuVoc' E. > 2 { entry do.
 	drawVoc ''
 elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
 	(> 2 { entry) drawTocEntryForum DisplayDetailRect
+elseif. (1 getCategoryId TagCatString) = > 1 { entry do.
+	(> 1 { entry) drawTocEntryChildren DisplayDetailRect
 else.
-	y drawTocEntryChildren DisplayDetailRect
+	categoryId =. (> 1 { entry) getCategoryId > 2 { entry
+	categoryId drawTocEntryChildren DisplayDetailRect
 end.
-NB. if. (1 getCategoryId ForumsCatString) = > 1 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y do. NB. level ; parent ; category ; parentseq ; count ; link
-NB. 	(> 2 { TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries y) drawTocEntryForum DisplayDetailRect
-NB. else.
-NB. 	y drawTocEntryChildren DisplayDetailRect
-NB. end.
 )
 
 drawToc =: 3 : 0
@@ -881,9 +881,15 @@ if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache)
 	result =. > index { 1 {"1 TocOutlineRailEntriesCache
 else.
 	visitedRailEntries =: ''
-	result =. > x recurseGetTocOutlineRailEntries y
+	result =: > x recurseGetTocOutlineRailEntries y
+NB.	tagCatId =: 1 getCategoryId TagCatString
 	if. x = 0 do. result =. }. result end.
-	TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < result
+	if. 0 = # result do.
+		result =. ''
+	else.
+NB. 		result =. (> tagCatId&~: &. > 1 {"1 rawResult) # rawResult  NB. Drop the child categories of *Tags.
+		TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < result
+	end.
 end.
 result
 )
@@ -894,12 +900,12 @@ NB. Return the subtree TOC from the categories table with a set of wiki document
 NB. Return table of (level parent category parentSeq count link) ; table of title ; link
 key =. < y
 if. (# WikiDocsCache) > index =. (0 {"1 WikiDocsCache) i. key do.
-	result =. > index {1 {"1 WikiDocsCache
+	result =. > index { 1 {"1 WikiDocsCache
 else.
 	entries =. y getTocOutlineRailEntries 100
 	if. 0 = # entries do.
 		NB. The category is not a parent.
-		entry =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where rowid = ' , (": y)
+		entry =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link from categories where rowid = ' , ": y
 		wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": y
 		result =. (< entry) , < wikiDocs
 	else.
@@ -937,7 +943,7 @@ NB. x Parent id
 NB. y Category name (category names are guaranteed to be unique)
 NB. Return the rowid of the category
 result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" and parentid = ' , ": x
-if. 0 = # result do. _1 else. , > result end.
+if. 0 = # result do. _1 else. {. , > result end.  NB. {. to force it to a scalar shape.
 )
 
 getParentId =: 3 : 0
@@ -1078,7 +1084,9 @@ runningY
 selectVocGlyph =: 3 : 0
 NB. y A glyph
 VocSelectedGlyph =: , y
-invalidateDisplay ''
+entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
+queueLoadPage n =: (> 7 { entry) ; > 5 { entry
+NB. invalidateDisplay ''
 )
 
 drawVoc =: 3 : 0
