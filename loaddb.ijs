@@ -352,8 +352,9 @@ html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Speci
 pat =. rxcomp '<li>[^h]+href="([^"]+)"[^>]+>([^<]+)\<'
 offsetLengths =. }."2 pat rxmatches html
 smoutput '$ offsetLengths' ; $ offsetLengths
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 100000 ; '*Tags' ; 0 ; 2 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Tags' ; 0 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
-tagId =. 1 getCategoryId '*Tags'
+tagId =. 100000 getCategoryId '*Tags'
 treeCategories =: , > {: sqlreadm__db 'select distinct child from categories'
 for_ol. offsetLengths do.
 	wd 'msgs'
@@ -516,6 +517,6 @@ NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
 processCategory ''
 loadTagCategories ''
-NB. loadForum &. > ;: 'chat database general source programming beta'
+loadForum &. > ;: 'chat database general source programming beta'
 finishTables ''
 )

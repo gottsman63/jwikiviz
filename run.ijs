@@ -6,12 +6,7 @@ coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Fix use of curl for search
-NB. Spider the Vocabulary--don't use the spreadsheet.
-NB. Standalone application.
 NB. NuVoc Ancillary Pages?
-NB. Focus Lost on Isigraph?  What are the wheel events from the browser?
-NB. Hover on a glyph selects the first valence link.
-NB. Tag cloud
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -20,6 +15,8 @@ NB. Animate scroll rather than jumping when the travel is too high.
 NB. Saved pages mechanism.  "Save" button next to the url field?
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
+NB. Spider the Vocabulary--don't use the spreadsheet.
+NB. Standalone application.
 
 NB. ============= Database ===============
 dbFile =: jpath '~temp/cache.db'
@@ -106,6 +103,10 @@ NB. Give the user the chance to get the mouse over to the webview without activa
 NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 invalidateDisplay ''
+)
+
+vizform_browser_mmove =: 3 : 0
+smoutput 0 1 { ". > 1 { 13 { wdq
 )
 
 vizform_vocContext_paint =: 3 : 0
@@ -439,7 +440,6 @@ end.
 if. LastUrlLoaded -: url do. return. end.
 log 'Loading url ' , url
 wd 'set browser url *' , url 
-smoutput 'Loaded page ' , url
 CurrentHistoryEntry =: url ; 1 { y
 CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
@@ -704,18 +704,18 @@ TocEntryChildCategoryIndex =: 0 NB. The index of the currenty-selected child cat
 TocEntryChildCategoryEntries =: '' NB. Table of Title ; Link
 
 drawTocEntryChildrenWithTree =: 4 : 0
-NB. x maxDepth
+NB. x Category id
 NB. y xx yy width height entryY
 NB. Render the descendants of the TocSelectedTopCategory in xx yy width height.
 NB. This is used when the child count is too high.  It renders a tree in the first column (drawaScrollerField)
 NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
 NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
-maxDepth =. x
 'xx yy width height' =. y
-'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
+categoryId =. x
+NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
 log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
-categoryId =. parentId getCategoryId category
+NB. categoryId =. parentId getCategoryId category
 tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parent category parentSeq count link) ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
 ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
@@ -777,7 +777,6 @@ glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect xx , yy , width , height
-'categoryId' ; x
 tocWikiDocs =. getTocWikiDocs x NB. Table of tocOutlineEntry ; (table of title ; link)
 if. 0 = # tocWikiDocs do. '' return. end.
 categoryEntries =. > {."1 tocWikiDocs
@@ -794,7 +793,7 @@ compressedColWidth =. <. (width - colWidth) % <: # columnGroups
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =. <"1 <. (xx + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
 if. (1 < # categoryEntries) *. (# columnRects) > 2 * fullSizeColCount do. 
-	maxDepth drawTocEntryChildrenWithTree xx , yy , width , height
+	x drawTocEntryChildrenWithTree xx , yy , width , height
 	''
 	return.
 end.
@@ -835,8 +834,8 @@ if.  +./ '*NuVoc' E. > 2 { entry do.
 	drawVoc ''
 elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
 	(> 2 { entry) drawTocEntryForum DisplayDetailRect
-elseif. (1 getCategoryId TagCatString) = > 1 { entry do.
-	(> 1 { entry) drawTocEntryChildren DisplayDetailRect
+elseif. TagCatString -: > 2 { entry do.
+	100000 drawTocEntryChildrenWithTree DisplayDetailRect
 else.
 	categoryId =. (> 1 { entry) getCategoryId > 2 { entry
 	categoryId drawTocEntryChildren DisplayDetailRect
@@ -882,7 +881,6 @@ if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache)
 else.
 	visitedRailEntries =: ''
 	result =: > x recurseGetTocOutlineRailEntries y
-NB.	tagCatId =: 1 getCategoryId TagCatString
 	if. x = 0 do. result =. }. result end.
 	if. 0 = # result do.
 		result =. ''
@@ -1086,7 +1084,6 @@ NB. y A glyph
 VocSelectedGlyph =: , y
 entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
 queueLoadPage n =: (> 7 { entry) ; > 5 { entry
-NB. invalidateDisplay ''
 )
 
 drawVoc =: 3 : 0
