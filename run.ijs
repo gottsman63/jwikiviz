@@ -5,7 +5,7 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Scroll behavior for long subject- and author lists in forum detail area.
-NB. Fix use of curl for search
+NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. NuVoc Ancillary Pages?
 
 NB. B Items
@@ -105,10 +105,6 @@ VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 invalidateDisplay ''
 )
 
-vizform_browser_mmove =: 3 : 0
-smoutput 0 1 { ". > 1 { 13 { wdq
-)
-
 vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
@@ -145,13 +141,12 @@ catch.
 	log (13!:12) ''
 	log dbError ''
 end.
-NB. invalidateDisplay_base_ ''
 )
 
 wd 'timer 0'
 
 trigger_paint =: 3 : 0
-try.
+NB. try.
 'w h' =. ". wd 'get vocContext wh'
 if. (w > 300) *. h > 300 do.
 	scheduleBackgroundRender ''
@@ -164,10 +159,10 @@ NB.	manageMouseMove VocMouseXY
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
-catch.
+NB. catch.
 log (13!:12) ''
 log dbError ''
-end.
+NB. end.
 )
 
 invalidateDisplay =: 3 : 0

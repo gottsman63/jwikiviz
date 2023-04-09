@@ -293,12 +293,24 @@ createThreads =: 3 : 0
 while. (<: {: 8 T. '') > 1 T. '' do. 0 T. '' end.
 )
 
-loadForumHtml =: 3 : 0
-NB. Using the data in the forums SQLITE table, load the HTML for each forum post and store it in the table.
-)
-
 createThreads =: 3 : 0
 while. (1 T. '') < <: {: 8 T. '' do. 0 T. '' end.
+)
+
+loadAncillaryPages =: 3 : 0
+smoutput 'loadAncillaryPages'
+html =. gethttp 'https://code.jsoftware.com/wiki/NuVoc'
+html =. (I. 'printfooter' E. html) {. html =. (I. 'Ancillary_Pages' E. html) }. html
+pat =. 'href="([^"]+)" title="([^"]+)"'
+offsetLengths =. }."2 pat rxmatches html
+linkOffsetLengths =. 0 {"2 offsetLengths
+titleOffsetLengths =. 1 {"2 offsetLengths
+links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 html
+titles =. (<"0 {:"1 titleOffsetLengths) {. &. > ({."1 titleOffsetLengths) <@}."0 1 html
+nuVocId =. 1 getCategoryId '*NuVoc'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 2 ; nuVocId ; 'Ancillary Pages' ; (# titles) ; 0 ; 'https://code.jsoftware.com/wiki/NuVoc'
+ancillaryId =. nuVocId getCategoryId 'Ancillary Pages'
+sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; < (ancillaryId #~ # links) ; titles ; <links
 )
 
 extractField =: 4 : 0
@@ -452,12 +464,15 @@ NB.	end.
 end.
 )
 
-finishTables =: 3 : 0
-NB. Add level, count, sortke and path information to the category table.
-NB. Add count and sortkey information to the wiki table.
+setupTables =: 3 : 0
+NB. Note that these should be the first rows inserted into the categories table.
+sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+)
+
+finishLoadingForums =: 3 : 0
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
 forumId =. 1 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
@@ -512,11 +527,12 @@ sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 setup =: 3 : 0
 setupTempDirectory ''
 setupDb ''
-loadVoc ''
-NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
-sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
+setupTables ''
 processCategory ''
+loadVoc ''
+loadAncillaryPages ''
+NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 loadTagCategories ''
 loadForum &. > ;: 'chat database general source programming beta'
-finishTables ''
+finishLoadingForums ''
 )
