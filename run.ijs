@@ -146,7 +146,7 @@ end.
 wd 'timer 0'
 
 trigger_paint =: 3 : 0
-NB. try.
+try.
 'w h' =. ". wd 'get vocContext wh'
 if. (w > 300) *. h > 300 do.
 	scheduleBackgroundRender ''
@@ -159,10 +159,12 @@ NB.	manageMouseMove VocMouseXY
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
-NB. catch.
+catch.
 log (13!:12) ''
 log dbError ''
-NB. end.
+smoutput (13!:12) ''
+smoutput dbError ''
+end.
 )
 
 invalidateDisplay =: 3 : 0
@@ -301,7 +303,7 @@ DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
 DocumentColumnFont =: 'arial 18'
 SectionFont =: 'arial bold 16'
-SectionColor =: 160 0 0
+SectionColor =: 110 0 0
 CurrentVocGeometry =: '' NB. Table of glyph x y width height.
 NewVocGeometry =: ,: '' ; _1 ; 0 ; 0 ; 0
 VocSelectedGlyph =: ''
@@ -339,6 +341,7 @@ UseHtmlCache =: 0
 SearchString =: ''
 SearchResultsTable =: '' NB. Path ; doc name ; document link
 Months =: ;:'January February March April May June July August September October November December'
+ShortMonths =: ;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
 ForumsCatString =: '*Forums'
 SearchCatString =: '*Search'
 TagCatString =: '*Tags'
@@ -585,12 +588,11 @@ glclip 0 0 10000 10000
 rect
 )
 
-TocEntryForumMonth =: 11
-
 setTocEntryForumMonthIndex =: 3 : 0
 NB. y The month whose posts we'll display
 TocEntryForumMonthIndex =: y
 setTocEntryForumSubjectIndex 0
+ForumSubjectScrollIndex =: 0
 )
 
 TocEntryForumYear =: 2023
@@ -599,6 +601,8 @@ setTocEntryForumYear =: 3 : 0
 NB. y The year whose posts we'll display
 TocEntryForumYear =: y
 setTocEntryForumSubjectIndex 0
+ForumSubjectScrollIndex =: 0
+TocEntryForumMonthIndex =: 11
 )
 
 TocEntryForumSubjectIndex =: 0
@@ -606,6 +610,7 @@ TocEntryForumSubjectIndex =: 0
 setTocEntryForumSubjectIndex =: 3 : 0
 NB. The index of the subject that's currently highlighted
 TocEntryForumSubjectIndex =: y
+ForumAuthorScrollIndex =: 0
 setTocEntryForumAuthorIndex 0
 )
 
@@ -614,16 +619,28 @@ TocEntryForumAuthorIndex =: 0
 setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
+months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = > {."1 ForumCacheTable
+month =. TocEntryForumMonthIndex { months
+entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable
+subjects =. ~. {."1 entries
+subject =. TocEntryForumSubjectIndex { subjects
+authorEntry =: y { ForumCacheTable #~ subject = 2 {"1 ForumCacheTable
+queueLoadPage ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 4 { authorEntry) ; LF -.~ > subject
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
 ForumCurrentName =: ''
+ForumSubjectScrollIndex =: 0
+ForumAuthorScrollIndex =: 0
+ForumName =: ''
 
 drawTocEntryForum =: 4 : 0
 NB. x The name of the forum
 NB. y xx yy width height
 NB. Display the contents of the forum
+NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x
+ForumName =: x
 'xx yy width height' =. y
 if. -. ForumCurrentName -: x do. 
 	result =. > {: sqlreadm__db 'select year, month, subject, author, link, rowid from forums where forumname = "' , x , '" order by year desc, month asc, rowid asc'
@@ -631,7 +648,7 @@ if. -. ForumCurrentName -: x do.
 	ForumCurrentName =: x
 	TocEntryForumYear =: 2023
 	TocEntryForumSubjectIndex =: 0
-	TocEntryForumMonthIndex =: 0
+	TocEntryForumMonthIndex =: 11
 end.
 glclip 0 0 10000 100000
 glrgb 0 0 0
@@ -645,47 +662,37 @@ if. 0 = # years do. return. end.
 months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
 TocEntryForumMonthIndex =: TocEntryForumMonthIndex <. <: # months
 month =. TocEntryForumMonthIndex { months
-yearOrigins =. (xx + margin) ,. 50 + yy + TocLineHeight * i. # years
+yearOrigins =. (xx + width - 60) ,. 50 + yy + TocLineHeight * i. # years
 glrgb SectionColor
 gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 years
-monthStrings =. months { ;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
+monthStrings =. months { ShortMonths
 monthOrigins =. (# months) {. <"1 (xx + 60 + 40 * i. 12) ,. yy + margin
 monthOrigins drawStringAt &. > monthStrings
-(<"1 yearRects =. yearOrigins ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
-(<"1 monthRects =. (> monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
+(<"1 yearRects =. (yearOrigins - 2) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
+(<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
 TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
 (TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
 entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable
 if. 0 = # entries do. return. end.
+colWidth =. <. -: width - 80 + margin
+colHeight =. height - 3 * TocLineHeight
+subjRect =. xx , (yy + 50) , colWidth, colHeight
+authRect =. subjRect + (colWidth + margin) , 0 0 0
 subjects =. ~. {."1 entries
-rowCount =. <. (height - 60) % # subjects
-leftSubjects =. (rowCount <. # subjects) {. subjects
-glrgb 0 0 0
-gltextcolor''
-glfont TocFont
-(<"1 leftOrigins =. (xx + 80 + 180) ,. (1 { 0 { yearRects) + TocLineHeight * i. # leftSubjects) drawStringAt &. > leftSubjects
-leftRects =. leftOrigins ,"1 1 > ,&TocLineHeight &. > {.@glqextent &. > leftSubjects
-(<"1 leftRects) registerRectLink &. > '*setTocEntryForumSubjectIndex '&, &. > ": &. > (<"0 i. # leftRects)
-(TocEntryForumSubjectIndex { leftRects) drawHighlight SelectionColor
+ratios =. authorCounts % >./ authorCounts =. > # &. > ({."1 entries) </. entries
 subject =. TocEntryForumSubjectIndex { subjects
-authorEntries =. entries #~ ({."1 entries) = TocEntryForumSubjectIndex { subjects
+authorEntries =. entries #~ ({."1 entries) = subject  NB. Check all months' posts since conversations may span months.
 authors =. 1 {"1 authorEntries
-authorHeight =. TocLineHeight * # authors
-authorY =. <. (height - authorHeight) <. (1 { 0 { leftRects) >. (-: authorHeight) -~ 1 { TocEntryForumSubjectIndex { leftRects 
-authorOrigins =. (xx + margin + 60) ,. authorY + TocLineHeight * i. # authors
-glclip 0 0 , (_5 + 0 { 0 { leftRects) , height
-(<"1 authorOrigins) drawStringAt &. > authors
-authorRects =. authorOrigins ,"1 1 (> {.@glqextent &. > authors) ,. TocLineHeight
-(<"1 authorRects) registerRectLink &. > '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authorRects
-TocEntryForumAuthorIndex =: TocEntryForumAuthorIndex <. <: # authors
-(TocEntryForumAuthorIndex { authorRects) drawHighlight SelectionColor
+links =.   2 {"1 authorEntries
+subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
+authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
+authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
+ForumSubjectScrollIndex =: drawScrollerField subjRect ; subjects ; subjectCommands ; ratios ; (1 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex
+ForumAuthorScrollIndex =: drawScrollerField authRect ; authors ; authorCommands ; (0 #~ # authors) ; (0 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex
 glclip 0 0 10000 100000
-title =. LF -.~ (> TocEntryForumAuthorIndex { authors) , ' * ' , (> subject)
-selectedAuthorEntry =. TocEntryForumAuthorIndex { authorEntries
-queueLoadPage ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 2 { selectedAuthorEntry) ; title
 )
 
 setTocEntryChildCategoryIndex =: 3 : 0
@@ -1099,7 +1106,6 @@ glfont 'arial bold 24'
 glrgb HighlightColor
 gltextcolor ''
 10 0 drawStringAt (": fps) , ' fps'
-log 'drawFrameRate ' , ": fps
 )
 
 go =: 3 : 0
