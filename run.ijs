@@ -7,8 +7,8 @@ NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
 NB. Tag entries need to have a lower level.
-NB. Add a wide/narrow checkbox(?)
-NB. Add a "deadener" checkbox
+NB. *Tags should be a two-layer arrangement.
+NB. The *Search results in the wiki table aren't being properly cleared out
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -690,29 +690,33 @@ glrgb 255 255 255
 glbrush ''
 margin =. 5
 glrect xx , yy , width , height
-years =. ~. > {."1 ForumCacheTable
+years =. /:~ ~. > {."1 ForumCacheTable
 if. 0 = # years do. return. end.
 months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
 TocEntryForumMonthIndex =: TocEntryForumMonthIndex <. <: # months
 month =. TocEntryForumMonthIndex { months
-yearOrigins =. (xx + width - 60) ,. 50 + yy + TocLineHeight * i. # years
+yearOrigins =. ((xx + margin) + 30 * i. # years) ,. yy + margin
+yearStrings =. '`'&, &. > _2&{. &. > ": &. > years
 glrgb SectionColor
 gltextcolor ''
 glfont SectionFont
-yearOrigins drawStringAt"1 1 > ": &. > <"0 years
+yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthStrings =. months { ShortMonths
-monthOrigins =. (# months) {. <"1 (xx + 60 + 40 * i. 12) ,. yy + margin
+monthOrigins =. (# months) {. <"1 (xx + margin + 5 + 40 * i. 12) ,. yy + 20 + margin
+monthAdjustments =. 60 * ({."1 > monthOrigins) > (0 >. <: years i. TocEntryForumYear) { {."1 yearOrigins
+monthOrigins =. <"1 (> monthOrigins) + monthAdjustments ,. 0
+
 monthOrigins drawStringAt &. > monthStrings
-(<"1 yearRects =. (yearOrigins - 2) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
+(<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
 TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
 (TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
 entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable
 if. 0 = # entries do. return. end.
-colWidth =. <. -: width - 80 + margin
+colWidth =. <. -: width - +: margin
 colHeight =. height - 3 * TocLineHeight
-subjRect =. xx , (yy + 50) , colWidth, colHeight
+subjRect =. (xx + margin) , (yy + 50) , colWidth, colHeight
 authRect =. subjRect + (colWidth + margin) , 0 0 0
 subjects =. ~. {."1 entries
 ratios =. authorCounts % >./ authorCounts =. > # &. > ({."1 entries) </. entries
@@ -865,7 +869,6 @@ linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entri
 parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 4 {"1 entries) ; (1 #~ # entries) ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
 TocOutlineRailScrollIndex =: drawScrollerField parms
 entry =. TocOutlineRailSelectedIndex { entries
-smoutput 'entry' ; entry
 if.  +./ '*NuVoc' E. > 2 { entry do.
 	drawVoc ''
 elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
