@@ -6,8 +6,6 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
-NB. Tag entries need to have a lower level.
-NB. *Tags should be a two-layer arrangement.
 NB. The *Search results in the wiki table aren't being properly cleared out
 
 NB. B Items
@@ -705,7 +703,6 @@ monthStrings =. months { ShortMonths
 monthOrigins =. (# months) {. <"1 (xx + margin + 5 + 40 * i. 12) ,. yy + 20 + margin
 monthAdjustments =. 60 * ({."1 > monthOrigins) > (0 >. <: years i. TocEntryForumYear) { {."1 yearOrigins
 monthOrigins =. <"1 (> monthOrigins) + monthAdjustments ,. 0
-
 monthOrigins drawStringAt &. > monthStrings
 (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
@@ -801,6 +798,54 @@ TocEntryChildScrollIndex =: drawScrollerField parms
 ''
 )
 
+TocEntryTagScrollIndex =: 0
+TocEntryTagSubcatIndex =: 0
+
+setTocEntryTagSubcatIndex =: 3 : 0
+TocEntryTagSubcatIndex =: y
+)
+
+drawTocEntryTags =: 3 : 0
+NB. y xx yy width height
+NB. Render the immediate subcategories of *Tags in a scrollerField.  
+NB. Render the sub-subcategories of the selected subcategory to the right with their pages.
+NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+'xx yy width height' =. y
+margin =. 5
+subcatEntries =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link, rowid from categories where parentid = ' , ": TagHiddenCatId getCategoryId TagCatString
+subcats =. 2 {"1 subcatEntries
+subcatColWidth =. <. width % 3
+detailX =. xx + subcatColWidth + margin
+detailWidth =. width - subcatColWidth + margin
+commandLinks =. '*setTocEntryTagSubcatIndex '&, &. > ": &. > <"0 i. # subcats
+scrollEntries =. ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) ; subcats ; commandLinks ; (0 #~ # subcats) ; (1 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex
+TocEntryTagScrollIndex =: drawScrollerField scrollEntries
+parentId =. > 6 { TocEntryTagSubcatIndex { subcatEntries
+tocWikiDocs =. getTocWikiDocs parentId
+if. 0 = # tocWikiDocs do. '' return. end.
+categoryEntries =. > {."1 tocWikiDocs
+catLinkFlag =. (2 5 {"1 categoryEntries) ,. <1 NB. Category ; Link ; Heading Flag
+documentTables =. {:"1 tocWikiDocs
+titleLinkFlag =. ,.&(<0) &. > documentTables NB. Title ; Link ; Heading Flag
+entryList =. (<0) ,. ; (<"1 catLinkFlag) , &. > titleLinkFlag
+rowCount =. <. height % TocLineHeight
+columnGroups =. (-rowCount) <\ entryList
+selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - detailX) % detailWidth) * # columnGroups
+fullSizeColCount =. <. (width - subcatColWidth) % MinColWidth
+colWidth =. <. detailWidth % fullSizeColCount
+compressedColWidth =. <. (detailWidth - colWidth) % <: # columnGroups
+columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
+columnRects =. <"1 <. (detailX + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
+if. fullSizeColCount < # columnRects do.
+	glrgb ScrollColor
+	glbrush ''
+	glpen 0
+	w =. <. detailWidth % # columnRects
+	glrect <. (detailX + selectedColumnIndex * w) , yy , w , height
+end.
+columnRects drawTocEntryChildrenColumn &. > columnGroups
+)
+
 drawTocEntryChildren =: 4 : 0
 NB. x Category id
 NB. y xx yy width height
@@ -874,7 +919,7 @@ if.  +./ '*NuVoc' E. > 2 { entry do.
 elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
 	(> 2 { entry) drawTocEntryForum DisplayDetailRect
 elseif. TagCatString -: > 2 { entry do.
-	TagHiddenCatId drawTocEntryChildrenWithTree DisplayDetailRect
+	drawTocEntryTags DisplayDetailRect
 elseif. (1 getCategoryId SearchCatString) = > 1 { entry do.
 	((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId > 2 { entry) drawTocEntryChildren DisplayDetailRect
 else.

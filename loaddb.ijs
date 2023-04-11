@@ -354,42 +354,47 @@ end.
 sqlcmd__db 'commit transaction'
 )
 
-
 loadTagCategories =: 3 : 0
 NB. Load all of the categories and remove the existing tree categories from the list to produce the Tag categories.
 NB. Create a category called *Tags in the categories table and put the Tag categories under it.
 NB. Load all of the Tag categories' pages into the wiki table.
 NB. html =. gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
+anchorId =. 100000
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Tags' ; 0 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; anchorId ; '*Tags' ; 0 ; 2 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
+treeCategories =. , > {: sqlreadm__db 'select distinct child from categories'
 html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000"'
 pat =. rxcomp '<li>[^h]+href="([^"]+)"[^>]+>([^<]+)\<'
 offsetLengths =. }."2 pat rxmatches html
-smoutput '$ offsetLengths' ; $ offsetLengths
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 100000 ; '*Tags' ; 0 ; 2 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Tags' ; 0 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
-tagId =. 100000 getCategoryId '*Tags'
-treeCategories =: , > {: sqlreadm__db 'select distinct child from categories'
-for_ol. offsetLengths do.
-	wd 'msgs'
-	'linkOffset linkLength' =. 0 { ol
-	'catOffset catLength' =. 1 { ol
-	link =. 'https://code.jsoftware.com' , linkLength {. linkOffset }. html
-	cat =. catLength {. catOffset }. html
-	smoutput 'cat [' , cat , ']'
-	if. (# treeCategories) > treeCategories i. < cat do. smoutput '...skipping ' , cat continue. end.
-	smoutput 'link' ; link
+linkOffsets =. {."(1) 0 {"2 offsetLengths
+linkLengths =. {:"(1) 0 {"2 offsetLengths
+links =: 'https://code.jsoftware.com/'&, &. > linkLengths <@{."0 1 linkOffsets }."0 1 html
+catOffsets =. {."(1) 1 {"2 offsetLengths
+catLengths =. {:"(1) 1 {"2 offsetLengths
+sieve =. -. (categories =: catLengths <@{."0 1 catOffsets }."0 1 html) e. treeCategories
+categories =. sieve # categories
+links =. sieve # links
+headerCategories =. ,&'...' &. > > {. &. > _15 <\ categories
+count =. # headerCategories
+data =. (count # 1) ; (count # anchorId getCategoryId '*Tags') ; headerCategories ; (count # 0) ; (i. count) ; < count # < ''
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < data
+headerIds =. (anchorId getCategoryId '*Tags')&getCategoryId &. > headerCategories
+for_entry. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
+	'headerId category link' =. entry
 	catHtml =. (2!:0) 'curl "' , link , '"'
 	catHtml =. (I. 'printfooter' E. catHtml) {. catHtml =. (I. 'mw-category-generated' E. catHtml) }. catHtml
 	pagePat =. 'href="([^"]+)"[^>]+>([^<]+)<'
 	pageOffsetLengths =. }."2 pagePat rxmatches catHtml
-	sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; data =: < 5 ; tagId ; cat ; (# pageOffsetLengths) ; ol_index ; link
-	catId =. tagId getCategoryId cat
+	sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 5 ; headerId ; category ; (# pageOffsetLengths) ; entry_index ; link
+	catId =. headerId getCategoryId category
 	for_pageOl. pageOffsetLengths do.
 		'pageLinkOffset pageLinkLength' =. 0 { pageOl
 		'pageTitleOffset pageTitleLength' =. 1 { pageOl
 		pageLink =. 'https://code.jsoftware.com' , pageLinkLength {.  pageLinkOffset }. catHtml
 		pageTitle =. pageTitleLength {. pageTitleOffset }. catHtml
-		sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; data2 =: < catId ; pageTitle ; pageLink
+		sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; < catId ; pageTitle ; pageLink
 	end.
+	
 end.
 )
 
