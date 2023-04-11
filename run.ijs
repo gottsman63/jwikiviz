@@ -4,9 +4,11 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Scroll behavior for long subject- and author lists in forum detail area.
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
-NB. NuVoc Ancillary Pages?
+NB. Fix the color scheme.
+NB. Tag entries need to have a lower level.
+NB. Add a wide/narrow checkbox(?)
+NB. Add a "deadener" checkbox
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -55,8 +57,9 @@ wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
+wd       'cc numb checkbox; cn Numb;'
 wd       'cc history combolist;'
-wd       'cc launch button; cn Launch Browser;'
+wd       'cc launch button; cn Browser;'
 wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
@@ -94,8 +97,14 @@ wd 'timer 0'
 wd 'pclose'
 )
 
+vizform_numb_button =: 3 : 0
+Numb =: ". numb
+invalidateDisplay ''
+)
+
 vizform_clearSearches_button =: 3 : 0
 clearSearches ''
+invalidateDisplay ''
 )
 
 vizform_vocContext_mmove =: 3 : 0
@@ -113,6 +122,7 @@ vizform_searchBox_button =: 3 : 0
 try.
 	search searchBox
 	wd 'set searchBox text ""'
+	invalidateDisplay ''
 catch.
 	log (13!:12) ''
 	log dbError ''
@@ -159,7 +169,7 @@ NB.	manageMouseMove VocMouseXY
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
-catch.
+catchd.
 log (13!:12) ''
 log dbError ''
 smoutput (13!:12) ''
@@ -173,32 +183,41 @@ wd 'set vocContext invalid'
 NB. ======================================================
 
 NB. =================== Search ===========================
+deleteCategoryIdAndDescendants =: 3 : 0
+NB. y A category id whose descendants are to be deleted.
+if. y < 0 do. return. end.
+childIds =. > {: sqlreadm__db 'select rowid from categories where parentid = ' , ": y
+deleteCategoryIdAndDescendants &. > childIds
+sqlcmd__db 'delete from categories where rowid = ' , ": y
+)
+
+deleteCategoryIdDescendantsOnly =: 3 : 0
+if. y < 0 do. return. end.
+childIds =. , > > {: sqlreadm__db 'select rowid from categories where parentid = ' , ": y
+deleteCategoryIdAndDescendants &. > childIds
+)
+
 clearSearches =: 3 : 0
+NB. y A search string
+NB. Remove the search records from the TOC.
 log 'clearSearches'
-terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId SearchCatString
-clearSearch &. > terms
+terms1 =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId SearchCatString
+smoutput 'terms1' ; terms1
+if. 0 < # terms1 do. clearSearch &. > terms1 end.
+terms2 =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": SearchHiddenCatId getCategoryId SearchCatString
+smoutput 'terms2' ; terms2
+if. 0 < # terms2 do. clearSearch &. > terms2 end.
 clearCache ''
-invalidateDisplay ''
 )
 
 clearSearch =: 3 : 0
-NB. y A search string
-NB. Remove the search records from the TOC.
-log 'clearSearch ' , y
-searchId =. 1 getCategoryId SearchCatString
-termId =. searchId getCategoryId y
-if. termId >: 0 do. 
-	wikiId =. termId getCategoryId 'Wiki'
-	if. wikiId >: 0 do. sqlcmd__db 'delete from wiki where categoryid = ' , ": wikiId end.
-	forumsId =. termId getCategoryId 'Forums'
-	if. forumsId >: 0 do.
-		forumIds =. > {: sqlreadm__db 'select rowid from categories where parentid = ' , ": forumsId
-		sqlcmd__db &. > 'delete from wiki where categoryid = '&, &. > ": &. > forumIds
-		sqlcmd__db 'delete from categories where parentid = ' , ": forumsId
-	end.
-	sqlcmd__db 'delete from categories where parentid = ' , ": termId 
-end.
-sqlcmd__db 'delete from categories where parentid = ' , (": searchId) , ' and child = "' , y , '"'
+NB. y A search term
+wikiParentIds =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" AND parentid = ' , ": SearchHiddenCatId
+smoutput 'wikiParentIds' ; wikiParentIds
+sqlcmd__db &. > 'delete from wiki where categoryid = '&, &. > ": &. > wikiParentIds
+deleteCategoryIdAndDescendants (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
+deleteCategoryIdAndDescendants (1 getCategoryId SearchCatString) getCategoryId y
+clearCache ''
 )
 
 addSearchToToc =: 3 : 0
@@ -206,22 +225,26 @@ NB. y A search string
 NB. Save parent ; child.  
 term =.  y
 clearSearch term
-searchId =. 1 getCategoryId SearchCatString
 cols =. ;: 'level parentid child count parentseq link'
-sqlinsert__db 'categories' ; cols ; < 2 ; searchId ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-sqlinsert__db 'categories' ; cols ; < 3 ; (searchId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
-clearCache ''
-invalidateDisplay ''
+sqlinsert__db 'categories' ; cols ; < 2 ; (1 getCategoryId SearchCatString) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+NB. sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 )
 
 searchWiki =: 3 : 0
 NB. y Search term
-NB. Perform the search, parse the results, and update the "categories" and "wiki" table.
+NB. Perform the search, parse the results, and update the "categories" and "wiki" tables.
+NB. Return the number of hits.
+NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
+NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
+NB. smoutput (1!:1) < fname
+log 'Searching wiki for ' , y , '...'
 html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y) , '"'
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
-wikiId =. ((1 getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
+wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
+log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 = # offsetLengths do.
 	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
 else.
@@ -235,20 +258,22 @@ else.
 	wikiCols =. ;: 'title categoryid link'
 	data =. titles ; (wikiId #~ # titles) ; < links
 	sqlinsert__db 'wiki';wikiCols;<data
-	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
+	sqlupdate__db 'categories' ; ('rowid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 2
 end.
-clearCache ''
-invalidateDisplay ''
+# offsetLengths
 )
 
 searchForums =: 3 : 0
-NB. y Search term
-NB. Perform the search, parse the results, and update the "categories" and "wiki" table.
+NB. y Search term		
+NB. Perform the search, parse the results, and update the "categories" and "wiki" tables.
+log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
-offsetLengths =.  pat rxmatches html
-forumsId =. ((1 getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Forums'
+offsetLengths =. pat rxmatches html
+NB. forumsId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Forums'
+termId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
+log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 = # offsetLengths do.
 	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < 0 ; 3
 else.
@@ -265,21 +290,19 @@ else.
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
 	titleGroups =. forums </. titles
 	linkGroups =. forums </. links
-	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < (# titles) ; 3
+NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < (# titles) ; 3
 	for_index. i. # titleGroups do.
 		fname =. > index { ~. forums
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
 		cols =. (;: 'level parentid child parentseq count link')
-		data =. 4 ; forumsId ; fname ; index ; (# forumLinks) ; 'http://www.jsoftware.com/mailman/listinfo/' , }. fname
+		data =. 2 ; termId ; fname ; (>: index) ; (# forumLinks) ; 'http://www.jsoftware.com/mailman/listinfo/' , }. fname
 		sqlinsert__db 'categories' ; cols ; < data
-		forumId =. forumsId getCategoryId fname
+		forumId =. termId getCategoryId fname
 		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
 		sqlinsert__db 'wiki';wikiCols;<data
 	end.
 end.
-clearCache ''
-invalidateDisplay ''
 )
 
 search =: 3 : 0
@@ -287,10 +310,16 @@ NB. y A search string.
 try.
 	log 'Searching for ' , y
 	addSearchToToc y
+	clearCache ''
+	invalidateDisplay ''
+	wd 'msgs'
 	searchWiki y
 	searchForums y
-catch.
+	clearCache ''
+	invalidateDisplay ''
+catchd.
 	log (13!:12) ''
+	log 'Db Error (if any): ' , dbError ''
 end.
 )
 
@@ -328,7 +357,6 @@ NB. TocOutline =: '' NB. level ; path component ; full path
 TocFont =: 'arial 16'
 TocBoldFont =: 'arial bold 16'
 TocItalicFont =: 'arial italic 16'
-TocBoldItalicFont =: 'arial bold italic 16'
 TocLineHeight =: 21
 TocSelectedTopCategory =: '*NuVoc'
 TocScrollIndex =: 0
@@ -337,14 +365,14 @@ ScrollColor =: 230 230 230
 BarColor =: ScrollColor * 0.7
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
-UseHtmlCache =: 0
-SearchString =: ''
-SearchResultsTable =: '' NB. Path ; doc name ; document link
 Months =: ;:'January February March April May June July August September October November December'
 ShortMonths =: ;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
 ForumsCatString =: '*Forums'
 SearchCatString =: '*Search'
+SearchHiddenCatId =: 200000
 TagCatString =: '*Tags'
+TagHiddenCatId =: 100000
+Numb =: 0
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -493,7 +521,7 @@ NB. Return the scrollIndex, which may have changed.
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 5
-stripeWidth =. 70
+stripeWidth =.<. 0.75 * w
 glfont TocFont
 if. maxLineCount < # strings do.
 	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
@@ -519,6 +547,7 @@ if. maxLineCount < # strings do.
 		glcursor IDC_ARROW
 		if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glcursor IDC_SIZEVER end.
 		if. VocMouseXY pointInRect (xx + stripeWidth) , yy , (w - stripeWidth) , h do. glcursor IDC_POINTINGHAND end.
+		
 	end.
 	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb <. ScrollColor * 0.85 else. glrgb ScrollColor end.
 	glbrush ''
@@ -548,7 +577,11 @@ for_i. i. # strings do.
 NB.		glrect origin , ({. glqextent > i { strings) , 2
 	end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	((origin - margin , 0), w, lineHeight) registerRectLink > i { links
+	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
+		((origin - margin , 0), w, lineHeight) registerRectLink > i { links
+	elseif. -. Numb do.
+		((origin - margin , 0), w, lineHeight) registerRectLink > i { links
+	end.
 NB.	glclip xx , yy ,  w , h
 end.
 glclip 0 0 10000 100000
@@ -832,12 +865,15 @@ linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entri
 parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 4 {"1 entries) ; (1 #~ # entries) ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
 TocOutlineRailScrollIndex =: drawScrollerField parms
 entry =. TocOutlineRailSelectedIndex { entries
+smoutput 'entry' ; entry
 if.  +./ '*NuVoc' E. > 2 { entry do.
 	drawVoc ''
 elseif. (1 getCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
 	(> 2 { entry) drawTocEntryForum DisplayDetailRect
 elseif. TagCatString -: > 2 { entry do.
-	100000 drawTocEntryChildrenWithTree DisplayDetailRect
+	TagHiddenCatId drawTocEntryChildrenWithTree DisplayDetailRect
+elseif. (1 getCategoryId SearchCatString) = > 1 { entry do.
+	((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId > 2 { entry) drawTocEntryChildren DisplayDetailRect
 else.
 	categoryId =. (> 1 { entry) getCategoryId > 2 { entry
 	categoryId drawTocEntryChildren DisplayDetailRect
@@ -942,8 +978,14 @@ getCategoryId =: 4 : 0
 NB. x Parent id
 NB. y Category name (category names are guaranteed to be unique)
 NB. Return the rowid of the category
+if. x < 0 do. _1 return. end.
 result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" and parentid = ' , ": x
-if. 0 = # result do. _1 else. {. , > result end.  NB. {. to force it to a scalar shape.
+if. 0 = # result do. 
+	smoutput 'getCategoryId _1 for' ; x ; y
+	_1
+else. 
+	{. , > result 
+end.  NB. {. to force it to a scalar shape.
 )
 
 getParentId =: 3 : 0

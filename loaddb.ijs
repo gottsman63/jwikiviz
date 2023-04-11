@@ -470,6 +470,7 @@ sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ;
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 200000 ; '*Search' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 )
 
 finishLoadingForums =: 3 : 0
