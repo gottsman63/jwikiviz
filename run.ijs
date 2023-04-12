@@ -61,6 +61,29 @@ sqlinsert__db 'vocabulary' ; (;: 'groupnum pos row glyph monadicrank label dyadi
 )
 NB. =======================================
 
+NB. ============ Managing History, Search Results and Bookmarks =============
+getAncillarySearchResults =: 3 : 0
+NB. y Search category ids, each in a box.
+>@{: &. > sqlreadm__db &. > 'select title, link from wiki where categoryid = '&, &. > ": &. > <"(0) 9 7
+)
+
+writeAncillaryData =: 3 : 0
+history =. > {: sqlreadm__db 'select label, link from history'
+text =. ; (,&TAB &. > {."1 history) ,. ,&LF &. > (1 {"1 history)
+termParentId =. (SearchHiddenCatId getCategoryId SearchCatString)
+terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": termParentId
+termIds =. termParentId getCategoryId &. > terms
+groupRows =: (<"0 terms) ,. &. > >@{:@sqlreadm__db &. > 'select child, rowid from categories where parentid = '&, &. > ": &. > termIds
+groupIds =: {:"1 &. > groupRows
+results =: getAncillarySearchResults &. > groupIds
+''
+)
+
+loadAncillaryData =: 3 : 0
+)
+
+NB. =========================================================================
+
 NB. ==================== Form =====================
 NB. FormMouseXY =: 0 0
 VocMouseXY =: 0 0
@@ -211,15 +234,6 @@ invalidateDisplay =: 3 : 0
 wd 'set vocContext invalid'
 )
 NB. ======================================================
-
-NB. ============ Managing History, Search Results and Bookmarks =============
-writeAncillaryData =: 3 : 0
-)
-
-loadAncillaryData =: 3 : 0
-)
-
-NB. =========================================================================
 
 NB. =================== Search ===========================
 deleteCategoryIdAndDescendants =: 3 : 0
