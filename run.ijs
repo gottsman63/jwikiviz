@@ -33,11 +33,31 @@ db =: sqlopen_psqlite_ dbFile
 )
 
 log =: 3 : 0
-sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
-if. 0 = ? 100 do.
-	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
-	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
-end.
+smoutput y
+NB. sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
+NB. if. 0 = ? 100 do.
+NB. 	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
+NB. 	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
+NB. end.
+)
+
+loadDbIntoMemory =: 3 : 0
+db =: sqlcreate_psqlite_ ':memory:'
+sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
+sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
+sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
+
+diskDb =: sqlopen_psqlite_ dbFile
+forumData =. > {: sqlreadm__diskDb 'select * from forums'
+sqlinsert__db 'forums' ; (;: 'forumname year month subject author link') ; < (0 {"1 forumData) ; (> 1 {"1 forumData) ; (> 2 {"1 forumData) ; (3 {"1 forumData) ; (4 {"1 forumData) ; < (5 {"1 forumData) 
+wikiData =. > {: sqlreadm__diskDb 'select * from wiki'
+sqlinsert__db 'wiki' ; (;: 'title categoryid link') ; < (0 {"1 wikiData) ; (> 1 {"1 wikiData) ; < (2 {"1 wikiData)
+categoriesData =. > {: sqlreadm__diskDb 'select * from categories'
+sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count link') ; < (> 0 {"1 categoriesData) ; (> 1 {"1 categoriesData) ; (2 {"1 categoriesData) ; (> 3 {"1 categoriesData) ; (> 4 {"1 categoriesData) ; < (5 {"1 categoriesData)
+vData =. > {: sqlreadm__diskDb 'select * from vocabulary'
+sqlinsert__db 'vocabulary' ; (;: 'groupnum pos row glyph monadicrank label dyadicrank link') ; < (> 0 {"1 vData) ; (1 {"1 vData) ; (> 2 {"1 vData) ; (3 {"1 vData) ; (4 {"1 vData) ; (5 {"1 vData) ; (6 {"1 vData) ; < 7 {"1 vData
 )
 NB. =======================================
 
@@ -191,6 +211,15 @@ invalidateDisplay =: 3 : 0
 wd 'set vocContext invalid'
 )
 NB. ======================================================
+
+NB. ============ Managing History, Search Results and Bookmarks =============
+writeAncillaryData =: 3 : 0
+)
+
+loadAncillaryData =: 3 : 0
+)
+
+NB. =========================================================================
 
 NB. =================== Search ===========================
 deleteCategoryIdAndDescendants =: 3 : 0
