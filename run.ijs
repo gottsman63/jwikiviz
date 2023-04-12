@@ -578,6 +578,7 @@ for_i. i. # strings do.
 		if. 0 > i { ratios do. glrgb 127 127 127 else.  glrgb SectionColor end.
 		glfont TocBoldFont
 	else.
+		glrgb 0 0 0
 		glfont TocFont
 	end.
 	glbrush ''
