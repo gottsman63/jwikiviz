@@ -6,13 +6,18 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
-NB. The *Search results in the wiki table aren't being properly cleared out
+NB. Check afterr next reload: The *Search results in the wiki table aren't being properly cleared out
+NB. The url construction for forum posts is probably failing for cross-month files.
+NB. Search should select the search term in the TOC
+NB. Write a supplementary Search/History/Bookmark file(s)
+NB. "Bookmark" button next to the url field?
+NB. In-Memory DB takes a copy of the file DB, merges contents of Search/History/Booomarks, runs?
+NB. "Taller" & "Wider"
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
 NB. Support parallel download of forum posts.
 NB. Animate scroll rather than jumping when the travel is too high.
-NB. Saved pages mechanism.  "Save" button next to the url field?
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
@@ -187,6 +192,7 @@ if. y < 0 do. return. end.
 childIds =. > {: sqlreadm__db 'select rowid from categories where parentid = ' , ": y
 deleteCategoryIdAndDescendants &. > childIds
 sqlcmd__db 'delete from categories where rowid = ' , ": y
+sqlcmd__db 'delete from wiki where categoryid = ' , ": y
 )
 
 deleteCategoryIdDescendantsOnly =: 3 : 0
@@ -200,19 +206,15 @@ NB. y A search string
 NB. Remove the search records from the TOC.
 log 'clearSearches'
 terms1 =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": 1 getCategoryId SearchCatString
-smoutput 'terms1' ; terms1
 if. 0 < # terms1 do. clearSearch &. > terms1 end.
 terms2 =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": SearchHiddenCatId getCategoryId SearchCatString
-smoutput 'terms2' ; terms2
 if. 0 < # terms2 do. clearSearch &. > terms2 end.
 clearCache ''
 )
 
 clearSearch =: 3 : 0
 NB. y A search term
-wikiParentIds =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" AND parentid = ' , ": SearchHiddenCatId
-smoutput 'wikiParentIds' ; wikiParentIds
-sqlcmd__db &. > 'delete from wiki where categoryid = '&, &. > ": &. > wikiParentIds
+termId =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" AND parentid = ' , ": SearchHiddenCatId getCategoryId SearchCatString
 deleteCategoryIdAndDescendants (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
 deleteCategoryIdAndDescendants (1 getCategoryId SearchCatString) getCategoryId y
 clearCache ''
@@ -224,9 +226,9 @@ NB. Save parent ; child.
 term =.  y
 clearSearch term
 cols =. ;: 'level parentid child count parentseq link'
-sqlinsert__db 'categories' ; cols ; < 2 ; (1 getCategoryId SearchCatString) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 2 ; (1 getCategoryId SearchCatString) ; (< term) ; _1 ; 0 ; 'https://www.jsoftware.com'
 sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Wiki') ; 0 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 NB. sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 )
 
@@ -269,12 +271,11 @@ wikiCols =. ;: 'title categoryid link'
 html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
-NB. forumsId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Forums'
 termId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
+smoutput 'termId' ; termId
+NB. forumsId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Forums'
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
-if. 0 = # offsetLengths do.
-	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < 0 ; 3
-else.
+if. 0 < # offsetLengths do.
 	ol =. 1 2 3 {"2 offsetLengths
 	linkOffsets =. 0 {"(1) 0 {"2 ol
 	forumOffsets =. 0 {"(1) 1 {"2 ol
@@ -301,14 +302,21 @@ NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level'
 		sqlinsert__db 'wiki';wikiCols;<data
 	end.
 end.
+count =. {. , > > {: sqlreadm__db 'select sum(count) from categories where parentid = ' , ": termId
+smoutput 'count' ; count ; $ count
+otherTermId =. (1 getCategoryId SearchCatString) getCategoryId y
+parms =. 'categories' ; ('rowid = ' , ": otherTermId) ; (;: 'count level') ; < count ; 2
+smoutput 'parms' ; parms
+sqlupdate__db parms
 )
 
 search =: 3 : 0
-NB. y A search string.
+NB. y A search term.
 try.
 	log 'Searching for ' , y
 	addSearchToToc y
 	clearCache ''
+	selectSearchTerm y
 	invalidateDisplay ''
 	wd 'msgs'
 	searchWiki y
@@ -319,6 +327,13 @@ catchd.
 	log (13!:12) ''
 	log 'Db Error (if any): ' , dbError ''
 end.
+)
+
+selectSearchTerm =: 3 : 0
+NB. y A search term
+NB. Select the search term in the Table of Contents.
+headers =. 2 {"1 > {."1 getTocWikiDocs 1
+setTocOutlineRailSelectedIndex n + (< y) i.~ (n =. headers i. < SearchCatString) }. headers
 )
 
 NB. ================== Drawing ====================
@@ -426,7 +441,7 @@ s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
 CurrentHistoryEntry =: ''
-HistoryMenu =: (60 <. # HistoryMenu) {. HistoryMenu
+HistoryMenu =: (30 <. # HistoryMenu) {. HistoryMenu
 sqlcmd__db 'delete from history'
 sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 HistoryMenu
 )
@@ -545,12 +560,12 @@ if. maxLineCount < # strings do.
 		glcursor IDC_ARROW
 		if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glcursor IDC_SIZEVER end.
 		if. VocMouseXY pointInRect (xx + stripeWidth) , yy , (w - stripeWidth) , h do. glcursor IDC_POINTINGHAND end.
-		
 	end.
 	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb <. ScrollColor * 0.85 else. glrgb ScrollColor end.
 	glbrush ''
 	glpen 0
 	glrect xx , yy , stripeWidth , h
+elseif. VocMouseXY pointInRect rect do. glcursor IDC_ARROW
 end.
 for_i. i. # strings do.
 	lineHeight =. i { heights
@@ -560,10 +575,9 @@ for_i. i. # strings do.
 	glpen 0
 	if. 0 < i { ratios do. glrect (origin - margin , 0) , (<. (w - margin) * i { ratios) , lineHeight - 4 end.
 	if. i { headingFlags do. 
-		glrgb SectionColor
+		if. 0 > i { ratios do. glrgb 127 127 127 else.  glrgb SectionColor end.
 		glfont TocBoldFont
 	else.
-		glrgb 0 0 0
 		glfont TocFont
 	end.
 	glbrush ''
@@ -671,6 +685,7 @@ NB. y xx yy width height
 NB. Display the contents of the forum
 NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x
+if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 ForumName =: x
 'xx yy width height' =. y
 if. -. ForumCurrentName -: x do. 
@@ -748,6 +763,7 @@ NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parent ; category ; parentseq ; count ; link
 NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 'xx yy width height' =. y
+if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 categoryId =. x
 NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
 log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
@@ -811,6 +827,7 @@ NB. Render the immediate subcategories of *Tags in a scrollerField.
 NB. Render the sub-subcategories of the selected subcategory to the right with their pages.
 NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 'xx yy width height' =. y
+if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 margin =. 5
 subcatEntries =. > {: sqlreadm__db 'select level, parentid, child, parentseq, count, link, rowid from categories where parentid = ' , ": TagHiddenCatId getCategoryId TagCatString
 subcats =. 2 {"1 subcatEntries
@@ -853,6 +870,7 @@ NB. Render the descendants of the TocOutlineRailSelectedIndex category in xx yy 
 NB. Use multiple columns if necessary.  If there are too many columns, invoke drawTocEntryChildrenWithTree.
 NB. getTocOutlineRailEntries returns table of level ; parentid ; category ; parentseq ; count ; link
 'xx yy width height' =. y
+if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
 NB. log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
 margin =. 5
