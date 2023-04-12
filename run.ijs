@@ -6,9 +6,7 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
-NB. Check afterr next reload: The *Search results in the wiki table aren't being properly cleared out
 NB. The url construction for forum posts is probably failing for cross-month files.
-NB. Search should select the search term in the TOC
 NB. Write a supplementary Search/History/Bookmark file(s)
 NB. "Bookmark" button next to the url field?
 NB. In-Memory DB takes a copy of the file DB, merges contents of Search/History/Booomarks, runs?
@@ -160,15 +158,21 @@ wd 'timer 0'
 
 trigger_paint =: 3 : 0
 try.
+minW =. 500
+minH =. 500
+glfill 255 255 255 255
 'w h' =. ". wd 'get vocContext wh'
-if. (w > 300) *. h > 300 do.
+if. (w > minH) *. h > minW do.
 	scheduleBackgroundRender ''
- 	glfill 255 255 255 255
-NB. 	drawVoc ''
  	drawToc ''
 	drawFrameRate ''
 	backgroundRenderComplete ''
-NB.	manageMouseMove VocMouseXY
+else.
+	glrgb 0 0 0
+	gltextcolor ''
+	glfont SectionFont
+	if. w <: minW do. 0 0 drawStringAt 'Wider' end.
+	if. h <: minH do. 0 20 drawStringAt 'Taller' end.
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
