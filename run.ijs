@@ -7,10 +7,9 @@ NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
 NB. The url construction for forum posts is probably failing for cross-month files.
-NB. Write a supplementary Search/History/Bookmark file(s)
+NB. Write a supplementary Search/History/Bookmark file(s) or separate database
 NB. "Bookmark" button next to the url field?
 NB. In-Memory DB takes a copy of the file DB, merges contents of Search/History/Booomarks, runs?
-NB. "Taller" & "Wider"
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -119,6 +118,10 @@ vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
+vizform_browser_curl =: 3 : 0
+CurrentHistoryEntry =: 1 { {: wdq
+)
+
 vizform_searchBox_button =: 3 : 0
 try.
 	search searchBox
@@ -149,8 +152,8 @@ sys_timer_z_ =: 3 : 0
 try.
 	checkHistoryMenu_base_ ''
 catch.
-	log (13!:12) ''
-	log dbError ''
+	smoutput (13!:12) ''
+	smoutput dbError ''
 end.
 )
 
@@ -483,7 +486,7 @@ end.
 if. LastUrlLoaded -: url do. return. end.
 log 'Loading url ' , url
 wd 'set browser url *' , url 
-CurrentHistoryEntry =: url ; 1 { y
+NB. CurrentHistoryEntry =: url ; 1 { y
 CurrentHistoryLoadTime =: (6!:1) ''
 LastUrlLoaded =: url
 )
