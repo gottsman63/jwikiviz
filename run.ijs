@@ -1,3 +1,5 @@
+clear ''
+
 load 'data/sqlite'
 load 'web/gethttp'
 load 'regex'
@@ -48,7 +50,6 @@ sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
-
 diskDb =: sqlopen_psqlite_ dbFile
 forumData =. > {: sqlreadm__diskDb 'select * from forums'
 sqlinsert__db 'forums' ; (;: 'forumname year month subject author link') ; < (0 {"1 forumData) ; (> 1 {"1 forumData) ; (> 2 {"1 forumData) ; (3 {"1 forumData) ; (4 {"1 forumData) ; < (5 {"1 forumData) 
@@ -63,23 +64,42 @@ NB. =======================================
 
 NB. ============ Managing History, Search Results and Bookmarks =============
 getAncillarySearchResults =: 3 : 0
-NB. y Search category ids, each in a box.
->@{: &. > sqlreadm__db &. > 'select title, link from wiki where categoryid = '&, &. > ": &. > <"(0) 9 7
+NB. y Term.
+termParentId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
+subcats =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": termParentId
+subcatIds =. termParentId getCategoryId &. > subcats
+subcatResults =. >@{: &. > sqlreadm__db &. > 'select title, link from wiki where categoryid = '&, &. > ": &. > subcatIds
+; (< < y) ,. &. > (<"0 subcats) ,. &. > subcatResults
 )
 
 writeAncillaryData =: 3 : 0
 history =. > {: sqlreadm__db 'select label, link from history'
-text =. ; (,&TAB &. > {."1 history) ,. ,&LF &. > (1 {"1 history)
 termParentId =. (SearchHiddenCatId getCategoryId SearchCatString)
 terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": termParentId
-termIds =. termParentId getCategoryId &. > terms
-groupRows =: (<"0 terms) ,. &. > >@{:@sqlreadm__db &. > 'select child, rowid from categories where parentid = '&, &. > ": &. > termIds
-groupIds =: {:"1 &. > groupRows
-results =: getAncillarySearchResults &. > groupIds
-''
+searchResults =. ; getAncillarySearchResults &. > terms
+((3!:1) (< history) ,  < searchResults) (1!:2) < jpath '~temp/jviewer.dat'
+)
+
+loadAncillarySearchResults =: 4 : 0
+NB. x A search term ; A parent sequence number
+NB. y A table of category ; title ; link
+'term parentSeq' =. x
+categories =. ~. 0 {"1 y
+titles =. 1 {"1 y
+links =. 2 {"1 y
+termParentId =. (SearchHiddenCatId getCategoryId SearchCatString)
+sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count link') ; < 1 ; termParentId ; categories ; parentSeq ; <''
+NB. data =. (2 #~ # titles) ; 
+NB. sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count link') ; <
 )
 
 loadAncillaryData =: 3 : 0
+if. -. fexist fname =. jpath '~temp/jviewer.dat' do. return. end.
+'history searchResults' =: (3!:2) (1!:1) < fname
+if. 0 < # history do.
+end.
+if. 0 < # searchResults do.
+end.
 )
 
 NB. =========================================================================
@@ -1268,7 +1288,8 @@ gltextcolor ''
 )
 
 go =: 3 : 0
-dbOpenDb ''
+NB. dbOpenDb ''
+loadDbIntoMemory ''
 loadVoc ''
 buildForm ''
 layoutForm ''
