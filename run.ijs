@@ -63,6 +63,8 @@ sqlinsert__db 'vocabulary' ; (;: 'groupnum pos row glyph monadicrank label dyadi
 NB. =======================================
 
 NB. ============ Managing History, Search Results and Bookmarks =============
+AncillaryData =: ''
+
 getAncillarySearchResults =: 3 : 0
 NB. y Term.
 termParentId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
@@ -72,12 +74,24 @@ subcatResults =. >@{: &. > sqlreadm__db &. > 'select title, link from wiki where
 ; (< < y) ,. &. > (<"0 subcats) ,. &. > subcatResults
 )
 
-writeAncillaryData =: 3 : 0
+saveAncillaryData =: 3 : 0
+NB. Put search results and the History Menu into the AncillaryData global.
+NB. Or write them to a .dat file with (3!:0).  (You need permission.  Yuck.)
 history =. > {: sqlreadm__db 'select label, link from history'
 termParentId =. (SearchHiddenCatId getCategoryId SearchCatString)
 terms =. > {: sqlreadm__db 'select child from categories where parentid = ' , ": termParentId
 searchResults =. ; getAncillarySearchResults &. > terms
-((3!:1) (< history) ,  < searchResults) (1!:2) < jpath '~temp/jviewer.dat'
+AncillaryData =: (< history) ,  < searchResults
+)
+
+loadAncillaryData =: 3 : 0
+NB. Take the ancillary data (search results, History Menu) from AncillaryData and write them to the database.
+NB. What if the data formats change across versions of the client?  The database cache?
+NB. We can force the clients to load only compatible versions of the cache.
+NB. We can force new clients to download new versions of the cache.
+NB. The cache needs a version table with one row.
+NB. Can the client update itself?  Can the client check for updates (maybe by date or size)?
+NB. *INFO TOC entry with client/cached version information, announcements, instructions.  Maybe a Web page.
 )
 
 loadAncillarySearchResults =: 4 : 0
