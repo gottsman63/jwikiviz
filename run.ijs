@@ -55,6 +55,7 @@ wd       'cc searchBox edit;'
 wd      'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
+wd   'cc moat isigraph'
 wd   'bin v;'
 wd     'bin h;'
 wd       'cc numb checkbox; cn Numb;'
@@ -68,18 +69,19 @@ wd 'bin z;'
 
 layoutForm =: 3 : 0
 'w h' =. ". wd 'getp wh'
-winW =: w - 20
-winH =: h - 20
+winW =. w - 20
+winH =. h - 20
 controlHeight =. 30
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": <. (winW * 0.08) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
+wd 'set moat maxwh ' , (": 20 , winH - controlHeight) , ';'
 wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
 DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
-wd 'timer 200'
+wd 'timer 100'
 )
 
 vizform_default =: 3 : 0
@@ -118,6 +120,10 @@ vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
+vizform_moat_mmove =: 3 : 0
+QueuedUrl =: ''
+)
+
 vizform_browser_curl =: 3 : 0
 CurrentHistoryEntry =: 1 { {: wdq
 )
@@ -134,8 +140,7 @@ end.
 )
 
 vizform_history_select =: 3 : 0
-queueLoadPage s =. (". history_select) { HistoryMenu
-LastUrlLoaded =: '' NB. Make sure selecting the top item in the History menu will still load that page.
+loadPage (". history_select) { HistoryMenu
 )
 
 vizform_launch_button =: 3 : 0
@@ -150,7 +155,7 @@ wd 'pclose'
 
 sys_timer_z_ =: 3 : 0
 try.
-	checkHistoryMenu_base_ ''
+	checkQueuedUrlTime_base_ ''
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError ''
@@ -371,7 +376,6 @@ HighlightColor =: 192 64 64
 SelectionColor =: 0 0 192
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
 DefaultUrl =: '' NB. 'https://www.jsoftware.com' NB. The URL to load when no link is being hovered over. 
-LastUrlLoaded =: ''
 NB. Toc =: '' NB. path ; doc name ; document link
 NB. TocOutline =: '' NB. level ; path component ; full path
 TocFont =: 'arial 16'
@@ -393,6 +397,8 @@ SearchHiddenCatId =: 200000
 TagCatString =: '*Tags'
 TagHiddenCatId =: 100000
 Numb =: 0
+QueuedUrl =: ''
+QueuedUrlTime =: 0
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -427,27 +433,27 @@ NB. y A rect (x y w h)
 (rx < px) *. (px < rx + rw) *. (py > ry) *. (py < ry + rh)
 )
 
-getDocumentSectionGeometryForMouseXY =: 3 : 0
-, DocumentSectionGeometry #~ VocMouseXY pointInRect"1 1 (1 2 3 4) {"1 DocumentSectionGeometry
+checkQueuedUrlTime =: 3 : 0
+if. (0.25 < ((6!:1) '') - QueuedUrlTime) *. -. QueuedUrl -: '' do. 
+	smoutput 'Loading the page...'
+	loadPage QueuedUrl ; '***' 
+	QueuedUrl =: ''
+end.
 )
 
-checkDefaultUrl =: 3 : 0
-if. LastUrlLoaded -: '' do. loadPage DefaultUrl end. 
-)
-
-queueLoadPage =: 3 : 0
-NB. y Url ; Optional title
-if. 6 < # y do. entry =. (< y) , a: else. entry =. y end.
-loadPage entry
+queueUrl =: 3 : 0
+NB. y A url to queue for delayed loading ; A title (discarded for now)
+QueuedUrl =: > {. y
+QueuedUrlTime =: (6!:1) ''
 )
 
 addToHistoryMenu =: 3 : 0
-if. CurrentHistoryEntry -: '' do. return. end.
-if. HistoryMenu -: '' do. HistoryMenu =: ,: CurrentHistoryEntry else. HistoryMenu =: ~. CurrentHistoryEntry , HistoryMenu end.
+NB. y Label ; Link
+if. y -: '' do. return. end.
+if. HistoryMenu -: '' do. HistoryMenu =: ,: y else. HistoryMenu =: ~. y , HistoryMenu end.
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
-CurrentHistoryEntry =: ''
 HistoryMenu =: (30 <. # HistoryMenu) {. HistoryMenu
 sqlcmd__db 'delete from history'
 sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 HistoryMenu
@@ -460,17 +466,7 @@ wd 'set history items *' , s
 wd 'set history select 0'
 )
  
-checkHistoryMenu =: 3 : 0
-NB. Possibly prepend the current page to the history menu.
-NB. Called from the timer.
-if. (1.5 < ((6!:1) '') - CurrentHistoryLoadTime) *. -. '' -: CurrentHistoryEntry do.
-	addToHistoryMenu ''
-end.
-)
-
 HistoryMenu =: '' NB. Table of Title ; Link
-CurrentHistoryEntry =: '' NB. Title ; Link
-CurrentHistoryLoadTime =: 0 NB. The time at which this entry was first loaded.
 
 loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
@@ -486,9 +482,6 @@ end.
 if. LastUrlLoaded -: url do. return. end.
 log 'Loading url ' , url
 wd 'set browser url *' , url 
-NB. CurrentHistoryEntry =: url ; 1 { y
-CurrentHistoryLoadTime =: (6!:1) ''
-LastUrlLoaded =: url
 )
 
 NB. ======================== Cached Drawing ===========================
@@ -507,7 +500,7 @@ if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. (; y) ; '----'
 if. '*' = {. urlCommand do.
 	". }. urlCommand
 else. 
-	queueLoadPage urlCommand ; name
+	queueUrl urlCommand ; name
 end.
 x drawReversibleSelection SelectionColor
 )
@@ -678,7 +671,7 @@ entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTa
 subjects =. ~. {."1 entries
 subject =. TocEntryForumSubjectIndex { subjects
 authorEntry =: y { ForumCacheTable #~ subject = 2 {"1 ForumCacheTable
-queueLoadPage ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 4 { authorEntry) ; LF -.~ > subject
+queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 4 { authorEntry) ; LF -.~ > subject
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
@@ -711,7 +704,7 @@ glrgb 255 255 255
 glbrush ''
 margin =. 5
 glrect xx , yy , width , height
-years =. /:~ ~. > {."1 ForumCacheTable
+years =. \:~ ~. > {."1 ForumCacheTable
 if. 0 = # years do. return. end.
 months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
 TocEntryForumMonthIndex =: TocEntryForumMonthIndex <. <: # months
@@ -755,7 +748,7 @@ glclip 0 0 10000 100000
 setTocEntryChildCategoryIndex =: 3 : 0
 NB. y Index of the category whose children should be displayed.
 TocEntryChildCategoryIndex =: y
-queueLoadPage (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
+queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
 
 TocEntryChildScrollIndex =: 0
@@ -925,7 +918,7 @@ setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
 entry =. y { 0 getTocOutlineRailEntries MaxTocDepth  NB. level ; parent ; category ; parentseq ; count ; link
-queueLoadPage (> 5 { entry) ; > 2 { entry
+queueUrl (> 5 { entry) ; > 2 { entry
 )
 
 drawTocRail =: 4 : 0
@@ -1201,7 +1194,7 @@ selectVocGlyph =: 3 : 0
 NB. y A glyph
 VocSelectedGlyph =: , y
 entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
-queueLoadPage n =: (> 7 { entry) ; > 5 { entry
+queueUrl n =: (> 7 { entry) ; > 5 { entry
 )
 
 drawVoc =: 3 : 0
