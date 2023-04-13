@@ -87,7 +87,7 @@ wd 'timer 100'
 vizform_default =: 3 : 0
 eventType =. > {: 5 { wdq
 if. eventType -: 'close' do. wd 'pclose ;' end.
-(> {: 5 { wdq) (1!:2) 2
+NB. (> {: 5 { wdq) (1!:2) 2
 )
 
 vizform_resize =: 3 : 0
@@ -435,7 +435,6 @@ NB. y A rect (x y w h)
 
 checkQueuedUrlTime =: 3 : 0
 if. (0.25 < ((6!:1) '') - QueuedUrlTime) *. -. QueuedUrl -: '' do. 
-	smoutput 'Loading the page...'
 	loadPage QueuedUrl ; '***' 
 	QueuedUrl =: ''
 end.
