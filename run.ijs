@@ -656,7 +656,7 @@ setTocEntryForumSubjectIndex =: 3 : 0
 NB. The index of the subject that's currently highlighted
 TocEntryForumSubjectIndex =: y
 ForumAuthorScrollIndex =: 0
-setTocEntryForumAuthorIndex 0
+TocEntryForumAuthorIndex =: 0
 )
 
 TocEntryForumAuthorIndex =: 0
@@ -664,19 +664,15 @@ TocEntryForumAuthorIndex =: 0
 setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
-months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = > {."1 ForumCacheTable
-month =. TocEntryForumMonthIndex { months
-entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable
-subjects =. ~. {."1 entries
-subject =. TocEntryForumSubjectIndex { subjects
-authorEntry =: y { ForumCacheTable #~ subject = 2 {"1 ForumCacheTable
-queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , > 4 { authorEntry) ; LF -.~ > subject
+'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
+queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , link) ; LF -.~ > subject
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
 ForumCurrentName =: ''
 ForumSubjectScrollIndex =: 0
 ForumAuthorScrollIndex =: 0
+ForumAuthorEntries =: ''  NB. Year ; Month ; Subject ; Author ; Link
 ForumName =: ''
 ForumYearBumpCount =: 0
 ForumMonthBumpCount =: 0
@@ -737,16 +733,20 @@ monthOrigins drawStringAt &. > monthStrings
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
 TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
 (TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
-entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable
+entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
 if. 0 = # entries do. return. end.
-subjects =. ~. {."1 entries
-ratios =. authorCounts % >./ authorCounts =. > # &. > ({."1 entries) </. entries
+subjects =. ~. 2 {"1 entries
+ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
+smoutput 'authorCounts' ; authorCounts
+smoutput 'ratios' ; ratios
+NB. ratios =. authorCounts % >./ authorCounts =. > # &. > (2 {"1 entries) </. entries
 subject =. TocEntryForumSubjectIndex { subjects
-authorEntries =. entries #~ ({."1 entries) = subject  NB. Check all months' posts since conversations may span months.
-authors =. 1 {"1 authorEntries
-links =.   2 {"1 authorEntries
+ForumAuthorEntries =: ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
+smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
+authors =. 3 {"1 ForumAuthorEntries
+links =.   4 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
-authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
+NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
 ForumSubjectScrollIndex =: drawScrollerField subjRect ; subjects ; subjectCommands ; ratios ; (1 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex
 ForumAuthorScrollIndex =: drawScrollerField authRect ; authors ; authorCommands ; (0 #~ # authors) ; (0 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex
