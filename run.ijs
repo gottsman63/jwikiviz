@@ -6,14 +6,14 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
+NB. Drop the .html from the forum post links (save 0.5 megabytes!).
 NB. The url construction for forum posts is probably failing for cross-month files.
-NB. Write a supplementary Search/History/Bookmark file(s) or separate database
 NB. "Bookmark" button next to the url field?
-NB. In-Memory DB takes a copy of the file DB, merges contents of Search/History/Booomarks, runs?
+NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
-NB. Support parallel download of forum posts.
+NB. Support parallel download of forum and wiki documents.
 NB. Animate scroll rather than jumping when the travel is too high.
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
@@ -678,6 +678,8 @@ ForumCurrentName =: ''
 ForumSubjectScrollIndex =: 0
 ForumAuthorScrollIndex =: 0
 ForumName =: ''
+ForumYearBumpCount =: 0
+ForumMonthBumpCount =: 0
 
 drawTocEntryForum =: 4 : 0
 NB. x The name of the forum
@@ -696,28 +698,39 @@ if. -. ForumCurrentName -: x do.
 	TocEntryForumSubjectIndex =: 0
 	TocEntryForumMonthIndex =: 11
 end.
+margin =. 5
 glclip 0 0 10000 100000
 glrgb 0 0 0
 glpen 1
 glrgb 255 255 255
 glbrush ''
-margin =. 5
 glrect xx , yy , width , height
+colWidth =. <. -: width - +: margin
+colHeight =. height
+subjRect =. (xx + margin + 100) , yy , colWidth, colHeight
+authRect =. subjRect + (colWidth + margin) , 0 0 0
 years =. \:~ ~. > {."1 ForumCacheTable
 if. 0 = # years do. return. end.
 months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
 TocEntryForumMonthIndex =: TocEntryForumMonthIndex <. <: # months
+timeLineHeight =. 20
 month =. TocEntryForumMonthIndex { months
-yearOrigins =. ((xx + margin) + 30 * i. # years) ,. yy + margin
+if. (xx > {. VocMouseXY) +. ({. VocMouseXY) > {. subjRect do. 
+	ForumYearBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight
+	ForumMonthBumpCount =: ForumYearBumpCount
+end.
+if. (xx < {. VocMouseXY) *. ({. VocMouseXY) < xx + 40 do. ForumMonthBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight end.
+yearBumpArray =. (ForumYearBumpCount # 0) , 30 # 3 * timeLineHeight
+monthBumpArray =. (ForumMonthBumpCount # 0) , 12 # 3 * timeLineHeight
+yearOrigins =. (xx + margin) ,. ((# years) {. yearBumpArray) + yy + margin + timeLineHeight * i. # years
 yearStrings =. '`'&, &. > _2&{. &. > ": &. > years
 glrgb SectionColor
 gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthStrings =. months { ShortMonths
-monthOrigins =. (# months) {. <"1 (xx + margin + 5 + 40 * i. 12) ,. yy + 20 + margin
-monthAdjustments =. 60 * ({."1 > monthOrigins) > (0 >. <: years i. TocEntryForumYear) { {."1 yearOrigins
-monthOrigins =. <"1 (> monthOrigins) + monthAdjustments ,. 0
+monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
+NB. monthAdjustments =. 60 * ({."1 > monthOrigins) > (0 >. <: years i. TocEntryForumYear) { {."1 yearOrigins
 monthOrigins drawStringAt &. > monthStrings
 (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
@@ -726,10 +739,6 @@ TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
 (TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
 entries =. 2 3 4 {"1 ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable
 if. 0 = # entries do. return. end.
-colWidth =. <. -: width - +: margin
-colHeight =. height - 3 * TocLineHeight
-subjRect =. (xx + margin) , (yy + 50) , colWidth, colHeight
-authRect =. subjRect + (colWidth + margin) , 0 0 0
 subjects =. ~. {."1 entries
 ratios =. authorCounts % >./ authorCounts =. > # &. > ({."1 entries) </. entries
 subject =. TocEntryForumSubjectIndex { subjects
