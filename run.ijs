@@ -1200,8 +1200,8 @@ drawVoc =: 3 : 0
 glrgb 255 255 255
 glbrush ''
 glrect DetailRect
-225 30 drawVocSections 0 1 2 3 4 5
-510 30 drawVocSections 6 7 8 9 10 11
+225 30 drawVocSections 0 1 2 3 4 5 6
+510 30 drawVocSections 7 8 9 10 11
 )
 NB. ============================= End Voc ===============================
 
