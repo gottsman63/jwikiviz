@@ -125,7 +125,7 @@ QueuedUrl =: ''
 )
 
 vizform_browser_curl =: 3 : 0
-CurrentHistoryEntry =: 1 { {: wdq
+addToHistoryMenu 1 { {: wdq
 )
 
 vizform_searchBox_button =: 3 : 0
