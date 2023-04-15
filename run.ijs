@@ -1,3 +1,5 @@
+clear ''
+
 load 'data/sqlite'
 load 'web/gethttp'
 load 'regex'
@@ -434,9 +436,9 @@ NB. y A rect (x y w h)
 )
 
 checkQueuedUrlTime =: 3 : 0
-if. (0.25 < ((6!:1) '') - QueuedUrlTime) *. -. QueuedUrl -: '' do. 
-	loadPage QueuedUrl ; '***' 
-	QueuedUrl =: ''
+if. (0.25 < ((6!:1) '') - QueuedUrlTime_base_) *. -. QueuedUrl_base_ -: '' do. 
+	loadPage_base_ QueuedUrl_base_ ; '***' 
+	QueuedUrl_base_ =: ''
 end.
 )
 
@@ -464,11 +466,12 @@ s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
 )
- 
+
 HistoryMenu =: '' NB. Table of Title ; Link
 
 loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
+try.
 if. 0 = # y do. return. end.
 url =. > {. y
 if. url -: '' do. return. end.
@@ -478,9 +481,11 @@ if. 'Category:' -: 9 {. url do.
 elseif. -. 'http' -: 4 {. url do.
 	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/' , url
 end.
-if. LastUrlLoaded -: url do. return. end.
 log 'Loading url ' , url
-wd 'set browser url *' , url 
+wd 'set browser url *' , url
+catch.
+	smoutput (13!:12) ''
+end.
 )
 
 NB. ======================== Cached Drawing ===========================
@@ -656,7 +661,7 @@ setTocEntryForumSubjectIndex =: 3 : 0
 NB. The index of the subject that's currently highlighted
 TocEntryForumSubjectIndex =: y
 ForumAuthorScrollIndex =: 0
-TocEntryForumAuthorIndex =: 0
+setTocEntryForumAuthorIndex 0
 )
 
 TocEntryForumAuthorIndex =: 0
@@ -693,6 +698,7 @@ if. -. ForumCurrentName -: x do.
 	TocEntryForumYear =: 2023
 	TocEntryForumSubjectIndex =: 0
 	TocEntryForumMonthIndex =: 11
+	ForumAuthorEntries =: ''
 end.
 margin =. 5
 glclip 0 0 10000 100000
@@ -726,7 +732,6 @@ glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthStrings =. months { ShortMonths
 monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
-NB. monthAdjustments =. 60 * ({."1 > monthOrigins) > (0 >. <: years i. TocEntryForumYear) { {."1 yearOrigins
 monthOrigins drawStringAt &. > monthStrings
 (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
@@ -735,14 +740,13 @@ TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
 (TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
 entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
 if. 0 = # entries do. return. end.
-subjects =. ~. 2 {"1 entries
+subjects =: ~. 2 {"1 entries
 ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
-smoutput 'authorCounts' ; authorCounts
-smoutput 'ratios' ; ratios
 NB. ratios =. authorCounts % >./ authorCounts =. > # &. > (2 {"1 entries) </. entries
-subject =. TocEntryForumSubjectIndex { subjects
+subjects =. ~. allSubjects
+subject =. TocEntryForumSubjectIndex { subjects 
 ForumAuthorEntries =: ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
-smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
+NB. smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
 authors =. 3 {"1 ForumAuthorEntries
 links =.   4 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
