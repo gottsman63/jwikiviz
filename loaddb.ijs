@@ -307,7 +307,9 @@ titleOffsetLengths =. 1 {"2 offsetLengths
 links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 html
 titles =. (<"0 {:"1 titleOffsetLengths) {. &. > ({."1 titleOffsetLengths) <@}."0 1 html
 nuVocId =. 1 getCategoryId '*NuVoc'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 2 ; nuVocId ; 'Ancillary Pages' ; (# titles) ; 0 ; 'https://code.jsoftware.com/wiki/NuVoc'
+data =. 2 ; nuVocId ; (nextCatId 1) ; 'Ancillary Pages' ; (# titles) ; 0 ; 'https://code.jsoftware.com/wiki/NuVoc'
+smoutput data
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data
 ancillaryId =. nuVocId getCategoryId 'Ancillary Pages'
 sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; < (ancillaryId #~ # links) ; titles ; <links
 )
@@ -358,10 +360,17 @@ NB. Load all of the categories and remove the existing tree categories from the 
 NB. Create a category called *Tags in the categories table and put the Tag categories under it.
 NB. Load all of the Tag categories' pages into the wiki table.
 NB. html =. gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
-anchorId =. 100000
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Tags' ; 0 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; anchorId ; '*Tags' ; 0 ; 2 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
-treeCategories =. , > {: sqlreadm__db 'select distinct child from categories'
+smoutput 'loadTagCategories'
+anchorId =. 500000
+data1 =. 1 ; 1 ; (nextCatId 1) ; '*Tags' ; 0 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
+cols1 =. ;: 'level parentid categoryid category count parentseq link'
+smoutput 'data1' ; data1
+smoutput 'cols1' ; cols1
+sqlinsert__db 'categories' ; cols1 ; < data1
+data2 =. 1 ; anchorId ; (nextCatId 1) ; '*Tags' ; 0 ; 2 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
+smoutput ,. 'data2' ; data2
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data2
+treeCategories =. , > {: sqlreadm__db 'select distinct category from categories'
 html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000"'
 pat =. rxcomp '<li>[^h]+href="([^"]+)"[^>]+>([^<]+)\<'
 offsetLengths =. }."2 pat rxmatches html
@@ -374,24 +383,30 @@ sieve =. -. (categories =: catLengths <@{."0 1 catOffsets }."0 1 html) e. treeCa
 categories =. sieve # categories
 links =. sieve # links
 headerCategories =. ,&'...' &. > > {. &. > _15 <\ categories
+smoutput ,. 'headerCategories' ; headerCategories
 count =. # headerCategories
-data =. (count # 1) ; (count # anchorId getCategoryId '*Tags') ; headerCategories ; (count # 0) ; (i. count) ; < count # < ''
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < data
+data3 =. (count # 1) ; (count # anchorId getCategoryId '*Tags') ; (nextCatId count) ; headerCategories ; (count # 0) ; (i. count) ; < count # < ''
+smoutput ,. 'data3' ; data3
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data3
 headerIds =. (anchorId getCategoryId '*Tags')&getCategoryId &. > headerCategories
-for_entry. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
+for_entry. k =: ((# categories) {. 15 # headerIds) ,. categories ,. links do.
 	'headerId category link' =. entry
 	catHtml =. (2!:0) 'curl "' , link , '"'
 	catHtml =. (I. 'printfooter' E. catHtml) {. catHtml =. (I. 'mw-category-generated' E. catHtml) }. catHtml
 	pagePat =. 'href="([^"]+)"[^>]+>([^<]+)<'
 	pageOffsetLengths =. }."2 pagePat rxmatches catHtml
-	sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 5 ; headerId ; category ; (# pageOffsetLengths) ; entry_index ; link
+	data4 =. 5 ; headerId ; (nextCatId 1) ; category ; (# pageOffsetLengths) ; entry_index ; link
+	smoutput ,. 'data4' ; data4
+	sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data4
 	catId =. headerId getCategoryId category
+	smoutput 'headerId category => catId' ; headerId ; category ; catId
 	for_pageOl. pageOffsetLengths do.
 		'pageLinkOffset pageLinkLength' =. 0 { pageOl
 		'pageTitleOffset pageTitleLength' =. 1 { pageOl
 		pageLink =. 'https://code.jsoftware.com' , pageLinkLength {.  pageLinkOffset }. catHtml
 		pageTitle =. pageTitleLength {. pageTitleOffset }. catHtml
-		sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; < catId ; pageTitle ; pageLink
+		data5 =. catId ; pageTitle ; pageLink
+		sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; < data5
 	end.
 	
 end.
@@ -399,11 +414,10 @@ end.
 
 visitedPairs =: ,: a: , a:
 visitedChildren =: ''
-pairsToVisit =: ,:  0 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.  Note that rowid begins numbering at 1.
+pairsToVisit =: ,:  0 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.
 emergencySeq =: 500
 
 processCategory =: 3 : 0
-NB. y Name of a child category. 
 NB. Retrieve and processs the HTML.  Recurse to handle any child categories.
 while. 0 < # pairsToVisit do.
 	'level parentId childCategory' =. {. pairsToVisit
@@ -434,7 +448,8 @@ while. 0 < # pairsToVisit do.
 	else.
 		parentSeq =. ". ({: ol) {. ({. ol) }. viewSourceHtml 
 	end.
-	parms =.'categories' ; (;: 'level parentid child parentseq link') ; < (level + 1) ; parentId ; childCategory ; parentSeq ; ('Category:' , childCategory)
+	parms =.'categories' ; (;: 'level parentid categoryid category parentseq link') ; < (level + 1) ; parentId ; (nextCatId 1) ; childCategory ; parentSeq ; ('Category:' , childCategory)
+	smoutput parms
 	sqlinsert__db parms
 	count =. 0
 	categoryId =. parentId getCategoryId childCategory
@@ -456,7 +471,7 @@ while. 0 < # pairsToVisit do.
 		sqlcmd__db 'commit transaction'
 	end.
 	smoutput 'parentId childCategory' ; parentId ; childCategory
-	parms =.'categories' ; ('rowid = ' , ": categoryId) ; (;: 'count') ; < count
+	parms =.'categories' ; ('categoryid = ' , ": categoryId) ; (;: 'count') ; < count
 	sqlupdate__db parms
 	childCategories =. ('&#039;' ; '''')&rxrplc &. > categories
 NB.	childCategories =. childCategories -. visitedChildren
@@ -470,41 +485,42 @@ end.
 
 setupTables =: 3 : 0
 NB. Note that these should be the first rows inserted into the categories table.
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid child parentseq count') ; < 0 ; 0 ; 0 ; '' ; 0 ; 0
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid child count parentseq link') ; < 1 ; 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; 2 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; 3 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 200000 ; '*Search' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category parentseq count') ; < 0 ; 0 ; 0 ; '' ; 0 ; 0
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 2 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 3 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 4 ; '*Search' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 )
 
 finishLoadingForums =: 3 : 0
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
 forumId =. 1 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
-cols =. ;: 'level parentid child parentseq count link'
-data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< , forumNames) , (< i. # links) , (< 0 #~ # forumNames) , < , links
+cols =. ;: 'level parentid categoryid category parentseq count link'
+data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< nextCatId # links) , (< , forumNames) , (< i. # links) , (< 0 #~ # forumNames) , < , links
+smoutput data
 sqlinsert__db 'categories';cols;<data
 )
 
 getCategory =: 3 : 0
 NB. y Category Id
 NB. Return the category string, empty string if none.
-result =. > {: sqlreadm__db 'select child from categories where categoryid = ' , ": y
+result =. > {: sqlreadm__db 'select category from categories where categoryid = ' , ": y
 if. 0 = # result do. '' else. > , > result end.
 )
 
 getCategoryIdNoParent =: 3 : 0
 NB. y Category string
 NB. Return the id or _1.
-result =. > {: sqlreadm__db 'select categoryid from categories where child = "' , y , '"'
+result =. > {: sqlreadm__db 'select categoryid from categories where category = "' , y , '"'
 if. 0 = # result do. _1 else. > , > result end.
 )
 
 getCategoryId =: 4 : 0
 NB. x Parent id
-NB. y Category name (category names are guaranteed to be unique)
+NB. y Category name (category names are guaranteed to be unique) 
 NB. Return the rowid of the category
-result =. > {: sqlreadm__db 'select categoryid from categories where child = "' , y , '" and parentid = ' , ": x
+result =. > {: sqlreadm__db 'select categoryid from categories where category = ''' , (n =: ('''' ; '''''') rxrplc y) , ''' and parentid = ' , ": x
 if. 0 = # result do. _1 else. , > result end.
 )
 
