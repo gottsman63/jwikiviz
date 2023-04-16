@@ -13,7 +13,6 @@ forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 
-
 fixQuotes =: 3 : 0
 NB. y A glyph that may have stray quotation marks
 NB. Strip them.
@@ -471,10 +470,10 @@ end.
 
 setupTables =: 3 : 0
 NB. Note that these should be the first rows inserted into the categories table.
-sqlinsert__db 'categories' ; (;: 'level parentid child parentseq count') ; < 0 ; 0 ; '' ; 0 ; 0
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid child parentseq count') ; < 0 ; 0 ; 0 ; '' ; 0 ; 0
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid child count parentseq link') ; < 1 ; 1 ; 1 ; '*NuVoc' ; 0 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; 2 ; '*Search' ; 0 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 1 ; 3 ; '*Forums' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid child count parentseq link') ; < 1 ; 200000 ; '*Search' ; 0 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 )
 
@@ -490,14 +489,14 @@ sqlinsert__db 'categories';cols;<data
 getCategory =: 3 : 0
 NB. y Category Id
 NB. Return the category string, empty string if none.
-result =. > {: sqlreadm__db 'select child from categories where rowid = ' , ": y
+result =. > {: sqlreadm__db 'select child from categories where categoryid = ' , ": y
 if. 0 = # result do. '' else. > , > result end.
 )
 
 getCategoryIdNoParent =: 3 : 0
 NB. y Category string
 NB. Return the id or _1.
-result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '"'
+result =. > {: sqlreadm__db 'select categoryid from categories where child = "' , y , '"'
 if. 0 = # result do. _1 else. > , > result end.
 )
 
@@ -505,14 +504,44 @@ getCategoryId =: 4 : 0
 NB. x Parent id
 NB. y Category name (category names are guaranteed to be unique)
 NB. Return the rowid of the category
-result =. > {: sqlreadm__db 'select rowid from categories where child = "' , y , '" and parentid = ' , ": x
+result =. > {: sqlreadm__db 'select categoryid from categories where child = "' , y , '" and parentid = ' , ": x
 if. 0 = # result do. _1 else. , > result end.
 )
 
 getParentId =: 3 : 0
 NB. y Category id
 NB. Return the rowid of the category's parent.
-, > , > {: sqlreadm__db 'select parentid from categories where rowid = ' , ": y
+, > , > {: sqlreadm__db 'select parentid from categories where caategoryid = ' , ": y
+)
+
+NextCatId =: 0
+
+nextCatId =: 3 : 0
+NB. y Number of ids needed
+if. NextCatId = 0 do.
+	result =. , > > {: sqlreadm__db 'select max(parentid) from categories where parentid < 1000000'
+	if. 'NULL' -: result do. base =: 200 else. base =: >: {. result end.
+else.
+	base =: NextCatId
+end.
+ids =. base + i. y
+NextCatId =: base + y
+ids
+)
+
+NextUserCatId =: 0
+
+nextUserCatId =: 3 : 0
+NB. y Number of ids needed
+if. NextUserCatId = 0 do.
+	result =. , > > {: sqlreadm__db 'select max(parentid) from categories where parentid > 1000000' 
+	if. 'NULL' -: result do. base =: 1000000 else. base =: >: {. result end.
+else.
+	base =: NextUserCatId
+end.
+ids =. base + i. y
+NextUserCatId =: base + y
+ids
 )
 
 dbOpenDb =: 3 : 0
@@ -524,7 +553,7 @@ try. (1!:55) < dbFile catch. end.
 db =: sqlcreate_psqlite_ dbFile
 sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
-sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, child TEXT, parentseq INTEGER, count INTEGER, link TEXT)' 
+sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid INTEGER, category TEXT, parentseq INTEGER, count INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
