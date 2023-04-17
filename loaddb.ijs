@@ -350,7 +350,7 @@ for_boxedHtml. yearMonthHtml do.
 	k =. pat rxmatches html
 	matches =. }."1 (1 {"1 k) {. &. > ({."1 k) <@}."1"0 _ html
 	if. 0 = # matches do. continue. end.
-	links =. {."1 matches
+	links =. _5&}. &. > {."1 matches
 	subjects =. 1 {"1 matches
 	authors =. 2 {"1 matches
 	c =. # links
@@ -579,11 +579,11 @@ setup =: 3 : 0
 setupTempDirectory ''
 setupDb ''
 setupTables ''
-processCategory ''
+NB. processCategory ''
 loadVoc ''
-loadAncillaryPages ''
+NB. loadAncillaryPages ''
 NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
-loadTagCategories ''
+NB. loadTagCategories ''
 loadForum &. > ;: 'chat database general source programming beta'
 finishLoadingForums ''
 )

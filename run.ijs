@@ -670,7 +670,7 @@ setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
-queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link) ; LF -.~ > subject
+queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; LF -.~ > subject
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
