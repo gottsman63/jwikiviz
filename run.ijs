@@ -242,10 +242,10 @@ NB. y A search string
 NB. Save parent ; child.  
 term =.  y
 clearSearch term
-cols =. ;: 'level parentid category count parentseq link'
-sqlinsert__db 'categories' ; cols ; < 2 ; (getTopCategoryId SearchCatString) ; (< term) ; _1 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+cols =. ;: 'level parentid categoryid category count parentseq link'
+NB. sqlinsert__db 'categories' ; cols ; < 2 ; (getTopCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; _1 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 NB. sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 )
 
@@ -283,6 +283,7 @@ end.
 searchForums =: 3 : 0
 NB. y Search term		
 NB. Perform the search, parse the results, and update the "categories" and "wiki" tables.
+try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
@@ -311,8 +312,8 @@ NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level'
 		fname =. > index { ~. forums
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
-		cols =. (;: 'level parentid category parentseq count link')
-		data =. 2 ; termId ; fname ; (>: index) ; (# forumLinks) ; 'http://www.jsoftware.com/mailman/listinfo/' , }. fname
+		cols =. (;: 'level parentid categoryid category parentseq count link')
+		data =. 2 ; termId ; (nextUserCatId 1) ; fname ; (>: index) ; (# forumLinks) ; 'http://www.jsoftware.com/mailman/listinfo/' , }. fname
 		sqlinsert__db 'categories' ; cols ; < data
 		forumId =. termId getCategoryId fname
 		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
@@ -325,6 +326,13 @@ otherTermId =. (getTopCategoryId SearchCatString) getCategoryId y
 parms =. 'categories' ; ('categoryid = ' , ": otherTermId) ; (;: 'count level') ; < count ; 2
 smoutput 'parms' ; parms
 sqlupdate__db parms
+catchd.
+	log (13!:12) ''
+	log 'Db Error (if any): ' , dbError ''
+catcht.
+	log (13!:12) ''
+	log 'Db Error (if any): ' , dbError ''
+end.
 )
 
 search =: 3 : 0
@@ -333,7 +341,7 @@ try.
 	log 'Searching for ' , y
 	addSearchToToc y
 	clearCache ''
-	selectSearchTerm y
+	selectSearch ''
 	invalidateDisplay ''
 	wd 'msgs'
 	searchWiki y
@@ -346,11 +354,10 @@ catchd.
 end.
 )
 
-selectSearchTerm =: 3 : 0
-NB. y A search term
-NB. Select the search term in the Table of Contents.
-headers =. 2 {"1 > {."1 getTocWikiDocs 1
-setTocOutlineRailSelectedIndex n + (< y) i.~ (n =. headers i. < SearchCatString) }. headers
+selectSearch=: 3 : 0
+NB. Select '*Search' in the Table of Contents (TOC).
+index =. (< SearchCatString) i.~ 3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth NB. Table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
+setTocOutlineRailSelectedIndex index
 )
 
 NB. ================== Drawing ====================
@@ -785,10 +792,10 @@ NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedInde
 log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
 NB. categoryId =. parentId getCategoryId category
 tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parent category parentSeq count link) ; (table of title ; link)
-if. 0 = # tocWikiDocs do. '' return. end.
+if. 1 = # $ tocWikiDocs do. '' return. end.
 ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
 margin =. 5
-categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent category parentSeq count link
+categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent categoryid category parentSeq count link
 NB. indents =. #&'  ' &. > &. <"0 levels - <./ levels =. > 0 {"1 categoryEntries
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
@@ -950,12 +957,13 @@ TocOutlineRailScrollIndex =: drawScrollerField parms
 entry =. TocOutlineRailSelectedIndex { entries
 if.  +./ '*NuVoc' E. > 3 { entry do.
 	drawVoc ''
-elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; category ; parentseq ; count ; link
+elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
 	(> 3 { entry) drawTocEntryForum DisplayDetailRect
 elseif. TagCatString -: > 3 { entry do.
 	drawTocEntryTags DisplayDetailRect
-elseif. (getTopCategoryId SearchCatString) = > 1 { entry do.
-	((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId > 3 { entry) drawTocEntryChildren DisplayDetailRect
+elseif. (< SearchCatString) = 3 { entry do.
+	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree DisplayDetailRect
+NB. 	((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId > 3 { entry) drawTocEntryChildren DisplayDetailRect
 else.
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren DisplayDetailRect
@@ -1041,6 +1049,21 @@ result
 clearCache =: 3 : 0
 TocOutlineRailEntriesCache =: ,: a: , a:
 WikiDocsCache =: ,: a: , a:
+)
+
+NextUserCatId =: 0
+
+nextUserCatId =: 3 : 0
+NB. y Number of ids needed
+if. NextUserCatId = 0 do.
+	result =. , > > {: sqlreadm__db 'select max(parentid) from categories where parentid > 1000000' 
+	if. 'NULL' -: result do. base =: 1000000 else. base =: >: {. result end.
+else.
+	base =: NextUserCatId
+end.
+ids =. base + i. y
+NextUserCatId =: base + y
+ids
 )
 
 getCategory =: 3 : 0
