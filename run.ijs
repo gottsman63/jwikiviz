@@ -673,7 +673,7 @@ setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
-queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/' , link) ; LF -.~ > subject
+queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link) ; LF -.~ > subject
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
@@ -748,7 +748,7 @@ ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"
 NB. ratios =. authorCounts % >./ authorCounts =. > # &. > (2 {"1 entries) </. entries
 subjects =. ~. allSubjects
 subject =. TocEntryForumSubjectIndex { subjects 
-ForumAuthorEntries =: ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
+ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
 NB. smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
 authors =. 3 {"1 ForumAuthorEntries
 links =.   4 {"1 ForumAuthorEntries
