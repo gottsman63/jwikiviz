@@ -9,11 +9,8 @@ NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
 NB. Drop the .html from the forum post links (save 0.5 megabytes!).
-NB. The url construction for forum posts is probably failing for cross-month files.
 NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Scroller gray stripe should take account of column width.
-NB. Forum posts are still not showing up.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -389,7 +386,7 @@ TocItalicFont =: 'arial italic 16'
 TocLineHeight =: 21
 TocSelectedTopCategory =: '*NuVoc'
 TocScrollIndex =: 0
-MaxTocDepth =: 4
+MaxTocDepth =: 3
 ScrollColor =: 230 230 230
 BarColor =: ScrollColor * 0.7
 DisplayListRect =: 10 10 100 100
