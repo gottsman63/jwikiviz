@@ -12,8 +12,6 @@ NB. Drop the .html from the forum post links (save 0.5 megabytes!).
 NB. The url construction for forum posts is probably failing for cross-month files.
 NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Reverse the months.
-NB. Push the search results hierarchy into the detail area--have only a single line item in the TOC for *Search.
 NB. Move the Forums hierarchy into the detail area...?  (Bob?  Not clear on this one.)
 
 NB. B Items
@@ -70,6 +68,7 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
+wd 'set vocContext minwh ' , ": VocMinWidth , VocMinHeight
 )
 
 layoutForm =: 3 : 0
@@ -290,7 +289,6 @@ html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , 
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
 termId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
-smoutput 'termId' ; termId
 NB. forumsId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Forums'
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 < # offsetLengths do.
@@ -321,14 +319,9 @@ NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level'
 	end.
 end.
 count =. {. , > > {: sqlreadm__db 'select sum(count) from categories where parentid = ' , ": termId
-smoutput 'count' ; count ; $ count
 otherTermId =. (getTopCategoryId SearchCatString) getCategoryId y
 parms =. 'categories' ; ('categoryid = ' , ": otherTermId) ; (;: 'count level') ; < count ; 2
-smoutput 'parms' ; parms
 sqlupdate__db parms
-catchd.
-	log (13!:12) ''
-	log 'Db Error (if any): ' , dbError ''
 catcht.
 	log (13!:12) ''
 	log 'Db Error (if any): ' , dbError ''
@@ -348,7 +341,7 @@ try.
 	searchForums y
 	clearCache ''
 	invalidateDisplay ''
-catchd.
+catcht.
 	log (13!:12) ''
 	log 'Db Error (if any): ' , dbError ''
 end.
@@ -361,6 +354,8 @@ setTocOutlineRailSelectedIndex index
 )
 
 NB. ================== Drawing ====================
+VocMinWidth =: 800
+VocMinHeight =: 900
 MaxCellWidth =: 100
 MinColWidth =: 200
 CellMargin =: 5
@@ -370,14 +365,11 @@ DocumentFont =: 'arial bold 18'
 DocumentColumnFont =: 'arial 18'
 SectionFont =: 'arial bold 16'
 SectionColor =: 110 0 0
-CurrentVocGeometry =: '' NB. Table of glyph x y width height.
-NewVocGeometry =: ,: '' ; _1 ; 0 ; 0 ; 0
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
 DocumentSectionGeometry =: '' NB. index x y width height label sectionName columnId url
 DocumentSectionSelectedIndex =: _1
 VocTable =: '' NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
-VocSelectionGeometry =: 0 ; 0 ; 0 ; 0 ; ''  NB. Table of x y w h link
 POSColors =: 221 204 255 , 204 238 255 , 238 255 204 , 255 204 238 , 221 221 221 ,: 238 170 170
 POSNames =: ;: 'Verb Adverb Conjunction Noun Copula Control'
 VocCellFont =: 'consolas 16 bold'
