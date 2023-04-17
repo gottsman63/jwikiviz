@@ -12,7 +12,8 @@ NB. Drop the .html from the forum post links (save 0.5 megabytes!).
 NB. The url construction for forum posts is probably failing for cross-month files.
 NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Move the Forums hierarchy into the detail area...?  (Bob?  Not clear on this one.)
+NB. Scroller gray stripe should take account of column width.
+NB. Forum posts are still not showing up.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -540,7 +541,7 @@ NB. Return the scrollIndex, which may have changed.
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 5
-stripeWidth =.<. 0.75 * w
+stripeWidth =.<. 0.5 * w
 glfont TocFont
 if. maxLineCount < # strings do.
 	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
@@ -654,7 +655,7 @@ NB. y The year whose posts we'll display
 TocEntryForumYear =: y
 setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
-TocEntryForumMonthIndex =: 11
+TocEntryForumMonthIndex =: 0
 )
 
 TocEntryForumSubjectIndex =: 0
@@ -699,7 +700,7 @@ if. -. ForumCurrentName -: x do.
 	ForumCurrentName =: x
 	TocEntryForumYear =: 2023
 	TocEntryForumSubjectIndex =: 0
-	TocEntryForumMonthIndex =: 11
+	TocEntryForumMonthIndex =: 0
 	ForumAuthorEntries =: ''
 end.
 margin =. 5
