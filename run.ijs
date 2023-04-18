@@ -1,3 +1,4 @@
+
 clear ''
 
 load 'data/sqlite'
@@ -8,6 +9,7 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
+NB. Log resolution, JVERSION.
 NB. "Bookmark" button next to the url field?
 NB. Sort Forums by traffic.
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
@@ -35,9 +37,10 @@ db =: sqlopen_psqlite_ dbFile
 
 log =: 3 : 0
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
-if. 0 = ? 100 do.
+if. 0 = ? 200 do.
 	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
 	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
+	sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; JVERSION
 end.
 )
 NB. =======================================
@@ -71,14 +74,13 @@ wd 'bin z;'
 layoutForm =: 3 : 0
 'w h' =. ". wd 'getp wh'
 winW =. w - 40
-winH =. h - 60
+winH =. h - 45
 controlHeight =. 30
-wd 'setp wh 1344 840'
+wd 'set vocContext minwh 650 775'
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": <. (winW * 0.08) , controlHeight) , ';'
-wd 'set vocContext minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'timer 100'
 )
@@ -158,52 +160,58 @@ wd 'timer 0'
 wd 'pclose'
 )
 
+PerpetuateAnimationStartTime =: 0
+
 sys_timer_z_ =: 3 : 0
 try.
 	checkQueuedUrlTime_base_ ''
+	if. 2 > ((6!:1) '') - PerpetuateAnimationStartTime_base_ do. invalidateDisplay_base_ '' end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError ''
 end.
 )
 
+perpetuateAnimation =: 3 : 0
+PerpetuateAnimationStartTime =: (6!:1) ''
+)
+
 wd 'timer 0'
+
+DisplayListRectTargetWidth =: 175
+DisplayListRectSourceWidth =: 20
+DisplayListRectAnimationStartTime =: 0
 
 setDisplayRects =: 3 : 0
 'w h' =. ". wd 'get vocContext wh'
-if. ({. VocMouseXY) < ({. DisplayListRect) + 2 { DisplayListRect do.
-	DisplayListRect =: 0 0 175 , h
-	DisplayDetailRect =: 175 0 , (w - 175) , h
-	log 'Normal TOC Rail ' , ": VocMouseXY 
+if. ({. VocMouseXY) < DisplayListRectTargetWidth do.
+	if. DisplayListRectTargetWidth ~: 175 do. 
+		DisplayListRectAnimationStartTime =: (6!:1) '' 
+		perpetuateAnimation ''
+	end.
+	DisplayListRectTargetWidth =: 175
+	DisplayListRectSourceWidth =: 20
 else.
-	log 'Shrunken TOC Rail ' , ": VocMouseXY
-	DisplayListRect =: 0 0 20 , h
-	DisplayDetailRect =: 25 0 , (w - 25) , h
+	if. DisplayListRectTargetWidth ~: 20 do. 
+		DisplayListRectAnimationStartTime =: (6!:1) '' 
+		perpetuateAnimation ''
+	end.
+	DisplayListRectTargetWidth =: 20
+	DisplayListRectSourceWidth =: 175
 end.
+length =. <. DisplayListRectSourceWidth + (DisplayListRectTargetWidth - DisplayListRectSourceWidth) * 1 <. 2 * ((6!:1) '') - DisplayListRectAnimationStartTime
+DisplayListRect =: 0 0 , length , h
+DisplayDetailRect =: length , 0 , (w - length) , h
 )
 
 trigger_paint =: 3 : 0
+log 'trigger_paint ' , (wd 'getp wh') , '   ' , (": getFrameRate '') , ' fps'
 try.
-minW =. 500
-minH =. 500
 glfill 255 255 255 255
-'w h' =. ". wd 'get vocContext wh'
 setDisplayRects ''
-if. (w > minH) *. h > minW do.
-NB.	scheduleBackgroundRender ''
- 	drawToc ''
-NB. 	drawFrameRate ''
-NB. 	backgroundRenderComplete ''
-else.
-	glrgb 0 0 0
-	gltextcolor ''
-	glfont SectionFont
-	if. w <: minW do. 0 0 drawStringAt 'Wider' end.
-	if. h <: minH do. 0 20 drawStringAt 'Taller' end.
-end.
+drawToc ''
 glclip 0 0 10000 10000
-NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
-catcht.
+catcht. catch. 
 log (13!:12) ''
 log dbError ''
 smoutput (13!:12) ''
@@ -776,6 +784,7 @@ NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": T
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
 ForumSubjectScrollIndex =: drawScrollerField subjRect ; subjects ; subjectCommands ; ratios ; (1 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex
 ForumAuthorScrollIndex =: drawScrollerField authRect ; authors ; authorCommands ; (0 #~ # authors) ; (0 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex
+if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
 
@@ -1264,13 +1273,13 @@ NB. ============================= End Voc ===============================
 
 FrameTimeStamps =: ''
 
-drawFrameRate =: 3 : 0
+getFrameRate =: 3 : 0
 FrameTimeStamps =: (t =. (6!:1) '' ) , FrameTimeStamps
 fps =. # FrameTimeStamps =: FrameTimeStamps #~ (t - 1) < FrameTimeStamps
-glfont 'arial bold 24'
-glrgb HighlightColor
-gltextcolor ''
-10 0 drawStringAt (": fps) , ' fps'
+NB. glfont 'arial bold 24'
+NB. glrgb HighlightColor
+NB. gltextcolor ''
+NB. 10 0 drawStringAt (": fps) , ' fps'
 )
 
 go =: 3 : 0
