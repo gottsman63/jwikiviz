@@ -53,13 +53,14 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
+wd       'cc numb checkbox; cn Numb;'
 wd      'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'cc moat isigraph'
 wd   'bin v;'
 wd     'bin h;'
-wd       'cc numb checkbox; cn Numb;'
+NB. wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
 wd     'bin z;'
@@ -106,6 +107,11 @@ Numb =: ". numb
 invalidateDisplay ''
 )
 
+vizform_bookmark_button =: 3 : 0
+bookmark ''
+invalidateDisplay ''
+)
+
 vizform_clearSearches_button =: 3 : 0
 clearSearches ''
 invalidateDisplay ''
@@ -126,9 +132,10 @@ vizform_moat_mmove =: 3 : 0
 QueuedUrl =: ''
 )
 
-vizform_browser_curl =: 3 : 0
-addToHistoryMenu 1 { {: wdq
-)
+NB. vizform_browser_curl =: 3 : 0
+NB. url =. 1 { {: wdq
+NB. if. -. url -: 0 { 0 { HistoryMenu do. addToHistoryMenu url ; url end.
+NB. )
 
 vizform_searchBox_button =: 3 : 0
 try.
@@ -186,7 +193,7 @@ else.
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
-catchd.
+catcht.
 log (13!:12) ''
 log dbError ''
 smoutput (13!:12) ''
@@ -435,16 +442,20 @@ NB. y A rect (x y w h)
 (rx < px) *. (px < rx + rw) *. (py > ry) *. (py < ry + rh)
 )
 
+bookmark =: 3 : 0
+
+)
+
 checkQueuedUrlTime =: 3 : 0
 if. (0.25 < ((6!:1) '') - QueuedUrlTime_base_) *. -. QueuedUrl_base_ -: '' do. 
-	loadPage_base_ QueuedUrl_base_ ; '***' 
+	loadPage_base_ QueuedUrl_base_
 	QueuedUrl_base_ =: ''
 end.
 )
 
 queueUrl =: 3 : 0
-NB. y A url to queue for delayed loading ; A title (discarded for now)
-QueuedUrl =: > {. y
+NB. y A url to queue for delayed loading ; A title
+QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
 )
 
@@ -483,6 +494,7 @@ elseif. -. 'http' -: 4 {. url do.
 end.
 log 'Loading url ' , url
 wd 'set browser url *' , url
+addToHistoryMenu (< url) , {: y
 catch.
 	smoutput (13!:12) ''
 end.
@@ -595,9 +607,9 @@ NB.		glrect origin , ({. glqextent > i { strings) , 2
 	end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
 	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
-		((origin - margin , 0), w, lineHeight) registerRectLink > i { links
+		((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings
 	elseif. -. Numb do.
-		((origin - margin , 0), w, lineHeight) registerRectLink > i { links
+		((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings
 	end.
 NB.	glclip xx , yy ,  w , h
 end.
@@ -670,7 +682,7 @@ setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
-queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; LF -.~ > subject
+queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
@@ -930,7 +942,7 @@ setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
-queueUrl (> 6 { entry) ; > 2 { entry
+queueUrl (> 6 { entry) ; > 3 { entry
 )
 
 drawTocRail =: 4 : 0
