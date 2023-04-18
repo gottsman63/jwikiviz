@@ -11,6 +11,7 @@ NB. Fix the color scheme.
 NB. Drop the .html from the forum post links (save 0.5 megabytes!).
 NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
+NB. Diagnostic table with JVERSION, screen resolution.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -48,7 +49,7 @@ VocMouseXY =: 0 0
 
 buildForm =: 3 : 0 
 wd 'pc vizform;'
-wd 'bin h;'
+wd 'bin v;'
 wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
@@ -57,7 +58,6 @@ wd       'cc numb checkbox; cn Numb;'
 wd      'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
-wd   'cc moat isigraph'
 wd   'bin v;'
 wd     'bin h;'
 NB. wd       'cc bookmark button; cn *Bookmark'
@@ -67,23 +67,20 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
-wd 'set vocContext minwh ' , ": VocMinWidth , VocMinHeight
 )
 
 layoutForm =: 3 : 0
+if. EmphasizeBrowserFlag do. ratio =. 0.1 else. ratio =. 0.5 end.
 'w h' =. ". wd 'getp wh'
-winW =. w - 20
-winH =. h - 20
+winW =. w
+winH =. h
 controlHeight =. 30
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": <. (winW * 0.08) , controlHeight) , ';'
-wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-wd 'set moat maxwh ' , (": 20 , winH - controlHeight) , ';'
-wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
-DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
+wd 'set vocContext maxwh ' , (": <. winW , controlHeight -~ winH * ratio) , ';'
+wd 'set browser maxwh ' , (": <. winW , winH * 1 - ratio) , ';'
 wd 'timer 100'
 )
 
@@ -114,6 +111,12 @@ invalidateDisplay ''
 
 vizform_clearSearches_button =: 3 : 0
 clearSearches ''
+invalidateDisplay ''
+)
+
+vizform_vocContext_mblup =: 3 : 0
+EmphasizeBrowserFlag =: -. EmphasizeBrowserFlag
+layoutForm ''
 invalidateDisplay ''
 )
 
@@ -176,10 +179,15 @@ wd 'timer 0'
 trigger_paint =: 3 : 0
 try.
 minW =. 500
-minH =. 500
+minH =. 100
+NB. DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
+NB. DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
+
 glfill 255 255 255 255
 'w h' =. ". wd 'get vocContext wh'
-if. (w > minH) *. h > minW do.
+DisplayListRect =: 0 30 175 , h - 30
+DisplayDetailRect =: 175 0 , (w - 175) , h
+if. (h > minH) *. w > minW do.
 	scheduleBackgroundRender ''
  	drawToc ''
 	drawFrameRate ''
@@ -188,8 +196,12 @@ else.
 	glrgb 0 0 0
 	gltextcolor ''
 	glfont SectionFont
-	if. w <: minW do. 0 0 drawStringAt 'Wider' end.
-	if. h <: minH do. 0 20 drawStringAt 'Taller' end.
+	if. EmphasizeBrowserFlag do. 
+		0 0  drawStringAt 'Click Here!'
+	else.
+		if. w <: minW do. 0 0 drawStringAt 'Wider' end.
+		if. h <: minH do. 0 20 drawStringAt 'Taller' end.
+	end.
 end.
 glclip 0 0 10000 10000
 NB. wd 'msgs' NB. Message pump.  This really screws things up when it's uncommented.
@@ -408,6 +420,7 @@ TagHiddenCatId =: 500000
 Numb =: 0
 QueuedUrl =: ''
 QueuedUrlTime =: 0
+EmphasizeBrowserFlag =: 0
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
