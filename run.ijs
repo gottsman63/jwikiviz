@@ -9,9 +9,7 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
-NB. Log resolution, JVERSION.
 NB. "Bookmark" button next to the url field?
-NB. Sort Forums by traffic.
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 
 NB. B Items
@@ -76,7 +74,7 @@ layoutForm =: 3 : 0
 winW =. w - 40
 winH =. h - 45
 controlHeight =. 30
-wd 'set vocContext minwh 650 775'
+wd 'set vocContext minwh 650 765'
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
@@ -1243,7 +1241,7 @@ cellWidths =. {."1 dimensions
 columnWidths =. >./ > lineNumbers < /. cellWidths
 lineHeights =. > >./ &. > lineNumbers < /. {:"1 dimensions
 lines =. ({. , {:)"1 &. > lineNumbers < /. cells NB. POS Glyph
-spacings =. 5 * ~: lineNumbers
+spacings =. 3 * ~: lineNumbers
 glfont 'consolas bold 12'
 glrgb 0 0 0
 gltextcolor ''

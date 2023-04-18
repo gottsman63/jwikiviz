@@ -585,6 +585,6 @@ loadVoc ''
 loadAncillaryPages ''
 NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 loadTagCategories ''
-loadForum &. > ;: 'chat database general source programming beta'
+loadForum &. > ;: 'programming general beta chat source database '
 finishLoadingForums ''
 )
