@@ -8,8 +8,8 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
-NB. Drop the .html from the forum post links (save 0.5 megabytes!).
 NB. "Bookmark" button next to the url field?
+NB. Sort Forums by traffic.
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 
 NB. B Items
@@ -57,7 +57,6 @@ wd       'cc numb checkbox; cn Numb;'
 wd      'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
-wd   'cc moat isigraph'
 wd   'bin v;'
 wd     'bin h;'
 NB. wd       'cc bookmark button; cn *Bookmark'
@@ -67,23 +66,20 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
-wd 'set vocContext minwh ' , ": VocMinWidth , VocMinHeight
 )
 
 layoutForm =: 3 : 0
 'w h' =. ". wd 'getp wh'
-winW =. w - 20
-winH =. h - 20
+winW =. w - 40
+winH =. h - 60
 controlHeight =. 30
+wd 'setp wh 1344 840'
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": <. (winW * 0.08) , controlHeight) , ';'
-wd 'set vocContext maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-wd 'set moat maxwh ' , (": 20 , winH - controlHeight) , ';'
-wd 'set browser maxwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-DisplayListRect =: <. 10 , controlHeight , 175 , winH - 80
-DisplayDetailRect =: <. h , controlHeight , ((winW * 0.5) - h =. 190) , winH - 80
+wd 'set vocContext minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
+wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'timer 100'
 )
 
@@ -173,17 +169,31 @@ end.
 
 wd 'timer 0'
 
+setDisplayRects =: 3 : 0
+'w h' =. ". wd 'get vocContext wh'
+if. ({. VocMouseXY) < ({. DisplayListRect) + 2 { DisplayListRect do.
+	DisplayListRect =: 0 0 175 , h
+	DisplayDetailRect =: 175 0 , (w - 175) , h
+	log 'Normal TOC Rail ' , ": VocMouseXY 
+else.
+	log 'Shrunken TOC Rail ' , ": VocMouseXY
+	DisplayListRect =: 0 0 20 , h
+	DisplayDetailRect =: 25 0 , (w - 25) , h
+end.
+)
+
 trigger_paint =: 3 : 0
 try.
 minW =. 500
 minH =. 500
 glfill 255 255 255 255
 'w h' =. ". wd 'get vocContext wh'
+setDisplayRects ''
 if. (w > minH) *. h > minW do.
-	scheduleBackgroundRender ''
+NB.	scheduleBackgroundRender ''
  	drawToc ''
-	drawFrameRate ''
-	backgroundRenderComplete ''
+NB. 	drawFrameRate ''
+NB. 	backgroundRenderComplete ''
 else.
 	glrgb 0 0 0
 	gltextcolor ''
@@ -1224,7 +1234,7 @@ cellWidths =. {."1 dimensions
 columnWidths =. >./ > lineNumbers < /. cellWidths
 lineHeights =. > >./ &. > lineNumbers < /. {:"1 dimensions
 lines =. ({. , {:)"1 &. > lineNumbers < /. cells NB. POS Glyph
-spacings =. 20 * ~: lineNumbers
+spacings =. 5 * ~: lineNumbers
 glfont 'consolas bold 12'
 glrgb 0 0 0
 gltextcolor ''
@@ -1247,8 +1257,8 @@ drawVoc =: 3 : 0
 glrgb 255 255 255
 glbrush ''
 glrect DetailRect
-225 30 drawVocSections 0 1 2 3 4 5 6
-510 30 drawVocSections 7 8 9 10 11
+((20 + {. DisplayDetailRect) , 5) drawVocSections 0 1 2 3 4 5 6
+((300 + {. DisplayDetailRect) , 5) drawVocSections 7 8 9 10 11
 )
 NB. ============================= End Voc ===============================
 
