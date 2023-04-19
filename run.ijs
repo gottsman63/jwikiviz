@@ -1,4 +1,3 @@
-
 clear ''
 
 load 'data/sqlite'
@@ -12,7 +11,6 @@ NB. Fix the color scheme.
 NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 NB. Expand the webview on scroll...?
-NB. Click to lock the browser.  Drop the 250ms delay on page load.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -64,7 +62,7 @@ wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
-NB. wd       'cc bookmark button; cn *Bookmark'
+wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
 wd     'bin z;'
@@ -81,8 +79,9 @@ controlHeight =. 30
 wd 'set vocContext minwh 650 765'
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
-wd 'set history maxwh ' , (": <. (winW * 0.4) , controlHeight) , ';'
-wd 'set launch maxwh ' , (": <. (winW * 0.08) , controlHeight) , ';'
+wd 'set bookmark maxwh ' , (": <. (winW * 0.07), controlHeight) , ';'
+wd 'set history maxwh ' , (": <. (winW * 0.36) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": <. (winW * 0.07) , controlHeight) , ';'
 wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
 wd 'timer 100'
 )
@@ -130,14 +129,21 @@ PageLoadFreezeTime =: (6!:1) ''
 perpetuateAnimation ''
 )
 
+vizform_vocContext_mwheel =: 3 : 0
+MWheelOffset =: MWheelOffset + 11 { ". > (1 {"1 wdq) {~ ({."1 wdq) i. < 'sysdata'
+invalidateDisplay ''
+)
+
 vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
-NB. vizform_browser_curl =: 3 : 0
-NB. url =. 1 { {: wdq
-NB. if. -. url -: 0 { 0 { HistoryMenu do. addToHistoryMenu url ; url end.
-NB. )
+vizform_browser_curl =: 3 : 0
+url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
+topHistoryUrl =. > 0 { 0 { HistoryMenu
+if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
+resetBookmarkButton ''
+)
 
 vizform_searchBox_button =: 3 : 0
 try.
@@ -426,6 +432,7 @@ DisplayDetailRect =: 100 10 100 100
 Months =: ;:'January February March April May June July August September October November December'
 ShortMonths =: ;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
 ForumsCatString =: '*Forums'
+BookmarkCatString =: '*Bookmarks'
 SearchCatString =: '*Search'
 SearchHiddenCatId =: 200000
 TagCatString =: '*Tags'
@@ -436,6 +443,7 @@ QueuedUrlTime =: 0
 PageLoadFreezeTime =: 0
 PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
+MWheelOffset =: 0
 
 
 getPosColor =: 3 : 0
@@ -471,8 +479,30 @@ NB. y A rect (x y w h)
 (rx < px) *. (px < rx + rw) *. (py > ry) *. (py < ry + rh)
 )
 
-bookmark =: 3 : 0
+isBookmarked =: 3 : 0
+NB. y A url
+NB. Return 1 if y is bookmarked
+links =. , > {: sqlreadm__db 'select link from wiki where categoryId = ' , ": getTopCategoryId BookmarkCatString
+(# links) > links i. < y
+)
 
+resetBookmarkButton =: 3 : 0
+'url title' =. {. HistoryMenu
+links =. , > {: sqlreadm__db 'select link from wiki where categoryId = ' , ": getTopCategoryId BookmarkCatString
+if. isBookmarked url do. wd 'set bookmark text "Un-bookmark";' else. wd 'set bookmark text "Bookmark";' end.
+)
+
+bookmark =: 3 : 0
+'url title' =. {. HistoryMenu
+id =. (getTopCategoryId BookmarkCatString)
+if. isBookmarked url do.
+	sqlcmd__db 'delete from wiki where categoryid = ' , (": id) , ' and link = "' , url , '"'
+else.
+	sqlinsert__db 'wiki' ; (;: 'title categoryid link') ; < title ; id ; url
+end.
+clearCache ''
+invalidateDisplay ''
+resetBookmarkButton ''
 )
 
 checkQueuedUrlTime =: 3 : 0
@@ -586,12 +616,9 @@ maxLineCount =. <. h % TocLineHeight
 margin =. 5
 stripeWidth =.<. 0.5 * w
 glfont TocFont
-if. maxLineCount < # strings do.
-	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
-		scrollIndex =. 0 >. (<: # strings) <. <. ((({: VocMouseXY) - yy) % h) * # strings
-	end.
-else.
-	scrollIndex =. 0
+if. VocMouseXY pointInRect rect do.
+	scrollIndex =. 0 >. (# strings) <. scrollIndex + MWheelOffset
+	MWheelOffset =: 0
 end.
 windowStartIndex =. <. 0 >. (window -~ # strings) <. 0 >. scrollIndex - -: window
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
@@ -605,18 +632,6 @@ glpen 1
 glrgb 255 255 255
 glbrush ''
 glrect rect
-if. maxLineCount < # strings do.
-	if. VocMouseXY pointInRect rect do.
-		glcursor IDC_ARROW
-		if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glcursor IDC_SIZEVER end.
-		if. VocMouseXY pointInRect (xx + stripeWidth) , yy , (w - stripeWidth) , h do. glcursor IDC_POINTINGHAND end.
-	end.
-	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do. glrgb <. ScrollColor * 0.85 else. glrgb ScrollColor end.
-	glbrush ''
-	glpen 0
-	glrect xx , yy , stripeWidth , h
-elseif. VocMouseXY pointInRect rect do. glcursor IDC_ARROW
-end.
 for_i. i. # strings do.
 	lineHeight =. i { heights
 	origin =. > i { origins
