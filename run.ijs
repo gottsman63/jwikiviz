@@ -11,12 +11,15 @@ NB. Fix use of curl for search (post a question that contrasts spawning a curl w
 NB. Fix the color scheme.
 NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
+NB. Expand the webview on scroll...?
+NB. Click to lock the browser.  Drop the 250ms delay on page load.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
 NB. Support parallel download of forum and wiki documents.
 NB. Animate scroll rather than jumping when the travel is too high.
 NB. Add a "Search" label.
+NB. Set focus to the Search input field when *Search is hovered.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
 NB. Standalone application.
@@ -46,6 +49,7 @@ NB. =======================================
 NB. ==================== Form =====================
 NB. FormMouseXY =: 0 0
 VocMouseXY =: 0 0
+VocMouseClickXY =: 0 0
 
 buildForm =: 3 : 0 
 wd 'pc vizform;'
@@ -120,12 +124,14 @@ VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 invalidateDisplay ''
 )
 
-vizform_vocContext_paint =: 3 : 0
-trigger_paint ''
+vizform_vocContext_mblup =: 3 : 0
+VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
+PageLoadFreezeTime =: (6!:1) ''
+perpetuateAnimation ''
 )
 
-vizform_moat_mmove =: 3 : 0
-QueuedUrl =: ''
+vizform_vocContext_paint =: 3 : 0
+trigger_paint ''
 )
 
 NB. vizform_browser_curl =: 3 : 0
@@ -162,8 +168,8 @@ PerpetuateAnimationStartTime =: 0
 
 sys_timer_z_ =: 3 : 0
 try.
-	checkQueuedUrlTime_base_ ''
-	if. 2 > ((6!:1) '') - PerpetuateAnimationStartTime_base_ do. invalidateDisplay_base_ '' end.
+NB. 	checkQueuedUrlTime_base_ ''
+	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_base_ do. invalidateDisplay_base_ '' end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError ''
@@ -208,6 +214,8 @@ try.
 glfill 255 255 255 255
 setDisplayRects ''
 drawToc ''
+drawPageLoadFreezeRect ''
+VocMouseClickXY =: 0 0
 glclip 0 0 10000 10000
 catcht. catch. 
 log (13!:12) ''
@@ -394,6 +402,7 @@ VocTable =: '' NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 POSColors =: 221 204 255 , 204 238 255 , 238 255 204 , 255 204 238 , 221 221 221 ,: 238 170 170
 POSNames =: ;: 'Verb Adverb Conjunction Noun Copula Control'
 VocCellFont =: 'consolas 16 bold'
+VocValenceFont =: 'arial 14'
 CategoryIndex =: 0
 CategoryTable =: ''
 HighlightTocColor =: 255 63 63
@@ -424,6 +433,10 @@ TagHiddenCatId =: 500000
 Numb =: 0
 QueuedUrl =: ''
 QueuedUrlTime =: 0
+PageLoadFreezeTime =: 0
+PageLoadFreezeRect =: ''
+PageLoadFreezeDuration =: 3
+
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -471,8 +484,10 @@ end.
 
 queueUrl =: 3 : 0
 NB. y A url to queue for delayed loading ; A title
+if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
+loadPage QueuedUrl
 )
 
 addToHistoryMenu =: 3 : 0
@@ -519,7 +534,7 @@ end.
 NB. ======================== Cached Drawing ===========================
 BackgroundRenderRequired =: 1
 CachedRectsAndLinks =: ''  NB. Table of rect ; url
-ReversibleSelections =: '' NB. Table of rect
+NB. ReversibleSelections =: '' NB. Table of rect
 
 registerRectLink =: 4 : 0
 NB. x xx yy width height
@@ -527,6 +542,10 @@ NB. y A url or * to be evaluated ; an optional title
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
+if. VocMouseClickXY pointInRect x do.
+	PageLoadFreezeTime =: (6!:1) ''
+	PageLoadFreezeRect =: x
+end.
 if. -. VocMouseXY pointInRect x do. return. end.
 if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. (; y) ; '----' end.
 if. '*' = {. urlCommand do.
@@ -542,19 +561,18 @@ NB. x xx yy width height
 NB. y color
 NB. Draw an outline around xx yy width height.  Remember it so it can be erased later.
 x drawHighlight y
-if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. ReversibleSelections =: ReversibleSelections , x end.
+NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. ReversibleSelections =: ReversibleSelections , x end.
 )
 
-scheduleBackgroundRender =: 3 : 0
-NB. Something major happened.  Render everything.
-BackgroundRenderRequired =: 1
-CachedRectsAndLinks =: ''
+drawPageLoadFreezeRect =: 3 : 0
+if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do.
+	glrgb 255 0 0
+	glpen 5
+	glrgba 0 0 0 0
+	glbrush ''
+	glrect PageLoadFreezeRect
+end.
 )
-
-backgroundRenderComplete =: 3 : 0
-BackgroundRenderRequired =: 0
-)
-
 NB. ============================== Scroller Field ===============================
 drawScrollerField =: 3 : 0
 NB. y Structure: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
@@ -1160,7 +1178,7 @@ NB. y centerOrigin (x and y)
 s =. monadic , ' ' , label , ' ' , dyadic
 width =. {. glqextent s
 leftX =. <. xx - -: width
-glfont 'arial 16'
+glfont VocValenceFont
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
