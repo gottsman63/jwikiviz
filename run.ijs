@@ -8,9 +8,9 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Fix the color scheme.
-NB. "Bookmark" button next to the url field?
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 NB. Expand the webview on scroll...?
+NB. Fix the *Search results display.  It's hard to read.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -56,7 +56,6 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
-wd       'cc numb checkbox; cn Numb;'
 wd      'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
@@ -72,6 +71,16 @@ wd 'bin z;'
 )
 
 layoutForm =: 3 : 0
+layoutDefaultForm ''
+return.
+if. LayoutTemplate = 'D' do. layoutDefaultForm ''
+elseif. LayoutTemplate = 'S' do. layoutSearchForm ''
+elseif. LayoutTemplate = 'N' do. layoutNuVocForm ''
+end.
+wd 'timer 100'
+)
+
+layoutDefaultForm =: 3 : 0
 'w h' =. ". wd 'getp wh'
 winW =. w - 40
 winH =. h - 45
@@ -79,11 +88,30 @@ controlHeight =. 30
 wd 'set vocContext minwh 650 765'
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
-wd 'set bookmark maxwh ' , (": <. (winW * 0.07), controlHeight) , ';'
-wd 'set history maxwh ' , (": <. (winW * 0.36) , controlHeight) , ';'
-wd 'set launch maxwh ' , (": <. (winW * 0.07) , controlHeight) , ';'
+wd 'set bookmark maxwh ' , (": <. (winW * 0.10), controlHeight) , ';'
+wd 'set history maxwh ' , (": <. (winW * 0.30) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": <. (winW * 0.10) , controlHeight) , ';'
 wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-wd 'timer 100'
+)
+
+layoutNuVocForm =: 3 : 0
+'w h' =. ". wd 'getp wh'
+winW =. w - 40
+winH =. h - 45
+leftWidth =. (winW * 0.5) >. 650 + 175  NB. Minimum necessary to show NuVoc
+controlHeight =. 30
+rightWidth =. 0 >. winW - leftWidth
+leftHeight =. winH
+wd 'set vocContext minwh ' , ": 650 765
+wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
+wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
+wd 'set bookmark maxwh ' , (": <. (winW * 0.10), controlHeight) , ';'
+wd 'set history maxwh ' , (": <. (winW * 0.30) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": <. (winW * 0.10) , controlHeight) , ';'
+wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
+)
+
+layoutSearchForm =: 3 : 0
 )
 
 vizform_default =: 3 : 0
@@ -346,7 +374,7 @@ NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level'
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
 		cols =. (;: 'level parentid categoryid category parentseq count link')
-		data =. 2 ; termId ; (nextUserCatId 1) ; fname ; (>: index) ; (# forumLinks) ; 'http://www.jsoftware.com/mailman/listinfo/' , }. fname
+		data =. 2 ; termId ; (nextUserCatId 1) ; fname ; (>: index) ; (# forumLinks) ; 'https://www.jsoftware.com/mailman/listinfo/' , }. fname
 		sqlinsert__db 'categories' ; cols ; < data
 		forumId =. termId getCategoryId fname
 		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
@@ -444,7 +472,7 @@ PageLoadFreezeTime =: 0
 PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
-
+LayoutTemplate =: 'D' NB. (D)efault, (S)earch, (N)uVoc
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -1108,7 +1136,7 @@ NextUserCatId =: 0
 nextUserCatId =: 3 : 0
 NB. y Number of ids needed
 if. NextUserCatId = 0 do.
-	result =. , > > {: sqlreadm__db 'select max(parentid) from categories where parentid > 1000000' 
+	result =. , > > {: sqlreadm__db 'select max(categoryid) from categories where categoryid >= 1000000' 
 	if. 'NULL' -: result do. base =: 1000000 else. base =: >: {. result end.
 else.
 	base =: NextUserCatId
