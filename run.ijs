@@ -53,11 +53,11 @@ buildForm =: 3 : 0
 wd 'pc vizform;'
 wd 'bin h;'
 wd   'bin v;'
+wd     'cc vocContext isigraph;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd      'bin z'
-wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
@@ -70,9 +70,16 @@ wd   'bin z;'
 wd 'bin z;'
 )
 
+LayoutTemplate =: 'D'
+
+setLayoutTemplate =: 3 : 0
+NB. y A one-character layout template code
+if. y -: LayoutTemplate do. return. end.
+LayoutTemplate =: y
+layoutForm ''
+)
+
 layoutForm =: 3 : 0
-layoutDefaultForm ''
-return.
 if. LayoutTemplate = 'D' do. layoutDefaultForm ''
 elseif. LayoutTemplate = 'S' do. layoutSearchForm ''
 elseif. LayoutTemplate = 'N' do. layoutNuVocForm ''
@@ -85,9 +92,9 @@ layoutDefaultForm =: 3 : 0
 winW =. w - 40
 winH =. h - 45
 controlHeight =. 30
-wd 'set vocContext minwh 650 765'
-wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
-wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
+wd 'set vocContext minwh 650 765;'
+wd 'set searchBox visible 0;'
+wd 'set clearSearches visible 0;'
 wd 'set bookmark maxwh ' , (": <. (winW * 0.10), controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.30) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": <. (winW * 0.10) , controlHeight) , ';'
@@ -98,20 +105,34 @@ layoutNuVocForm =: 3 : 0
 'w h' =. ". wd 'getp wh'
 winW =. w - 40
 winH =. h - 45
-leftWidth =. (winW * 0.5) >. 650 + 175  NB. Minimum necessary to show NuVoc
+leftWidth =. (winW * 0.5) >. 650 + 175  NB. Minimum width necessary to show NuVoc in the detail area.
 controlHeight =. 30
 rightWidth =. 0 >. winW - leftWidth
 leftHeight =. winH
-wd 'set vocContext minwh ' , ": 650 765
+wd 'set vocContext minwh ' , (": leftWidth , 765) , ';'
+wd 'set searchBox visible 0;'
+wd 'set clearSearches visible 0;'
+wd 'set bookmark maxwh ' , (": <. (rightWidth * 0.20), controlHeight) , ';'
+wd 'set history maxwh ' , (": <. (rightWidth * 0.60) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": <. (rightWidth * 0.20) , controlHeight) , ';'
+wd 'set browser minwh ' , (": <. rightWidth , winH - controlHeight) , ';'
+)
+
+layoutSearchForm =: 3 : 0
+'w h' =. ". wd 'getp wh'
+winW =. w - 40
+winH =. h - 45
+controlHeight =. 30
+wd 'set vocContext minwh ' , (": 650 , 765 - controlHeight) , ';'
+wd 'set searchBox visible 1;'
+wd 'set searchBox focus;'
 wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
+wd 'set clearSearches visible 1;'
 wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
 wd 'set bookmark maxwh ' , (": <. (winW * 0.10), controlHeight) , ';'
 wd 'set history maxwh ' , (": <. (winW * 0.30) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": <. (winW * 0.10) , controlHeight) , ';'
 wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-)
-
-layoutSearchForm =: 3 : 0
 )
 
 vizform_default =: 3 : 0
@@ -1036,15 +1057,20 @@ parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; (1 #
 TocOutlineRailScrollIndex =: drawScrollerField parms
 entry =. TocOutlineRailSelectedIndex { entries
 if.  +./ '*NuVoc' E. > 3 { entry do.
+	setLayoutTemplate 'N'
 	drawVoc ''
 elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
+	setLayoutTemplate 'D'
 	(> 3 { entry) drawTocEntryForum DisplayDetailRect
 elseif. TagCatString -: > 3 { entry do.
+	setLayoutTemplate 'D'
 	drawTocEntryTags DisplayDetailRect
 elseif. (< SearchCatString) = 3 { entry do.
+	setLayoutTemplate 'S'
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree DisplayDetailRect
 NB. 	((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId > 3 { entry) drawTocEntryChildren DisplayDetailRect
 else.
+	setLayoutTemplate 'D'
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren DisplayDetailRect
 end.
