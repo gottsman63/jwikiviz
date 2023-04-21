@@ -8,10 +8,7 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Fix the *Search results display.  It's hard to read.
-NB. Look into splitting the detail pane from the TOC in order to facilitate Search child element management.
 NB. Fix Raul's bug.
-NB. Drop the curtain.
 NB. Fix the page load freeze.
 
 NB. B Items
@@ -836,7 +833,7 @@ if. (xx < {. VocMouseXY) *. ({. VocMouseXY) < xx + 40 do. ForumMonthBumpCount =:
 yearBumpArray =. (ForumYearBumpCount # 0) , 30 # 3 * timeLineHeight
 monthBumpArray =. (ForumMonthBumpCount # 0) , 12 # 3 * timeLineHeight
 yearOrigins =. (xx + margin) ,. ((# years) {. yearBumpArray) + yy + margin + timeLineHeight * i. # years
-yearStrings =. '`'&, &. > _2&{. &. > ": &. > years
+yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
 gltextcolor ''
 glfont SectionFont
