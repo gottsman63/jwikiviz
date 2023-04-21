@@ -424,12 +424,19 @@ DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
 SectionFont =: 'arial bold 16'
 
-BackgroundColor =: 148 210 189
-SectionColor =: 155 34 38
-LabelColor =: 0 18 25
-ColumnGuideColor =: 10 147 150
-SelectionColor =: 0 95 115
-BarColor =: 233 216 166
+BackgroundColor =: 255 255 255
+SectionColor =: 0 0 0
+LabelColor =: 0 102 204
+ColumnGuideColor =: 245 253 198
+SelectionColor =: 0 0 0
+BarColor =: 245 195 150
+
+NB. BackgroundColor =: 148 210 189
+NB. SectionColor =: 155 34 38
+NB. LabelColor =: 0 18 25
+NB. ColumnGuideColor =: 10 147 150
+NB. SelectionColor =: 0 95 115
+NB. BarColor =: 233 216 166
 
 NB. BackgroundColor =: 255 255 255
 NB. SectionColor =: 238 170 170
@@ -709,18 +716,12 @@ scrollIndex
 NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
-NB. y Highlight Flag ; Name ; Link/Command ; HeadingFlag
+NB. y Highlight Flag ; Name ; Link/Command ; Level
 'xx yy maxWidth height' =. x
-'highlightFlag name command headingFlag' =. y
-if. headingFlag do. 
-	glrgb SectionColor
-	gltextcolor ''
-	glfont TocBoldFont
-else.
-	glrgb 0 0 0
-	gltextcolor ''
-	glfont TocFont
-end.
+'highlightFlag name command level' =. y
+glrgb getTocColorForLevel level
+gltextcolor ''
+glfont getTocFontForLevel level
 (xx , yy) drawStringAt name
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
@@ -729,7 +730,7 @@ adjRect registerRectLink command ; name
 
 drawTocEntryChildrenColumn =: 4 : 0
 NB. x xx yy width height
-NB. y Table of Name ; Link/Command ; HeadingFlag
+NB. y Table of Name ; Link/Command ; Level
 NB. Render the column in black, with headings in SectionColor
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
@@ -889,7 +890,7 @@ ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent categoryid category parentSeq count link
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
-levels =. 1 + (] - <./) > {."1 categoryEntries
+levels =. (] - <./) > {."1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
 catLinks =. 6 {"1 categoryEntries
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
@@ -901,7 +902,7 @@ categoryEntryList =. (<"0 catHighlightFlags) ,. catTitles ,. commands ,. <1 NB. 
 TocEntryChildCategoryIndex =: TocEntryChildCategoryIndex <. <: # catLinks
 displayChildTable =. > TocEntryChildCategoryIndex { 1 {"1 tocWikiDocs  NB. Table of Title ; Link
 TocEntryChildCategoryEntries =: catTitles ,. catLinks
-entryList =. (< 0) ,. displayChildTable ,. <0
+entryList =. (< 0) ,. displayChildTable ,. <_1
 rowCount =. <. height % TocLineHeight
 columnGroups =. (< categoryEntryList) , (-rowCount) <\ entryList
 selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - xx) % width) * # columnGroups
@@ -999,8 +1000,8 @@ if. 0 = # tocWikiDocs do. '' return. end.
 categoryEntries =. > {."1 tocWikiDocs
 catLinkFlag =. (3 6 {"1 categoryEntries) ,. <1 NB. Category ; Link ; Heading Flag
 documentTables =. {:"1 tocWikiDocs
-titleLinkFlag =. ,.&(<0) &. > documentTables NB. Title ; Link ; Heading Flag
-entryList =. (<0) ,. ; (<"1 catLinkFlag) , &. > titleLinkFlag
+titleLinkLevel =. ,.&(<_1) &. > documentTables NB. Title ; Link ; Level
+entryList =. (<0) ,. ; (<"1 catLinkFlag) , &. > titleLinkLevel
 rowCount =. <. height % TocLineHeight
 columnGroups =. (-rowCount) <\ entryList
 selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - xx) % width) * # columnGroups
