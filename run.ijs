@@ -10,8 +10,9 @@ NB. Fix use of curl for search (post a question that contrasts spawning a curl w
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 NB. Fix the *Search results display.  It's hard to read.
 NB. Look into splitting the detail pane from the TOC in order to facilitate Search child element management.
-NB. Adjustable font size?
 NB. Fix Raul's bug.
+NB. Drop the curtain.
+NB. Fix the page load freeze.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -243,24 +244,8 @@ DisplayListRectAnimationStartTime =: 0
 
 setDisplayRects =: 3 : 0
 'w h' =. ". wd 'get vocContext wh'
-if. ({. VocMouseXY) < DisplayListRectTargetWidth do.
-	if. DisplayListRectTargetWidth ~: 175 do. 
-		DisplayListRectAnimationStartTime =: (6!:1) '' 
-		perpetuateAnimation ''
-	end.
-	DisplayListRectTargetWidth =: 175
-	DisplayListRectSourceWidth =: 20
-else.
-	if. DisplayListRectTargetWidth ~: 20 do. 
-		DisplayListRectAnimationStartTime =: (6!:1) '' 
-		perpetuateAnimation ''
-	end.
-	DisplayListRectTargetWidth =: 20
-	DisplayListRectSourceWidth =: 175
-end.
-length =. <. DisplayListRectSourceWidth + (DisplayListRectTargetWidth - DisplayListRectSourceWidth) * 1 <. 2 * ((6!:1) '') - DisplayListRectAnimationStartTime
-DisplayListRect =: 0 0 , length , h
-DisplayDetailRect =: length , 0 , (w - length) , h
+DisplayListRect =: 0 0 175 , h
+DisplayDetailRect =: 175 0 , (w - 175) , h
 )
 
 trigger_paint =: 3 : 0
@@ -913,7 +898,7 @@ ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent categoryid category parentSeq count link
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
-levels =. (] - <./) > {."1 categoryEntries
+levels =. 1 + (] - <./) > {."1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
 catLinks =. 6 {"1 categoryEntries
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
@@ -974,7 +959,7 @@ subcatColWidth =. <. width % 3
 detailX =. xx + subcatColWidth + margin
 detailWidth =. width - subcatColWidth + margin
 commandLinks =. '*setTocEntryTagSubcatIndex '&, &. > ": &. > <"0 i. # subcats
-scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (1 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex
+scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex
 TocEntryTagScrollIndex =: ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) drawScrollerField scrollEntries
 parentId =. > 7 { TocEntryTagSubcatIndex { subcatEntries
 tocWikiDocs =. getTocWikiDocs parentId  NB. (level parentid categoryid category parentSeq count link) ; table of title ; link
