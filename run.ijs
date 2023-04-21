@@ -446,21 +446,21 @@ CellMargin =: 5
 CellLineHeight =: 25
 DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
-DocumentColumnFont =: 'arial 18'
 SectionFont =: 'arial bold 16'
-NB. BackgroundColor =: 233 216 166
-NB. SectionColor =: 155 34 38
-NB. LabelColor =: 0 18 25
-NB. ColumnGuideColor =: 148 210 189
-NB. SelectionColor =: 0 95 115
-NB. BarColor =: 148 210 189
 
-BackgroundColor =: 255 255 255
-SectionColor =: 0 0 0
-LabelColor =: 0 0 0
-ColumnGuideColor =: 204 238 255
-SelectionColor =: 0 0 0
-BarColor =: 238 170 170
+BackgroundColor =: 148 210 189
+SectionColor =: 155 34 38
+LabelColor =: 0 18 25
+ColumnGuideColor =: 10 147 150
+SelectionColor =: 0 95 115
+BarColor =: 233 216 166
+
+NB. BackgroundColor =: 255 255 255
+NB. SectionColor =: 238 170 170
+NB. LabelColor =: 0 0 0
+NB. ColumnGuideColor =: 204 238 255
+NB. SelectionColor =: 0 0 0
+NB. BarColor =: 238 170 170
 
 PageFreezeColor =: 0 18 25
 VocSelectedGlyph =: ''
@@ -500,9 +500,17 @@ MWheelOffset =: 0
 LayoutTemplate =: 'D' NB. (D)efault, (S)earch, (N)uVoc
 
 getTocFontForLevel =: 3 : 0
-NB. y An integer level in an outline hierarchy
+NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
 NB. Return the string specification of the font to use.
-> y { 'arial bold italic 13' ; 'arial bold 13' ; 'arial 13' ; 'arial 13' ; 'arial 13' ; 'arial 13' ; 'arial 13' ; 'arial 13'
+if. y < 0 do. 'arial 13' return. end.
+fonts =. 'arial bold 15' ; 'arial bold 13' ; 'arial 13'
+> (y <. <: # fonts) { fonts
+)
+
+getTocColorForLevel =: 3 : 0
+NB. y An integer level in an outline hierarchy.  _1 indicates a page; 9..n indicates a level.
+NB. Return a color for the text.
+if. 0 > y do. LabelColor else. SectionColor end.
 )
 
 getPosColor =: 3 : 0
@@ -663,12 +671,15 @@ if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do.
 end.
 )
 NB. ============================== Scroller Field ===============================
-drawScrollerField =: 3 : 0
-NB. y Structure: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+drawScrollerField =: 4 : 0
+NB. x xx yy width height
+NB. y strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
+NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's a page link, not a heading.
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
-'rect strings links ratios headingFlags selectedIndex scrollIndex' =. y
+rect =. x
+'strings links ratios levels selectedIndex scrollIndex' =. y
 'xx yy w h' =. rect
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
@@ -698,13 +709,8 @@ for_i. i. # strings do.
 	glbrush ''
 	glpen 0
 	if. 0 < i { ratios do. glrect (origin - margin , 0) , (<. (w - margin) * i { ratios) , lineHeight - 4 end.
-	if. i { headingFlags do. 
-		if. 0 > i { ratios do. glrgb 127 127 127 else.  glrgb SectionColor end.
-		glfont TocBoldFont
-	else.
-		glrgb LabelColor
-		glfont TocFont
-	end.
+	glfont getTocFontForLevel i { levels
+	glrgb getTocColorForLevel i { levels
 	glbrush ''
 	gltextcolor''
 	glclip xx , yy ,  w , h
@@ -806,7 +812,7 @@ drawTocEntryForum =: 4 : 0
 NB. x The name of the forum
 NB. y xx yy width height
 NB. Display the contents of the forum
-NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 ForumName =: x
@@ -872,8 +878,8 @@ links =.   4 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: drawScrollerField subjRect ; subjects ; subjectCommands ; ratios ; (1 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex
-ForumAuthorScrollIndex =: drawScrollerField authRect ; authors ; authorCommands ; (0 #~ # authors) ; (0 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex
+ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex
+ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
@@ -895,20 +901,19 @@ NB. Render the descendants of x (category id) in xx yy width height.
 NB. This is used when the child count is too high.  It renders a tree in the first column (drawaScrollerField)
 NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
-NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+NB. x y width height drawScrollerField strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 categoryId =. x
 NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
 log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
-NB. categoryId =. parentId getCategoryId category
 tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parent category parentSeq count link) ; (table of title ; link)
 if. 1 = # $ tocWikiDocs do. '' return. end.
 ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent categoryid category parentSeq count link
-NB. indents =. #&'  ' &. > &. <"0 levels - <./ levels =. > 0 {"1 categoryEntries
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
+levels =. (] - <./) > {."1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
 catLinks =. 6 {"1 categoryEntries
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
@@ -942,8 +947,8 @@ if. fullSizeColCount < # columnRects do.
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
 headerColumn =. > {. columnGroups
-parms =. (> {. columnRects) ; (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ratios ; ((# headerColumn) # 1) ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex
-TocEntryChildScrollIndex =: drawScrollerField parms
+parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ratios ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex
+TocEntryChildScrollIndex =: (> {. columnRects) drawScrollerField parms
 (}. columnRects) drawTocEntryChildrenColumn &. > }. columnGroups
 ''
 )
@@ -959,7 +964,7 @@ drawTocEntryTags =: 3 : 0
 NB. y xx yy width height
 NB. Render the immediate subcategories of *Tags in a scrollerField.  
 NB. Render the sub-subcategories of the selected subcategory to the right with their pages.
-NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 margin =. 5
@@ -969,8 +974,8 @@ subcatColWidth =. <. width % 3
 detailX =. xx + subcatColWidth + margin
 detailWidth =. width - subcatColWidth + margin
 commandLinks =. '*setTocEntryTagSubcatIndex '&, &. > ": &. > <"0 i. # subcats
-scrollEntries =. ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) ; subcats ; commandLinks ; (0 #~ # subcats) ; (1 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex
-TocEntryTagScrollIndex =: drawScrollerField scrollEntries
+scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (1 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex
+TocEntryTagScrollIndex =: ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) drawScrollerField scrollEntries
 parentId =. > 7 { TocEntryTagSubcatIndex { subcatEntries
 tocWikiDocs =. getTocWikiDocs parentId  NB. (level parentid categoryid category parentSeq count link) ; table of title ; link
 if. 0 = # tocWikiDocs do. '' return. end.
@@ -1057,14 +1062,15 @@ queueUrl (> 6 { entry) ; > 3 { entry
 drawTocRail =: 4 : 0
 NB. x xx yy w h
 NB. y A level of the Toc hierarchy to which to display
-NB. drawScrollerField: x y width height ; strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+NB. (x y width height) drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
 'xx yy width height' =. x
 entries =. 1 getTocOutlineRailEntries y NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
+levels =. (] - <./) > 0 {"1 entries
 maxCount =. >./ > 4 {"1 entries
 indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
-parms =. x ; indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; (1 #~ # entries) ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
-TocOutlineRailScrollIndex =: drawScrollerField parms
+parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
+TocOutlineRailScrollIndex =: x drawScrollerField parms
 entry =. TocOutlineRailSelectedIndex { entries
 if.  +./ '*NuVoc' E. > 3 { entry do.
 	setLayoutTemplate 'N'
@@ -1078,7 +1084,6 @@ elseif. TagCatString -: > 3 { entry do.
 elseif. (< SearchCatString) = 3 { entry do.
 	setLayoutTemplate 'S'
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree DisplayDetailRect
-NB. 	((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId > 3 { entry) drawTocEntryChildren DisplayDetailRect
 else.
 	setLayoutTemplate 'D'
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
