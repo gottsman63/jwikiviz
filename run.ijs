@@ -8,8 +8,8 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Fix Raul's bug.
-NB. Fix the page load freeze.
+NB. Webview scroll-based expansion.
+NB. Test infinite loop bug.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -51,11 +51,11 @@ buildForm =: 3 : 0
 wd 'pc vizform;'
 wd 'bin h;'
 wd   'bin v;'
-wd     'cc vocContext isigraph;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
-wd      'bin z'
+wd     'bin z'
+wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
@@ -78,59 +78,24 @@ layoutForm ''
 )
 
 layoutForm =: 3 : 0
-if. LayoutTemplate = 'D' do. layoutDefaultForm ''
-elseif. LayoutTemplate = 'S' do. layoutSearchForm ''
-elseif. LayoutTemplate = 'N' do. layoutNuVocForm ''
-end.
+layoutDefaultForm ''
 wd 'timer 100'
 )
 
 layoutDefaultForm =: 3 : 0
 'w h' =. ". wd 'getp wh'
-winW =. w - 40
-winH =. h - 45
+winW =. w - 20
+winH =. h - 40
 controlHeight =. 30
-wd 'set vocContext minwh 650 765;'
-wd 'set searchBox visible 0;'
-wd 'set clearSearches visible 0;'
-wd 'set bookmark maxwh ' , (": <. (winW * 0.10), controlHeight) , ';'
-wd 'set history maxwh ' , (": <. (winW * 0.30) , controlHeight) , ';'
-wd 'set launch maxwh ' , (": <. (winW * 0.10) , controlHeight) , ';'
-wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
-)
-
-layoutNuVocForm =: 3 : 0
-'w h' =. ". wd 'getp wh'
-winW =. w - 40
-winH =. h - 45
-leftWidth =. (winW * 0.5) >. 650 + 175  NB. Minimum width necessary to show NuVoc in the detail area.
-controlHeight =. 30
-rightWidth =. 0 >. winW - leftWidth
-leftHeight =. winH
-wd 'set vocContext minwh ' , (": leftWidth , 765) , ';'
-wd 'set searchBox visible 0;'
-wd 'set clearSearches visible 0;'
-wd 'set bookmark maxwh ' , (": <. (rightWidth * 0.20), controlHeight) , ';'
-wd 'set history maxwh ' , (": <. (rightWidth * 0.60) , controlHeight) , ';'
-wd 'set launch maxwh ' , (": <. (rightWidth * 0.20) , controlHeight) , ';'
-wd 'set browser minwh ' , (": <. rightWidth , winH - controlHeight) , ';'
-)
-
-layoutSearchForm =: 3 : 0
-'w h' =. ". wd 'getp wh'
-winW =. w - 40
-winH =. h - 45
-controlHeight =. 30
-wd 'set vocContext minwh ' , (": 650 , 765 - controlHeight) , ';'
-wd 'set searchBox visible 1;'
-wd 'set searchBox focus;'
-wd 'set searchBox maxwh ' , (": <. (winW * 0.3) , controlHeight) , ';'
-wd 'set clearSearches visible 1;'
-wd 'set clearSearches maxwh ' , (": <. (winW * 0.09) , controlHeight) , ';'
-wd 'set bookmark maxwh ' , (": <. (winW * 0.10), controlHeight) , ';'
-wd 'set history maxwh ' , (": <. (winW * 0.30) , controlHeight) , ';'
-wd 'set launch maxwh ' , (": <. (winW * 0.10) , controlHeight) , ';'
-wd 'set browser minwh ' , (": (<. winW * 0.5) , winH - controlHeight) , ';'
+vocContextWidth =. <. 825 >. winW % 2
+browserWidth =. winW - vocContextWidth
+wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.8) , controlHeight) , ';'
+wd 'set vocContext maxwh ' , (": vocContextWidth , winH) , ';'
+wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
+wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
+wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
 )
 
 vizform_default =: 3 : 0
