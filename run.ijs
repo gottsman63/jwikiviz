@@ -7,17 +7,17 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
-NB. Fix the color scheme.
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Expand the webview on scroll...?
 NB. Fix the *Search results display.  It's hard to read.
+NB. Look into splitting the detail pane from the TOC in order to facilitate Search child element management.
+NB. Adjustable font size?
+NB. Fix Raul's bug.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
 NB. Support parallel download of forum and wiki documents.
 NB. Animate scroll rather than jumping when the travel is too high.
 NB. Add a "Search" label.
-NB. Set focus to the Search input field when *Search is hovered.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
 NB. Standalone application.
@@ -266,7 +266,7 @@ DisplayDetailRect =: length , 0 , (w - length) , h
 trigger_paint =: 3 : 0
 log 'trigger_paint ' , (wd 'getp wh') , '   ' , (": getFrameRate '') , ' fps'
 try.
-glfill 255 255 255 255
+glfill BackgroundColor , 255
 setDisplayRects ''
 drawToc ''
 drawPageLoadFreezeRect ''
@@ -448,7 +448,21 @@ DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
 DocumentColumnFont =: 'arial 18'
 SectionFont =: 'arial bold 16'
-SectionColor =: 110 0 0
+NB. BackgroundColor =: 233 216 166
+NB. SectionColor =: 155 34 38
+NB. LabelColor =: 0 18 25
+NB. ColumnGuideColor =: 148 210 189
+NB. SelectionColor =: 0 95 115
+NB. BarColor =: 148 210 189
+
+BackgroundColor =: 255 255 255
+SectionColor =: 0 0 0
+LabelColor =: 0 0 0
+ColumnGuideColor =: 204 238 255
+SelectionColor =: 0 0 0
+BarColor =: 238 170 170
+
+PageFreezeColor =: 0 18 25
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
 DocumentSectionGeometry =: '' NB. index x y width height label sectionName columnId url
@@ -460,22 +474,12 @@ VocCellFont =: 'consolas 16 bold'
 VocValenceFont =: 'arial 14'
 CategoryIndex =: 0
 CategoryTable =: ''
-HighlightTocColor =: 255 63 63
-HighlightColor =: 192 64 64
-SelectionColor =: 0 0 192
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
-DefaultUrl =: '' NB. 'https://www.jsoftware.com' NB. The URL to load when no link is being hovered over. 
-NB. Toc =: '' NB. path ; doc name ; document link
-NB. TocOutline =: '' NB. level ; path component ; full path
-TocFont =: 'arial 16'
-TocBoldFont =: 'arial bold 16'
-TocItalicFont =: 'arial italic 16'
+TocFont =: 'arial 13'
+NB. TocBoldFont =: 'arial bold 14'
 TocLineHeight =: 21
-TocSelectedTopCategory =: '*NuVoc'
 TocScrollIndex =: 0
 MaxTocDepth =: 3
-ScrollColor =: 230 230 230
-BarColor =: ScrollColor * 0.7
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
 Months =: ;:'January February March April May June July August September October November December'
@@ -494,6 +498,12 @@ PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 LayoutTemplate =: 'D' NB. (D)efault, (S)earch, (N)uVoc
+
+getTocFontForLevel =: 3 : 0
+NB. y An integer level in an outline hierarchy
+NB. Return the string specification of the font to use.
+> y { 'arial bold italic 13' ; 'arial bold 13' ; 'arial 13' ; 'arial 13' ; 'arial 13' ; 'arial 13' ; 'arial 13' ; 'arial 13'
+)
 
 getPosColor =: 3 : 0
 NB. y The boxed name of a pos
@@ -645,7 +655,7 @@ NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. Revers
 
 drawPageLoadFreezeRect =: 3 : 0
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do.
-	glrgb 255 0 0
+	glrgb PageFreezeColor
 	glpen 5
 	glrgba 0 0 0 0
 	glbrush ''
@@ -675,10 +685,10 @@ heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # To
 ys =. <. }: +/\ 0 , heights
 heights =. <. heights
 origins =. <. (margin + xx) ,. margin + yy + ys
-glrgb 0 0 0
+glrgb LabelColor
 gltextcolor ''
 glpen 1
-glrgb 255 255 255
+glrgb BackgroundColor
 glbrush ''
 glrect rect
 for_i. i. # strings do.
@@ -692,7 +702,7 @@ for_i. i. # strings do.
 		if. 0 > i { ratios do. glrgb 127 127 127 else.  glrgb SectionColor end.
 		glfont TocBoldFont
 	else.
-		glrgb 0 0 0
+		glrgb LabelColor
 		glfont TocFont
 	end.
 	glbrush ''
@@ -814,7 +824,7 @@ margin =. 5
 glclip 0 0 10000 100000
 glrgb 0 0 0
 glpen 1
-glrgb 255 255 255
+glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 colWidth =. <. -: width - +: margin
@@ -881,7 +891,7 @@ TocEntryChildCategoryEntries =: '' NB. Table of Title ; Link
 drawTocEntryChildrenWithTree =: 4 : 0
 NB. x Category id
 NB. y xx yy width height entryY
-NB. Render the descendants of the TocSelectedTopCategory in xx yy width height.
+NB. Render the descendants of x (category id) in xx yy width height.
 NB. This is used when the child count is too high.  It renders a tree in the first column (drawaScrollerField)
 NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
@@ -921,11 +931,11 @@ columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGro
 columnRects =: <"1 <. (xx + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
 glrgb 0 0 0
 glpen 1
-glrgb 255 255 255
+glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 if. fullSizeColCount < # columnRects do.
-	glrgb ScrollColor
+	glrgb ColumnGuideColor
 	glbrush ''
 	glpen 0
 	w =. width % # columnRects
@@ -978,7 +988,7 @@ compressedColWidth =. <. (detailWidth - colWidth) % <: # columnGroups
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =. <"1 <. (detailX + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
 if. fullSizeColCount < # columnRects do.
-	glrgb ScrollColor
+	glrgb ColumnGuideColor
 	glbrush ''
 	glpen 0
 	w =. <. detailWidth % # columnRects
@@ -1000,7 +1010,7 @@ NB. log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
 margin =. 5
 glrgb 0 0 0
 glpen 1
-glrgb 255 255 255
+glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 tocWikiDocs =. getTocWikiDocs x NB. Table of (level parentid categoryid category parentSeq count link) ; table of title ; link
@@ -1024,7 +1034,7 @@ if. (1 < # categoryEntries) *. (# columnRects) > 2 * fullSizeColCount do.
 	return.
 end.
 if. fullSizeColCount < # columnRects do.
-	glrgb ScrollColor
+	glrgb ColumnGuideColor
 	glbrush ''
 	glpen 0
 	w =. width % # columnRects
@@ -1228,6 +1238,7 @@ while. 0 < # tokenWidths do.
 	sieve =. MaxCellWidth >: +/\tokenWidths
 	lineWidths =. lineWidths , +/ sieve # tokenWidths
 	tokenWidths =. tokenWidths #~ -. sieve
+	if. 0 = +/ sieve do. break. end. NB. Abort--not enough horizontal area for any of the remaining tokens.
 end.
 (>./ lineWidths) , CellLineHeight * # lineWidths
 )
@@ -1350,7 +1361,7 @@ queueUrl n =: (> 7 { entry) ; > 5 { entry
 drawVoc =: 3 : 0
 glrgb 255 255 255
 glbrush ''
-glrect DetailRect
+glrect DisplayDetailRect
 ((20 + {. DisplayDetailRect) , 5) drawVocSections 0 1 2 3 4 5 6
 ((300 + {. DisplayDetailRect) , 5) drawVocSections 7 8 9 10 11
 )
