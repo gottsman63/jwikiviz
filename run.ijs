@@ -10,6 +10,7 @@ NB. Fix use of curl for search (post a question that contrasts spawning a curl w
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
 NB. Webview scroll-based expansion.
 NB. Test infinite loop bug.
+NB. Take out Numb checkbox.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -78,24 +79,43 @@ layoutForm ''
 )
 
 layoutForm =: 3 : 0
-layoutDefaultForm ''
+'w h' =. ". wd 'getp wh'
+winW =. w - 40
+winH =. h - 45
+controlHeight =. 30
+vocContextHeight =. winH >. 760
+if. EmphasizeBrowserFlag *. winW < 1600 do.
+	vocContextWidth =. 175
+	browserWidth =. winW - vocContextWidth
+	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.8) , controlHeight) , ';'
+	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
+	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
+	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
+	wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
+	wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
+else.
+	vocContextWidth =. <. 825 >. winW % 2
+	browserWidth =. winW - vocContextWidth
+	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": <. (vocContextWidth * 0.8) , controlHeight) , ';'
+	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
+	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
+	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
+	wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
+	wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
+end.
 wd 'timer 100'
 )
 
-layoutDefaultForm =: 3 : 0
-'w h' =. ". wd 'getp wh'
-winW =. w - 20
-winH =. h - 40
-controlHeight =. 30
-vocContextWidth =. <. 825 >. winW % 2
-browserWidth =. winW - vocContextWidth
-wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.8) , controlHeight) , ';'
-wd 'set vocContext maxwh ' , (": vocContextWidth , winH) , ';'
-wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
-wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
-wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
-wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
+emphasizeBrowser =: 3 : 0
+EmphasizeBrowserFlag =: 1
+layoutForm ''
+)
+
+deemphasizeBrowser =: 3 : 0
+EmphasizeBrowserFlag =: 0
+layoutForm ''
 )
 
 vizform_default =: 3 : 0
@@ -132,6 +152,7 @@ vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
 NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
+deemphasizeBrowser ''
 invalidateDisplay ''
 )
 
@@ -155,6 +176,14 @@ url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 topHistoryUrl =. > 0 { 0 { HistoryMenu
 if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
+)
+
+vizform_browser_mwheel =: 3 : 0
+emphasizeBrowser ''
+)
+
+vizform_mmove =: 3 : 0
+deemphasizeBrowser ''
 )
 
 vizform_searchBox_button =: 3 : 0
@@ -444,7 +473,7 @@ PageLoadFreezeTime =: 0
 PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
-LayoutTemplate =: 'D' NB. (D)efault, (S)earch, (N)uVoc
+EmphasizeBrowserFlag =: 0
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
@@ -1018,6 +1047,7 @@ indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
 parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
 TocOutlineRailScrollIndex =: x drawScrollerField parms
+if. EmphasizeBrowserFlag do. return. end.
 entry =. TocOutlineRailSelectedIndex { entries
 if.  +./ '*NuVoc' E. > 3 { entry do.
 	setLayoutTemplate 'N'
@@ -1188,9 +1218,13 @@ tokenWidths =: (2 * CellMargin) + > {.@:glqextent &. > tokens
 lineWidths =. ''
 while. 0 < # tokenWidths do.
 	sieve =. MaxCellWidth >: +/\tokenWidths
-	lineWidths =. lineWidths , +/ sieve # tokenWidths
-	tokenWidths =. tokenWidths #~ -. sieve
-	if. 0 = +/ sieve do. break. end. NB. Abort--not enough horizontal area for any of the remaining tokens.
+	if. 0 = +/ sieve do. NB. Throw up our hands--not enough horizontal area for the next token.
+		lineWidths =. lineWidths , {. tokenWidths
+		tokenWidths =. }. tokenWidths
+	else.
+		lineWidths =. lineWidths , +/ sieve # tokenWidths
+		tokenWidths =. tokenWidths #~ -. sieve
+	end.
 end.
 (>./ lineWidths) , CellLineHeight * # lineWidths
 )
