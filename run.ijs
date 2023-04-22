@@ -6,9 +6,8 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-
+NB. Take out the high-cost (tight loop) log calls.
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -378,7 +377,6 @@ wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
 rawUrl =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030'
 url =. ('"' ; '\"') rxrplc ('\$' ; '\\$') rxrplc ('\\' ; '\\\\') rxrplc rawUrl
-smoutput 'url' ; url
 html =. gethttp '"' , url , '"'
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
