@@ -344,7 +344,9 @@ NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
 NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
 NB. smoutput (1!:1) < fname
 log 'Searching wiki for ' , y , '...'
-html =. (2!:0) 'curl "https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y) , '"'
+rawUrl =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , urlencode y
+url =. ('"' ; '\"') rxrplc ('\$' ; '\\$') rxrplc ('&' ; '\&') rxrplc ('\\' ; '\\\\') rxrplc rawUrl
+html =. gethttp '"' , url , '"'
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
 wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
@@ -373,7 +375,11 @@ NB. Perform the search, parse the results, and update the "categories" and "wiki
 try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
-html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
+NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
+rawUrl =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030'
+url =. ('"' ; '\"') rxrplc ('\$' ; '\\$') rxrplc ('\\' ; '\\\\') rxrplc rawUrl
+smoutput 'url' ; url
+html =. gethttp '"' , url , '"'
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
 termId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
