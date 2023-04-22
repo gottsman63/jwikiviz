@@ -1247,7 +1247,7 @@ log 'getCategoryId ' , (": x) , ', ' , y
 if. x < 0 do. _1 return. end.
 result =. > {: sqlreadm__db 'select categoryid from categories where category = "' , y , '" and parentid = ' , ": x
 if. 0 = # result do. 
-	smoutput 'getCategoryId _1 for' ; x ; y
+NB. 	smoutput 'getCategoryId _1 for' ; x ; y
 	_1
 else. 
 	{. , > result 
