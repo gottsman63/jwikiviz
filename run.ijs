@@ -8,11 +8,6 @@ coinsert 'jgl2'
 NB. A Items
 NB. Fix use of curl for search (post a question that contrasts spawning a curl with gethttp).
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Webview scroll-based expansion.
-NB. Test infinite loop bug.
-NB. Take out Numb checkbox.
-NB. Clear the log records on session start.
-NB. Don't reload the same page repeatedly.
 
 
 NB. B Items
@@ -1340,6 +1335,7 @@ lineTokens =. ''
 yStarts =. ''
 while. 0 < # tokenWidths do.
 	sieve =. MaxCellWidth >: +/\tokenWidths
+	if. 0 = +./ sieve do. sieve =. 1 , (<: # tokenWidths) # 0 end. NB. Take a token even if it doesn't fit.
 	lineWidths =. lineWidths , +/ sieve # tokenWidths
 	tokenWidths =. tokenWidths #~ -. sieve
 	lineTokens =. lineTokens , < sieve # tokens
