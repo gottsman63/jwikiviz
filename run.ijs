@@ -11,6 +11,9 @@ NB. Implement migration of ancillary information (history, searches, bookmarks) 
 NB. Webview scroll-based expansion.
 NB. Test infinite loop bug.
 NB. Take out Numb checkbox.
+NB. Clear the log records on session start.
+NB. Don't reload the same page repeatedly.
+
 
 NB. B Items
 NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
@@ -41,6 +44,10 @@ if. 0 = ? 200 do.
 	sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; JVERSION
 end.
 )
+
+clearLog =: 3 : 0
+sqlcmd__db 'delete from log'
+)
 NB. =======================================
 
 NB. ==================== Form =====================
@@ -48,7 +55,8 @@ NB. FormMouseXY =: 0 0
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
 
-buildForm =: 3 : 0 
+buildForm =: 3 : 0
+log 'buildForm'
 wd 'pc vizform;'
 wd 'bin h;'
 wd   'bin v;'
@@ -73,12 +81,14 @@ LayoutTemplate =: 'D'
 
 setLayoutTemplate =: 3 : 0
 NB. y A one-character layout template code
+log 'setLayoutTemplate ' , y
 if. y -: LayoutTemplate do. return. end.
 LayoutTemplate =: y
 layoutForm ''
 )
 
 layoutForm =: 3 : 0
+log 'layoutForm'
 'w h' =. ". wd 'getp wh'
 winW =. w - 40
 winH =. h - 45
@@ -109,11 +119,13 @@ wd 'timer 100'
 )
 
 emphasizeBrowser =: 3 : 0
+log 'emphasizeBrowser'
 EmphasizeBrowserFlag =: 1
 layoutForm ''
 )
 
 deemphasizeBrowser =: 3 : 0
+log 'deemphasizeBrowser'
 EmphasizeBrowserFlag =: 0
 layoutForm ''
 )
@@ -125,25 +137,30 @@ NB. (> {: 5 { wdq) (1!:2) 2
 )
 
 vizform_resize =: 3 : 0
+log 'vizform_resize'
 layoutForm ''
 )
 
 vizform_close =: 3 : 0
+log 'vizform_close'
 wd 'timer 0'
 wd 'pclose'
 )
 
 vizform_numb_button =: 3 : 0
+log 'vizform_numb_button'
 Numb =: ". numb
 invalidateDisplay ''
 )
 
 vizform_bookmark_button =: 3 : 0
+log 'vizform_bookmark_button'
 bookmark ''
 invalidateDisplay ''
 )
 
 vizform_clearSearches_button =: 3 : 0
+log 'vizform_clearSearches_button'
 clearSearches ''
 invalidateDisplay ''
 )
@@ -151,18 +168,21 @@ invalidateDisplay ''
 vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
 NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
+log 'vizform_vocContext_mmove'
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 deemphasizeBrowser ''
 invalidateDisplay ''
 )
 
 vizform_vocContext_mblup =: 3 : 0
+log 'vizform_vocContext_mblup'
 VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
 PageLoadFreezeTime =: (6!:1) ''
 perpetuateAnimation ''
 )
 
 vizform_vocContext_mwheel =: 3 : 0
+log 'vizform_vocContext_mwheel'
 MWheelOffset =: MWheelOffset + 11 { ". > (1 {"1 wdq) {~ ({."1 wdq) i. < 'sysdata'
 invalidateDisplay ''
 )
@@ -172,6 +192,7 @@ trigger_paint ''
 )
 
 vizform_browser_curl =: 3 : 0
+log 'vizform_browser_curl'
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 topHistoryUrl =. > 0 { 0 { HistoryMenu
 if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
@@ -179,14 +200,17 @@ resetBookmarkButton ''
 )
 
 vizform_browser_mwheel =: 3 : 0
+log 'vizform_browsser_mwheel'
 emphasizeBrowser ''
 )
 
 vizform_mmove =: 3 : 0
+log 'vizform_mmove'
 deemphasizeBrowser ''
 )
 
 vizform_searchBox_button =: 3 : 0
+log 'vizform_searchBox_button'
 try.
 	search searchBox
 	wd 'set searchBox text ""'
@@ -198,6 +222,7 @@ end.
 )
 
 vizform_history_select =: 3 : 0
+log 'vizform_history_select'
 loadPage (". history_select) { HistoryMenu
 )
 
@@ -207,6 +232,7 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
 )
 
 vizform_wctrl_fkey =: 3 : 0
+log 'vizform_wctrl_fkey'
 wd 'timer 0'
 wd 'pclose'
 )
@@ -214,6 +240,7 @@ wd 'pclose'
 PerpetuateAnimationStartTime =: 0
 
 sys_timer_z_ =: 3 : 0
+log_base_ 'sys_timer_z_'
 try.
 NB. 	checkQueuedUrlTime_base_ ''
 	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_base_ do. invalidateDisplay_base_ '' end.
@@ -234,6 +261,7 @@ DisplayListRectSourceWidth =: 20
 DisplayListRectAnimationStartTime =: 0
 
 setDisplayRects =: 3 : 0
+log 'setDisplayRects'
 'w h' =. ". wd 'get vocContext wh'
 DisplayListRect =: 0 0 175 , h
 DisplayDetailRect =: 175 0 , (w - 175) , h
@@ -257,6 +285,7 @@ end.
 )
 
 invalidateDisplay =: 3 : 0
+log 'invalidateDisplay'
 wd 'set vocContext invalid'
 )
 NB. ======================================================
@@ -264,6 +293,7 @@ NB. ======================================================
 NB. =================== Search ===========================
 deleteCategoryIdAndDescendants =: 3 : 0
 NB. y A category id whose descendants are to be deleted.
+log 'deleteCategoryIdAndDescendants ' , ": y
 if. y < 0 do. return. end.
 childIds =. > {: sqlreadm__db 'select categoryid from categories where parentid = ' , ": y
 deleteCategoryIdAndDescendants &. > childIds
@@ -272,6 +302,7 @@ sqlcmd__db 'delete from wiki where categoryid = ' , ": y
 )
 
 deleteCategoryIdDescendantsOnly =: 3 : 0
+log 'deleteCategoryIdDescendantsOnly ' , ": y
 if. y < 0 do. return. end.
 childIds =. , > > {: sqlreadm__db 'select categoryid from categories where parentid = ' , ": y
 deleteCategoryIdAndDescendants &. > childIds
@@ -290,6 +321,7 @@ clearCache ''
 
 clearSearch =: 3 : 0
 NB. y A search term
+log 'clearSearch ' , y
 termId =. > {: sqlreadm__db 'select categoryid from categories where category = "' , y , '" AND parentid = ' , ": SearchHiddenCatId getCategoryId SearchCatString
 deleteCategoryIdAndDescendants (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
 deleteCategoryIdAndDescendants (getTopCategoryId SearchCatString) getCategoryId y
@@ -299,6 +331,7 @@ clearCache ''
 addSearchToToc =: 3 : 0
 NB. y A search string
 NB. Save parent ; child.  
+log 'addSearchToToc ' , ": y
 term =.  y
 clearSearch term
 cols =. ;: 'level parentid categoryid category count parentseq link'
@@ -390,6 +423,7 @@ end.
 
 search =: 3 : 0
 NB. y A search term.
+log 'search ' , y
 try.
 	log 'Searching for ' , y
 	addSearchToToc y
@@ -408,6 +442,7 @@ end.
 )
 
 selectSearch=: 3 : 0
+log 'selectSearch'
 NB. Select '*Search' in the Table of Contents (TOC).
 index =. (< SearchCatString) i.~ 3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth NB. Table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
 setTocOutlineRailSelectedIndex index
@@ -513,6 +548,7 @@ drawHighlight =: 4 : 0
 NB. x xx yy w h
 NB. y color (r g b) but no (a)
 NB. glrgb y
+log 'drawHighlight ' , (": x) , ' ' , ": y
 color =. y , 255 NB. <. 255 * | 1 o. 2 * {: (6!:0) ''
 glrgba color
 glpen 2
@@ -537,12 +573,14 @@ links =. , > {: sqlreadm__db 'select link from wiki where categoryId = ' , ": ge
 )
 
 resetBookmarkButton =: 3 : 0
+log 'resetBookmarkButton'
 'url title' =. {. HistoryMenu
 links =. , > {: sqlreadm__db 'select link from wiki where categoryId = ' , ": getTopCategoryId BookmarkCatString
 if. isBookmarked url do. wd 'set bookmark text "Un-bookmark";' else. wd 'set bookmark text "Bookmark";' end.
 )
 
 bookmark =: 3 : 0
+log 'bookmark'
 'url title' =. {. HistoryMenu
 id =. (getTopCategoryId BookmarkCatString)
 if. isBookmarked url do.
@@ -555,15 +593,9 @@ invalidateDisplay ''
 resetBookmarkButton ''
 )
 
-checkQueuedUrlTime =: 3 : 0
-if. (0.25 < ((6!:1) '') - QueuedUrlTime_base_) *. -. QueuedUrl_base_ -: '' do. 
-	loadPage_base_ QueuedUrl_base_
-	QueuedUrl_base_ =: ''
-end.
-)
-
 queueUrl =: 3 : 0
 NB. y A url to queue for delayed loading ; A title
+log 'queueUrl ' , (0 {:: y) , ' ' , 1 {:: y
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
@@ -572,6 +604,7 @@ loadPage QueuedUrl
 
 addToHistoryMenu =: 3 : 0
 NB. y Label ; Link
+log 'addToHistoryMenu ' , (0 {:: y) , ' ' , 1 {:: y
 if. y -: '' do. return. end.
 if. HistoryMenu -: '' do. HistoryMenu =: ,: y else. HistoryMenu =: ~. y , HistoryMenu end.
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
@@ -583,6 +616,7 @@ sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 Hist
 )
 
 loadHistoryMenu =: 3 : 0
+log 'loadHistoryMenu'
 HistoryMenu =: > {: sqlreadm__db 'select link, label from history'
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
@@ -590,6 +624,7 @@ wd 'set history select 0'
 )
 
 HistoryMenu =: '' NB. Table of Title ; Link
+LastUrlLoaded =: ''
 
 loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
@@ -603,6 +638,8 @@ if. 'Category:' -: 9 {. url do.
 elseif. -. 'http' -: 4 {. url do.
 	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/' , url
 end.
+if. url -: LastUrlLoaded do. return. end.
+LastUrlLoaded =: url
 log 'Loading url ' , url
 wd 'set browser url *' , url
 addToHistoryMenu (< url) , {: y
@@ -622,6 +659,7 @@ NB. y A url or * to be evaluated ; an optional title
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
+log 'registerRectLink ' , (": x) , ' ' , (0 {:: y) , ' ' , 1 {:: y
 if. VocMouseClickXY pointInRect x do.
 	PageLoadFreezeTime =: (6!:1) ''
 	PageLoadFreezeRect =: x
@@ -640,11 +678,13 @@ drawReversibleSelection =: 4 : 0
 NB. x xx yy width height
 NB. y color
 NB. Draw an outline around xx yy width height.  Remember it so it can be erased later.
+log 'drawReversibleSelection ' , (": x) , ' ' , ": y
 x drawHighlight y
 NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. ReversibleSelections =: ReversibleSelections , x end.
 )
 
 drawPageLoadFreezeRect =: 3 : 0
+log 'drawPageLoadFreezeRect'
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do.
 	glrgb PageFreezeColor
 	glpen 5
@@ -661,6 +701,7 @@ NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's 
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
+log 'drawScrollerField ' , ": x
 rect =. x
 'strings links ratios levels selectedIndex scrollIndex' =. y
 'xx yy w h' =. rect
@@ -717,6 +758,7 @@ NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
 NB. y Highlight Flag ; Name ; Link/Command ; Level
+log 'drawTocEntryChild ' , ": x
 'xx yy maxWidth height' =. x
 'highlightFlag name command level' =. y
 glrgb getTocColorForLevel level
@@ -732,6 +774,7 @@ drawTocEntryChildrenColumn =: 4 : 0
 NB. x xx yy width height
 NB. y Table of Name ; Link/Command ; Level
 NB. Render the column in black, with headings in SectionColor
+log 'drawTocEntryChildrenColumn ' , ": x
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
 margin =. 5
@@ -743,6 +786,7 @@ rect
 
 setTocEntryForumMonthIndex =: 3 : 0
 NB. y The month whose posts we'll display
+log 'setTocEntryForumMonthIndex ' , ": y
 TocEntryForumMonthIndex =: y
 setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
@@ -752,6 +796,7 @@ TocEntryForumYear =: 2023
 
 setTocEntryForumYear =: 3 : 0
 NB. y The year whose posts we'll display
+log 'setTocEntryForumYear ' , ": y
 TocEntryForumYear =: y
 setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
@@ -761,7 +806,8 @@ TocEntryForumMonthIndex =: 0
 TocEntryForumSubjectIndex =: 0
 
 setTocEntryForumSubjectIndex =: 3 : 0
-NB. The index of the subject that's currently highlighted
+NB. y The index of the subject that's currently highlighted
+log 'setTocEntryForumSubjectIndex ', ": y
 TocEntryForumSubjectIndex =: y
 ForumAuthorScrollIndex =: 0
 setTocEntryForumAuthorIndex 0
@@ -770,7 +816,8 @@ setTocEntryForumAuthorIndex 0
 TocEntryForumAuthorIndex =: 0
 
 setTocEntryForumAuthorIndex =: 3 : 0
-NB. The index of the author who's currently highlighted.
+NB. Ty he index of the author who's currently highlighted.
+log 'setTocEntryForumAuthorIndex ' , ": y
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
 queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
@@ -863,6 +910,7 @@ glclip 0 0 10000 100000
 
 setTocEntryChildCategoryIndex =: 3 : 0
 NB. y Index of the category whose children should be displayed.
+log 'setTocEntryChildCategoryIndex ' , ": y
 TocEntryChildCategoryIndex =: y
 queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
@@ -879,6 +927,7 @@ NB. This is used when the child count is too high.  It renders a tree in the fir
 NB. and the children of each node in the subsequent columns.
 NB. getTocOutlineRailEntries returns table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
 NB. x y width height drawScrollerField strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
+log 'drawTocEntryChildrenWithTree ' , (": x) , ' ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 categoryId =. x
@@ -942,6 +991,7 @@ NB. y xx yy width height
 NB. Render the immediate subcategories of *Tags in a scrollerField.  
 NB. Render the sub-subcategories of the selected subcategory to the right with their pages.
 NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+log 'drawTocEntryTags ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 margin =. 5
@@ -985,6 +1035,7 @@ NB. y xx yy width height
 NB. Render the descendants of the TocOutlineRailSelectedIndex category in xx yy width height.
 NB. Use multiple columns if necessary.  If there are too many columns, invoke drawTocEntryChildrenWithTree.
 NB. getTocOutlineRailEntries returns table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
+log 'drawTocEntryChildren ' , (": x) , ' ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
@@ -1031,6 +1082,7 @@ TocOutlineRailScrollIndex =: 0
 
 setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
+log 'setTocOutlineRailSelectedIndex ' , ": y
 TocOutlineRailSelectedIndex =: y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 queueUrl (> 6 { entry) ; > 3 { entry
@@ -1040,6 +1092,7 @@ drawTocRail =: 4 : 0
 NB. x xx yy w h
 NB. y A level of the Toc hierarchy to which to display
 NB. (x y width height) drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+log 'drawTocRail ' , (": x) , ', ' , ": y
 'xx yy width height' =. x
 entries =. 1 getTocOutlineRailEntries y NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
 levels =. (] - <./) > 0 {"1 entries
@@ -1070,6 +1123,7 @@ end.
 )
 
 drawToc =: 3 : 0
+log 'drawToc'
 DisplayListRect drawTocRail MaxTocDepth
 )
 
@@ -1083,8 +1137,9 @@ TocWikiDocsEntries =: ''
 visitedRailEntries =: '' NB. Boxed IDs.
 
 recurseGetTocOutlineRailEntries =: 4 : 0
+log 'recurseGetTocOutlineRailEntries ' , (": x) , ', ' , ": y
 NB. x A parent id
-NB. y A depth.  
+NB. y A depth
 NB. Terminate cycles.
 if. y = 0 do. '' return. end.
 if. (# visitedRailEntries) > visitedRailEntries i. (< x) do. '' return. end.  NB. Terminate cycles.
@@ -1103,6 +1158,7 @@ NB. y Depth to which to go in the TOC hierarchy
 NB. Return level ; parentid ; category ; parentseq ; count ; link
 NB. Take account of the parentseq number when ordering the entries.
 NB. Terminate cycles.
+log 'getTocOutlineRailEntries ' , (": x) , ', ' , ": y
 key =. < (": x) , 'DDD' , ": y
 if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache) i. key do.
 	result =. > index { 1 {"1 TocOutlineRailEntriesCache
@@ -1124,6 +1180,7 @@ getTocWikiDocs =: 3 : 0
 NB. y A category id
 NB. Return the subtree TOC from the categories table with a set of wiki documents for each entry.
 NB. Return table of (level parentid categoryid category parentSeq count link) ; table of title ; link
+log 'getTocWikiDocs ' , ": y
 key =. < y
 if. (# WikiDocsCache) > index =. (0 {"1 WikiDocsCache) i. key do.
 	result =. > index { 1 {"1 WikiDocsCache
@@ -1146,6 +1203,7 @@ result
 )
 
 clearCache =: 3 : 0
+log 'clearCache'
 TocOutlineRailEntriesCache =: ,: a: , a:
 WikiDocsCache =: ,: a: , a:
 )
@@ -1154,6 +1212,7 @@ NextUserCatId =: 0
 
 nextUserCatId =: 3 : 0
 NB. y Number of ids needed
+log 'nextUserCatId ' , ": y
 if. NextUserCatId = 0 do.
 	result =. , > > {: sqlreadm__db 'select max(categoryid) from categories where categoryid >= 1000000' 
 	if. 'NULL' -: result do. base =: 1000000 else. base =: >: {. result end.
@@ -1168,6 +1227,7 @@ ids
 getCategory =: 3 : 0
 NB. y Category Id
 NB. Return the category string, empty string if none.
+log 'getCategory ' , ": y
 result =. > {: sqlreadm__db 'select category from categories where categoryid = ' , ": y
 if. 0 = # result do. '' else. > , > result end.
 )
@@ -1175,6 +1235,7 @@ if. 0 = # result do. '' else. > , > result end.
 getCategoryIdNoParent =: 3 : 0
 NB. y Category string
 NB. Return the id or _1.
+log 'getCategoryIdNoParent ' , y
 result =. > {: sqlreadm__db 'select categoryid from categories where category = "' , y , '"'
 if. 0 = # result do. _1 else. > , > result end.
 )
@@ -1183,6 +1244,7 @@ getCategoryId =: 4 : 0
 NB. x Parent id
 NB. y Category name (category names are guaranteed to be unique)
 NB. Return the categoryid of the category
+log 'getCategoryId ' , (": x) , ', ' , y
 if. x < 0 do. _1 return. end.
 result =. > {: sqlreadm__db 'select categoryid from categories where category = "' , y , '" and parentid = ' , ": x
 if. 0 = # result do. 
@@ -1195,24 +1257,28 @@ end.  NB. {. to force it to a scalar shape.
 
 getTopCategoryId =: 3 : 0
 NB. y Category name
+log 'getTopCategoryId ' , y
 1 getCategoryId y
 )
 
 getParentId =: 3 : 0
 NB. y Category id
 NB. Return the categoryid of the category's parent.
+log 'getParentId ' , ": y
 , > , > {: sqlreadm__db 'select parentid from categories where categoryid = ' , ": y
 )
 NB. ==================== End Table of Contents ====================
 
 NB. ====================== NuVoc ========================
 loadVoc =: 3 : 0
+log 'loadVoc'
 VocTable =: > 1 { sqlreadm__db 'select * from vocabulary'
 )
 
 calcCellDimensions =: 3 : 0
 NB. y A space-separated list of tokens inside a cell.
 NB. Return the width and height of the cell.  Create extra lines if necessary.
+log 'calcCellDimensions ' , y
 glfont VocCellFont
 tokens =. < ;._2 (> y) , ' '
 tokenWidths =: (2 * CellMargin) + > {.@:glqextent &. > tokens
@@ -1233,6 +1299,7 @@ end.
 calcRowDimensions =: 3 : 0
 NB. y A row of boxed tokens
 NB. Return the height and column widths of the row.
+log 'calcRowDimensions ' , ; y
 dimensions =. > calcCellDimensions &. > y
 (>./ {:"1 dimensions) , {."1 dimensions
 )
@@ -1240,6 +1307,7 @@ dimensions =. > calcCellDimensions &. > y
 drawVocEntry =: 4 : 0
 NB. x An entry from VocTable: Group POS Row Glyph MonadicRank Label DyadicRank Link
 NB. y centerOrigin (x and y)
+log 'drawVocEntry ' , (": x) , ', ' , ": y
 'xx yy' =. y
 'monadic label dyadic link' =. 4 5 6 7 { x
 s =. monadic , ' ' , label , ' ' , dyadic
@@ -1258,6 +1326,7 @@ drawVocCell =: 4 : 0
 NB. x POS ; Glyph ; Selected
 NB. y xStart ; yStart ; width ; height
 NB. Return the height
+log 'drawVocCell ' , (1 {:: x) 
 'pos glyph selected' =. x
 'xStart yStart width height' =. y
 glfont VocCellFont
@@ -1296,6 +1365,7 @@ drawVocLine =: 4 : 0
 NB. x Table of POS Glyph
 NB. y Origin ; height ; column widths
 NB. Return new y start.
+log 'drawVocLine ' , ": ; y
 'origin height colWidths' =. y
 'xx yStart' =. origin
 selected =. VocSelectedGlyph&-: &. > 1 {"1 x
@@ -1317,6 +1387,7 @@ yStart + selectionPadding + height
 drawVocSections =: 4 : 0
 NB. x Origin
 NB. y Section numbers
+log 'drawVocSections ' , (": x) , ', ' , ": y
 'xx runningY' =. x
 rows =. VocTable #~ (, > {."1 VocTable) e. y
 cells =. ~. 1 2 3 {"1 rows NB. POS Line Glyph
@@ -1340,12 +1411,14 @@ runningY
 
 selectVocGlyph =: 3 : 0
 NB. y A glyph
+log 'selectVocGlyph ' , y
 VocSelectedGlyph =: , y
 entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
 queueUrl n =: (> 7 { entry) ; > 5 { entry
 )
 
 drawVoc =: 3 : 0
+log 'drawVoc'
 glrgb 255 255 255
 glbrush ''
 glrect DisplayDetailRect
@@ -1367,6 +1440,7 @@ NB. 10 0 drawStringAt (": fps) , ' fps'
 
 go =: 3 : 0
 dbOpenDb ''
+clearLog ''
 loadVoc ''
 buildForm ''
 layoutForm ''
