@@ -7,10 +7,8 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Figure out how to handle the malleable webview
-NB. Lose the Layout Template--no longer needed.
 NB. Add ellipses (or something) to show the need for scrolling.
-NB. Esc should close, not Ctrl-W
+NB. Address Raul's latest bug.
 
 NB. B Items
 NB. Support parallel download of forum and wiki documents.
@@ -173,10 +171,6 @@ url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 topHistoryUrl =. > 0 { 0 { HistoryMenu
 if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
-)
-
-vizform_browser_mwheel =: 3 : 0
-emphasizeBrowser ''
 )
 
 vizform_mmove =: 3 : 0
