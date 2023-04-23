@@ -30,6 +30,7 @@ db =: sqlopen_psqlite_ dbFile
 )
 
 log =: 3 : 0
+if. -. LogFlag do. return. end.
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
 if. 0 = ? 200 do.
 	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
@@ -56,6 +57,7 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
+wd       'cc logcheck checkbox;cn Debug;'
 wd     'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
@@ -81,7 +83,8 @@ if. EmphasizeBrowserFlag do.
 	vocContextWidth =. 175
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.8) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.7) , controlHeight) , ';'
+	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.1) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
@@ -91,7 +94,8 @@ else.
 	vocContextWidth =. <. 825 >. winW % 2
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": <. (vocContextWidth * 0.8) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.7) , controlHeight) , ';'
+	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.1) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
@@ -140,6 +144,11 @@ vizform_clearSearches_button =: 3 : 0
 log 'vizform_clearSearches_button'
 clearSearches ''
 invalidateDisplay ''
+)
+
+vizform_logcheck_button =: 3 : 0
+LogFlag =: ". logcheck
+smoutput LogFlag
 )
 
 vizform_vocContext_mmove =: 3 : 0
@@ -489,6 +498,7 @@ PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 EmphasizeBrowserFlag =: 0
+LogFlag =: 0
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
