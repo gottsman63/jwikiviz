@@ -10,9 +10,7 @@ NB. Implement migration of ancillary information (history, searches, bookmarks) 
 NB. Take out the high-cost (tight loop) log calls.
 
 NB. B Items
-NB. Can I add a "Back" button that drives the webview?  What else can I tell the webview?
 NB. Support parallel download of forum and wiki documents.
-NB. Animate scroll rather than jumping when the travel is too high.
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
@@ -113,13 +111,11 @@ wd 'timer 100'
 )
 
 emphasizeBrowser =: 3 : 0
-log 'emphasizeBrowser'
 EmphasizeBrowserFlag =: 1
 layoutForm ''
 )
 
 deemphasizeBrowser =: 3 : 0
-log 'deemphasizeBrowser'
 EmphasizeBrowserFlag =: 0
 layoutForm ''
 )
@@ -131,7 +127,6 @@ NB. (> {: 5 { wdq) (1!:2) 2
 )
 
 vizform_resize =: 3 : 0
-log 'vizform_resize'
 layoutForm ''
 )
 
@@ -139,12 +134,6 @@ vizform_close =: 3 : 0
 log 'vizform_close'
 wd 'timer 0'
 wd 'pclose'
-)
-
-vizform_numb_button =: 3 : 0
-log 'vizform_numb_button'
-Numb =: ". numb
-invalidateDisplay ''
 )
 
 vizform_bookmark_button =: 3 : 0
@@ -176,7 +165,6 @@ perpetuateAnimation ''
 )
 
 vizform_vocContext_mwheel =: 3 : 0
-log 'vizform_vocContext_mwheel'
 MWheelOffset =: MWheelOffset + 11 { ". > (1 {"1 wdq) {~ ({."1 wdq) i. < 'sysdata'
 invalidateDisplay ''
 )
@@ -194,12 +182,10 @@ resetBookmarkButton ''
 )
 
 vizform_browser_mwheel =: 3 : 0
-log 'vizform_browsser_mwheel'
 emphasizeBrowser ''
 )
 
 vizform_mmove =: 3 : 0
-log 'vizform_mmove'
 deemphasizeBrowser ''
 )
 
@@ -255,7 +241,6 @@ DisplayListRectSourceWidth =: 20
 DisplayListRectAnimationStartTime =: 0
 
 setDisplayRects =: 3 : 0
-log 'setDisplayRects'
 'w h' =. ". wd 'get vocContext wh'
 DisplayListRect =: 0 0 175 , h
 DisplayDetailRect =: 175 0 , (w - 175) , h
@@ -279,7 +264,6 @@ end.
 )
 
 invalidateDisplay =: 3 : 0
-log 'invalidateDisplay'
 wd 'set vocContext invalid'
 )
 NB. ======================================================
@@ -343,15 +327,15 @@ NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
 NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
 NB. smoutput (1!:1) < fname
 log 'Searching wiki for ' , y , '...'
-rawUrl =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , urlencode y
-url =. ('"' ; '\"') rxrplc ('\$' ; '\\$') rxrplc ('&' ; '\&') rxrplc ('\\' ; '\\\\') rxrplc rawUrl
-html =. gethttp '"' , url , '"'
+url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , urlencode y
+html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
 wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
+smoutput 'wikiId' ; wikiId
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 = # offsetLengths do.
-	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
+	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 2
 else.
 	ol =. 1 2 {"2 offsetLengths
 	linkOffsets =. 0 {"(1) 0 {"2 ol
@@ -363,7 +347,7 @@ else.
 	wikiCols =. ;: 'title categoryid link'
 	data =. titles ; (wikiId #~ # titles) ; < links
 	sqlinsert__db 'wiki';wikiCols;<data
-	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 2
+	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
 end.
 # offsetLengths
 )
@@ -375,9 +359,8 @@ try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
-rawUrl =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030'
-url =. ('"' ; '\"') rxrplc ('\$' ; '\\$') rxrplc ('\\' ; '\\\\') rxrplc rawUrl
-html =. gethttp '"' , url , '"'
+url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030'
+html =. gethttp url
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
 termId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
@@ -403,7 +386,7 @@ NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level'
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
 		cols =. (;: 'level parentid categoryid category parentseq count link')
-		data =. 2 ; termId ; (nextUserCatId 1) ; fname ; (>: index) ; (# forumLinks) ; 'https://www.jsoftware.com/mailman/listinfo/' , }. fname
+		data =. 3 ; termId ; (nextUserCatId 1) ; fname ; (>: index) ; (# forumLinks) ; 'https://www.jsoftware.com/mailman/listinfo/' , }. fname
 		sqlinsert__db 'categories' ; cols ; < data
 		forumId =. termId getCategoryId fname
 		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
@@ -547,7 +530,6 @@ drawHighlight =: 4 : 0
 NB. x xx yy w h
 NB. y color (r g b) but no (a)
 NB. glrgb y
-log 'drawHighlight ' , (": x) , ' ' , ": y
 color =. y , 255 NB. <. 255 * | 1 o. 2 * {: (6!:0) ''
 glrgba color
 glpen 2
@@ -658,7 +640,6 @@ NB. y A url or * to be evaluated ; an optional title
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
-log 'registerRectLink ' , (": x) , ' ' , (0 {:: y) , ' ' , 1 {:: y
 if. VocMouseClickXY pointInRect x do.
 	PageLoadFreezeTime =: (6!:1) ''
 	PageLoadFreezeRect =: x
@@ -677,13 +658,11 @@ drawReversibleSelection =: 4 : 0
 NB. x xx yy width height
 NB. y color
 NB. Draw an outline around xx yy width height.  Remember it so it can be erased later.
-log 'drawReversibleSelection ' , (": x) , ' ' , ": y
 x drawHighlight y
 NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. ReversibleSelections =: ReversibleSelections , x end.
 )
 
 drawPageLoadFreezeRect =: 3 : 0
-log 'drawPageLoadFreezeRect'
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do.
 	glrgb PageFreezeColor
 	glpen 5
@@ -700,7 +679,7 @@ NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's 
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
-log 'drawScrollerField ' , ": x
+log 'drawScrollerField ' , (": x) , ": $ y
 rect =. x
 'strings links ratios levels selectedIndex scrollIndex' =. y
 'xx yy w h' =. rect
@@ -757,7 +736,6 @@ NB. ======================= Draw the TOC =========================
 drawTocEntryChild =: 4 : 0
 NB. x xx yy maxWidth height
 NB. y Highlight Flag ; Name ; Link/Command ; Level
-log 'drawTocEntryChild ' , ": x
 'xx yy maxWidth height' =. x
 'highlightFlag name command level' =. y
 glrgb getTocColorForLevel level
@@ -773,7 +751,6 @@ drawTocEntryChildrenColumn =: 4 : 0
 NB. x xx yy width height
 NB. y Table of Name ; Link/Command ; Level
 NB. Render the column in black, with headings in SectionColor
-log 'drawTocEntryChildrenColumn ' , ": x
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
 margin =. 5
@@ -785,7 +762,6 @@ rect
 
 setTocEntryForumMonthIndex =: 3 : 0
 NB. y The month whose posts we'll display
-log 'setTocEntryForumMonthIndex ' , ": y
 TocEntryForumMonthIndex =: y
 setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
@@ -795,7 +771,6 @@ TocEntryForumYear =: 2023
 
 setTocEntryForumYear =: 3 : 0
 NB. y The year whose posts we'll display
-log 'setTocEntryForumYear ' , ": y
 TocEntryForumYear =: y
 setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
@@ -806,7 +781,6 @@ TocEntryForumSubjectIndex =: 0
 
 setTocEntryForumSubjectIndex =: 3 : 0
 NB. y The index of the subject that's currently highlighted
-log 'setTocEntryForumSubjectIndex ', ": y
 TocEntryForumSubjectIndex =: y
 ForumAuthorScrollIndex =: 0
 setTocEntryForumAuthorIndex 0
@@ -816,7 +790,6 @@ TocEntryForumAuthorIndex =: 0
 
 setTocEntryForumAuthorIndex =: 3 : 0
 NB. Ty he index of the author who's currently highlighted.
-log 'setTocEntryForumAuthorIndex ' , ": y
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
 queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
@@ -909,7 +882,6 @@ glclip 0 0 10000 100000
 
 setTocEntryChildCategoryIndex =: 3 : 0
 NB. y Index of the category whose children should be displayed.
-log 'setTocEntryChildCategoryIndex ' , ": y
 TocEntryChildCategoryIndex =: y
 queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
@@ -930,8 +902,6 @@ log 'drawTocEntryChildrenWithTree ' , (": x) , ' ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 categoryId =. x
-NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
-log 'drawTocEntryChildrenWithTree ' , (": parentId) , ' ' , category
 tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parent category parentSeq count link) ; (table of title ; link)
 if. 1 = # $ tocWikiDocs do. '' return. end.
 ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
@@ -1037,8 +1007,6 @@ NB. getTocOutlineRailEntries returns table of level ; parentid ; categoryid ; ca
 log 'drawTocEntryChildren ' , (": x) , ' ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
-NB. 'level parentId category parentSeq count link' =. TocOutlineRailSelectedIndex { 0 getTocOutlineRailEntries maxDepth
-NB. log 'drawTocEntryChildren ' , (": parentId) , ' ' , category
 margin =. 5
 glrgb 0 0 0
 glpen 1
@@ -1081,7 +1049,6 @@ TocOutlineRailScrollIndex =: 0
 
 setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
-log 'setTocOutlineRailSelectedIndex ' , ": y
 TocOutlineRailSelectedIndex =: y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 queueUrl (> 6 { entry) ; > 3 { entry
@@ -1136,7 +1103,6 @@ TocWikiDocsEntries =: ''
 visitedRailEntries =: '' NB. Boxed IDs.
 
 recurseGetTocOutlineRailEntries =: 4 : 0
-log 'recurseGetTocOutlineRailEntries ' , (": x) , ', ' , ": y
 NB. x A parent id
 NB. y A depth
 NB. Terminate cycles.
@@ -1277,7 +1243,6 @@ VocTable =: > 1 { sqlreadm__db 'select * from vocabulary'
 calcCellDimensions =: 3 : 0
 NB. y A space-separated list of tokens inside a cell.
 NB. Return the width and height of the cell.  Create extra lines if necessary.
-log 'calcCellDimensions ' , y
 glfont VocCellFont
 tokens =. < ;._2 (> y) , ' '
 tokenWidths =: (2 * CellMargin) + > {.@:glqextent &. > tokens
@@ -1298,7 +1263,6 @@ end.
 calcRowDimensions =: 3 : 0
 NB. y A row of boxed tokens
 NB. Return the height and column widths of the row.
-log 'calcRowDimensions ' , ; y
 dimensions =. > calcCellDimensions &. > y
 (>./ {:"1 dimensions) , {."1 dimensions
 )
@@ -1306,7 +1270,6 @@ dimensions =. > calcCellDimensions &. > y
 drawVocEntry =: 4 : 0
 NB. x An entry from VocTable: Group POS Row Glyph MonadicRank Label DyadicRank Link
 NB. y centerOrigin (x and y)
-log 'drawVocEntry ' , (": x) , ', ' , ": y
 'xx yy' =. y
 'monadic label dyadic link' =. 4 5 6 7 { x
 s =. monadic , ' ' , label , ' ' , dyadic
@@ -1325,7 +1288,6 @@ drawVocCell =: 4 : 0
 NB. x POS ; Glyph ; Selected
 NB. y xStart ; yStart ; width ; height
 NB. Return the height
-log 'drawVocCell ' , (1 {:: x) 
 'pos glyph selected' =. x
 'xStart yStart width height' =. y
 glfont VocCellFont
@@ -1365,7 +1327,6 @@ drawVocLine =: 4 : 0
 NB. x Table of POS Glyph
 NB. y Origin ; height ; column widths
 NB. Return new y start.
-log 'drawVocLine ' , ": ; y
 'origin height colWidths' =. y
 'xx yStart' =. origin
 selected =. VocSelectedGlyph&-: &. > 1 {"1 x
@@ -1387,7 +1348,6 @@ yStart + selectionPadding + height
 drawVocSections =: 4 : 0
 NB. x Origin
 NB. y Section numbers
-log 'drawVocSections ' , (": x) , ', ' , ": y
 'xx runningY' =. x
 rows =. VocTable #~ (, > {."1 VocTable) e. y
 cells =. ~. 1 2 3 {"1 rows NB. POS Line Glyph
