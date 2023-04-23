@@ -1398,10 +1398,11 @@ NB. gltextcolor ''
 NB. 10 0 drawStringAt (": fps) , ' fps'
 )
 
-go =: 3 : 0
 dbOpenDb ''
-clearLog ''
 loadVoc ''
+
+go =: 3 : 0
+clearLog ''
 buildForm ''
 layoutForm ''
 loadHistoryMenu ''
