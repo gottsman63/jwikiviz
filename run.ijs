@@ -7,7 +7,12 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Take out the high-cost (tight loop) log calls.
+NB. Figure out how to handle the malleable webview
+NB. Lose the Layout Template--no longer needed.
+NB. Add ellipses (or something) to show the need for scrolling.
+NB. Fix the click-detail-vanishes bug.
+NB. *Bookmarks link should be www.jsoftware.com
+NB. Esc should close, not Ctrl-W
 
 NB. B Items
 NB. Support parallel download of forum and wiki documents.
@@ -86,7 +91,7 @@ winW =. w - 40
 winH =. h - 45
 controlHeight =. 30
 vocContextHeight =. winH >. 760
-if. EmphasizeBrowserFlag *. winW < 1600 do.
+if. EmphasizeBrowserFlag do.
 	vocContextWidth =. 175
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
@@ -106,11 +111,14 @@ else.
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
 	wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
 	wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
+	wd 'set browser minwh 100 50;'
 end.
 wd 'timer 100'
 )
 
 emphasizeBrowser =: 3 : 0
+'w h' =. ". wd 'getp wh'
+if. w > 1500 do. return. end. 
 EmphasizeBrowserFlag =: 1
 layoutForm ''
 )
@@ -160,8 +168,6 @@ invalidateDisplay ''
 vizform_vocContext_mblup =: 3 : 0
 log 'vizform_vocContext_mblup'
 VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
-PageLoadFreezeTime =: (6!:1) ''
-perpetuateAnimation ''
 )
 
 vizform_vocContext_mwheel =: 3 : 0
@@ -332,7 +338,6 @@ html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
 wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
-smoutput 'wikiId' ; wikiId
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 = # offsetLengths do.
 	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 2
@@ -380,7 +385,6 @@ if. 0 < # offsetLengths do.
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
 	titleGroups =. forums </. titles
 	linkGroups =. forums </. links
-NB.	sqlupdate__db 'categories' ; ('rowid = ' , ": forumsId) ; ('count' ; 'level') ; < (# titles) ; 3
 	for_index. i. # titleGroups do.
 		fname =. > index { ~. forums
 		forumLinks =. > index { linkGroups
@@ -629,10 +633,10 @@ catch.
 end.
 )
 
-NB. ======================== Cached Drawing ===========================
-BackgroundRenderRequired =: 1
-CachedRectsAndLinks =: ''  NB. Table of rect ; url
-NB. ReversibleSelections =: '' NB. Table of rect
+NB. ======================== Mouse-Sensitive Areas ===========================
+isFrozen =: 3 : 0
+PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime
+)
 
 registerRectLink =: 4 : 0
 NB. x xx yy width height
@@ -640,18 +644,22 @@ NB. y A url or * to be evaluated ; an optional title
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
+if. isFrozen '' do. return. end.
 if. VocMouseClickXY pointInRect x do.
 	PageLoadFreezeTime =: (6!:1) ''
 	PageLoadFreezeRect =: x
+	emphasizeBrowser ''
+	perpetuateAnimation ''
+else.
+	if. -. VocMouseXY pointInRect x do. return. end.
+	if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. (; y) ; '----' end.
+	if. '*' = {. urlCommand do.
+		". }. urlCommand
+	else. 
+		queueUrl urlCommand ; name
+	end.
+	x drawReversibleSelection SelectionColor
 end.
-if. -. VocMouseXY pointInRect x do. return. end.
-if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. (; y) ; '----' end.
-if. '*' = {. urlCommand do.
-	". }. urlCommand
-else. 
-	queueUrl urlCommand ; name
-end.
-x drawReversibleSelection SelectionColor
 )
 
 drawReversibleSelection =: 4 : 0
@@ -663,7 +671,7 @@ NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. Revers
 )
 
 drawPageLoadFreezeRect =: 3 : 0
-if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do.
+if. isFrozen '' do.
 	glrgb PageFreezeColor
 	glpen 5
 	glrgba 0 0 0 0
