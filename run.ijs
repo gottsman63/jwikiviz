@@ -177,7 +177,7 @@ trigger_paint ''
 vizform_browser_curl =: 3 : 0
 log 'vizform_browser_curl'
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
-topHistoryUrl =. > 0 { 0 { HistoryMenu
+topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
 if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
 )
@@ -200,12 +200,12 @@ end.
 
 vizform_history_select =: 3 : 0
 log 'vizform_history_select'
-loadPage (". history_select) { HistoryMenu
+loadPage (". history_select) { getHistoryMenu ''
 )
 
 vizform_launch_button =: 3 : 0
-log 'vizform_launch_button ' , ": > 0 { 0 { HistoryMenu
-if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
+log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
+if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { getHistoryMenu '') , '"' end.
 )
 
 vizform_cancel =: 3 : 0
@@ -556,14 +556,14 @@ links =. , > {: sqlreadm__db 'select link from wiki where categoryId = ' , ": ge
 
 resetBookmarkButton =: 3 : 0
 log 'resetBookmarkButton'
-'url title' =. {. HistoryMenu
+'url title' =. {. getHistoryMenu ''
 links =. , > {: sqlreadm__db 'select link from wiki where categoryId = ' , ": getTopCategoryId BookmarkCatString
 if. isBookmarked url do. wd 'set bookmark text "Un-bookmark";' else. wd 'set bookmark text "Bookmark";' end.
 )
 
 bookmark =: 3 : 0
 log 'bookmark'
-'url title' =. {. HistoryMenu
+'url title' =. {. getHistoryMenu ''
 id =. (getTopCategoryId BookmarkCatString)
 if. isBookmarked url do.
 	sqlcmd__db 'delete from wiki where categoryid = ' , (": id) , ' and link = "' , url , '"'
@@ -588,6 +588,7 @@ addToHistoryMenu =: 3 : 0
 NB. y Label ; Link
 log 'addToHistoryMenu ' , (0 {:: y) , ' ' , 1 {:: y
 if. y -: '' do. return. end.
+loadHistoryMenu ''
 if. HistoryMenu -: '' do. HistoryMenu =: ,: y else. HistoryMenu =: ~. y , HistoryMenu end.
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
@@ -603,6 +604,11 @@ HistoryMenu =: > {: sqlreadm__db 'select link, label from history'
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
+)
+
+getHistoryMenu =: 3 : 0
+if. HistoryMenu -: '' do. loadHistoryMenu '' end.
+HistoryMenu
 )
 
 HistoryMenu =: '' NB. Table of Title ; Link
