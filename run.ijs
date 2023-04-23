@@ -238,6 +238,11 @@ trigger_paint =: 3 : 0
 log 'trigger_paint ' , (wd 'getp wh') , '   ' , (": getFrameRate '') , ' fps'
 try.
 glfill BackgroundColor , 255
+'w h' =. ". wd 'getp wh'
+if. (w < 200) +. h < 200 do.
+	log 'trigger_paint--dimensions too small.  Aborting.'
+	return.
+end.
 setDisplayRects ''
 drawToc ''
 drawPageLoadFreezeRect ''
