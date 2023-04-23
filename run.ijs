@@ -10,8 +10,6 @@ NB. Implement migration of ancillary information (history, searches, bookmarks) 
 NB. Figure out how to handle the malleable webview
 NB. Lose the Layout Template--no longer needed.
 NB. Add ellipses (or something) to show the need for scrolling.
-NB. Fix the click-detail-vanishes bug.
-NB. *Bookmarks link should be www.jsoftware.com
 NB. Esc should close, not Ctrl-W
 
 NB. B Items
@@ -72,16 +70,6 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
-)
-
-LayoutTemplate =: 'D'
-
-setLayoutTemplate =: 3 : 0
-NB. y A one-character layout template code
-log 'setLayoutTemplate ' , y
-if. y -: LayoutTemplate do. return. end.
-LayoutTemplate =: y
-layoutForm ''
 )
 
 layoutForm =: 3 : 0
@@ -217,7 +205,7 @@ log 'vizform_launch_button ' , ": > 0 { 0 { HistoryMenu
 if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { HistoryMenu) , '"' end.
 )
 
-vizform_wctrl_fkey =: 3 : 0
+vizform_cancel =: 3 : 0
 log 'vizform_wctrl_fkey'
 wd 'timer 0'
 wd 'pclose'
@@ -1078,19 +1066,14 @@ TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. EmphasizeBrowserFlag do. return. end.
 entry =. TocOutlineRailSelectedIndex { entries
 if.  +./ '*NuVoc' E. > 3 { entry do.
-	setLayoutTemplate 'N'
 	drawVoc ''
 elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
-	setLayoutTemplate 'D'
 	(> 3 { entry) drawTocEntryForum DisplayDetailRect
 elseif. TagCatString -: > 3 { entry do.
-	setLayoutTemplate 'D'
 	drawTocEntryTags DisplayDetailRect
 elseif. (< SearchCatString) = 3 { entry do.
-	setLayoutTemplate 'S'
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree DisplayDetailRect
 else.
-	setLayoutTemplate 'D'
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren DisplayDetailRect
 end.
