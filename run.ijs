@@ -7,8 +7,8 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Add ellipses (or something) to show the need for scrolling.
-NB. Address Raul's latest bug.
+NB. Include count of log records in the Debug checkbox label...?
+NB. Narrow scroll bar + mouse wheel + two-zone?
 
 NB. B Items
 NB. Support parallel download of forum and wiki documents.
@@ -57,7 +57,7 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
-wd       'cc logcheck checkbox;cn Debug;'
+wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
@@ -84,7 +84,7 @@ if. EmphasizeBrowserFlag do.
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.7) , controlHeight) , ';'
-	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.1) , controlHeight) , ';'
+	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
@@ -95,7 +95,7 @@ else.
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.7) , controlHeight) , ';'
-	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.1) , controlHeight) , ';'
+	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
@@ -163,6 +163,7 @@ invalidateDisplay ''
 vizform_vocContext_mblup =: 3 : 0
 log 'vizform_vocContext_mblup'
 VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
+invalidateDisplay ''
 )
 
 vizform_vocContext_mwheel =: 3 : 0
@@ -206,12 +207,6 @@ loadPage (". history_select) { getHistoryMenu ''
 vizform_launch_button =: 3 : 0
 log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
 if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { getHistoryMenu '') , '"' end.
-)
-
-vizform_cancel =: 3 : 0
-log 'vizform_wctrl_fkey'
-wd 'timer 0'
-wd 'pclose'
 )
 
 PerpetuateAnimationStartTime =: 0
@@ -490,7 +485,6 @@ SearchCatString =: '*Search'
 SearchHiddenCatId =: 200000
 TagCatString =: '*Tags'
 TagHiddenCatId =: 500000
-Numb =: 0
 QueuedUrl =: ''
 QueuedUrlTime =: 0
 PageLoadFreezeTime =: 0
@@ -697,10 +691,9 @@ rect =. x
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 5
-stripeWidth =.<. 0.5 * w
 glfont TocFont
 if. VocMouseXY pointInRect rect do.
-	scrollIndex =. 0 >. (# strings) <. scrollIndex + MWheelOffset
+	scrollIndex =. 0 >. (# strings) <. scrollIndex + MWheelOffset  NB. Consume any scroll events.
 	MWheelOffset =: 0
 end.
 windowStartIndex =. <. 0 >. (window -~ # strings) <. 0 >. scrollIndex - -: window
@@ -727,18 +720,9 @@ for_i. i. # strings do.
 	glbrush ''
 	gltextcolor''
 	glclip xx , yy ,  w , h
-	if. lineHeight >: TocLineHeight do.
-		(> i { origins) drawStringAt > i { strings
-	else.
-NB.		glrect origin , ({. glqextent > i { strings) , 2
-	end.
+	if. lineHeight >: TocLineHeight do. (> i { origins) drawStringAt > i { strings end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	if. VocMouseXY pointInRect xx , yy , stripeWidth , h do.
-		((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings
-	elseif. -. Numb do.
-		((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings
-	end.
-NB.	glclip xx , yy ,  w , h
+	if. VocMouseXY pointInRect rect do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.
 end.
 glclip 0 0 10000 100000
 scrollIndex
