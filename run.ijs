@@ -693,10 +693,10 @@ maxLineCount =. <. h % TocLineHeight
 margin =. 5
 glfont TocFont
 if. VocMouseXY pointInRect rect do.
-	scrollIndex =. 0 >. (# strings) <. scrollIndex + MWheelOffset  NB. Consume any scroll events.
+	scrollIndex =. 0 >. (window -~ # strings) <. scrollIndex + MWheelOffset  NB. Consume any scroll events.
 	MWheelOffset =: 0
 end.
-windowStartIndex =. <. 0 >. (window -~ # strings) <. 0 >. scrollIndex - -: window
+windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
 ys =. <. }: +/\ 0 , heights
@@ -708,6 +708,14 @@ glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect rect
+scrollBarHeight =. <. h * window % # strings
+scrollBarOffset =. <. h * scrollIndex % # strings
+if. maxLineCount < # strings do.
+	glrgb 3 # 200
+	glbrush ''
+	glpen 0
+	glrect (xx + w - thickness) , scrollBarOffset , (thickness =. 10) , scrollBarHeight
+end.
 for_i. i. # strings do.
 	lineHeight =. i { heights
 	origin =. > i { origins
