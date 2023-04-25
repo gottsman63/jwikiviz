@@ -57,6 +57,7 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
+wd       'cc scrollConfig combolist;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
 wd     'cc vocContext isigraph;'
@@ -70,6 +71,12 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
+NB.    (1) Simultaneous scroll/select, full width.
+NB.    (2) Left mouse scroll, right select.
+NB.    (3) Left mouse scroll, right numb.
+NB.    (4) Two-finger scroll, mouse select, full width.
+ScrollConfig =: 0
+wd 'set scrollConfig items "0. Scroll + Select (Full Width)" "1. Scroll Left, Right Select" "2. Scroll + Select (Left Only)" "3. Scroll Wheel (Full Width)"'
 )
 
 layoutForm =: 3 : 0
@@ -83,7 +90,7 @@ if. EmphasizeBrowserFlag do.
 	vocContextWidth =. 175
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.7) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
@@ -94,7 +101,8 @@ else.
 	vocContextWidth =. <. 825 >. winW % 2
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.7) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
+	wd 'set scrollConfig maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
@@ -132,6 +140,11 @@ vizform_close =: 3 : 0
 log 'vizform_close'
 wd 'timer 0'
 wd 'pclose'
+)
+
+vizform_scrollConfig_select =: 3 : 0
+ScrollConfig =: ". scrollConfig_select
+invalidateDisplay ''
 )
 
 vizform_bookmark_button =: 3 : 0
@@ -684,6 +697,11 @@ NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's 
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
+NB. Scroll/Select Configurations
+NB.    (1) Simultaneous scroll/select, full width.
+NB.    (2) Left mouse scroll, right select.
+NB.    (3) Left mouse scroll, right numb.
+NB.    (4) Two-finger scroll, mouse select, full width.
 log 'drawScrollerField ' , (": x) , ": $ y
 rect =. x
 'strings links ratios levels selectedIndex scrollIndex' =. y
@@ -691,10 +709,25 @@ rect =. x
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 5
-glfont TocFont
-if. VocMouseXY pointInRect rect do.
-	scrollIndex =. 0 >. (window -~ # strings) <. scrollIndex + MWheelOffset  NB. Consume any scroll events.
-	MWheelOffset =: 0
+NB. glfont TocFont
+select. ScrollConfig
+case. 0 do. NB. (0) Simultaneous scroll/select, full width
+	if. VocMouseXY pointInRect rect do.
+		scrollIndex =. 0 >. (window -~ # strings) <. <. (# strings) * (yy -~ {: VocMouseXY) % h	
+	end.
+case. 1 do. NB. (1) Left mouse scroll, right select.
+	if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
+		scrollIndex =. 0 >. (window -~ # strings) <. <. (# strings) * (yy -~ {: VocMouseXY) % h
+	end.	
+case. 2 do. NB. (3) Left mouse scroll/select, right numb.
+	if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
+		scrollIndex =. 0 >. (window -~ # strings) <. <. (# strings) * (yy -~ {: VocMouseXY) % h
+	end.	
+case. 3 do. NB. (4) Two-finger scroll, mouse select, full width.
+	if. VocMouseXY pointInRect rect do.
+		scrollIndex =. 0 >. (window -~ # strings) <. scrollIndex + MWheelOffset  NB. Consume any scroll events.
+		MWheelOffset =: 0
+	end.
 end.
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
@@ -708,6 +741,12 @@ glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect rect
+if. (maxLineCount < # strings) *. (ScrollConfig = 1) +. ScrollConfig = 2 do.
+	glrgb ColumnGuideColor
+	glbrush ''
+	glpen 0
+	glrect xx , yy , (<. -: w) , h
+end.
 scrollBarHeight =. <. h * window % # strings
 scrollBarOffset =. <. h * scrollIndex % # strings
 if. maxLineCount < # strings do.
@@ -730,7 +769,13 @@ for_i. i. # strings do.
 	glclip xx , yy ,  w , h
 	if. lineHeight >: TocLineHeight do. (> i { origins) drawStringAt > i { strings end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	if. VocMouseXY pointInRect rect do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.
+	if. (ScrollConfig = 0) +. ScrollConfig = 3 do.
+		if. VocMouseXY pointInRect rect do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.
+	elseif. ScrollConfig = 1 do.
+		if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.
+	elseif. ScrollConfig = 2 do.
+		if. VocMouseXY pointInRect xx , yy , (-: w) , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.		
+	end.
 end.
 glclip 0 0 10000 100000
 scrollIndex
