@@ -6,10 +6,10 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Implement migration of ancillary information (history, searches, bookmarks) when a new cache.db file arrives.
-NB. Include count of log records in the Debug checkbox label...?
-NB. Narrow scroll bar + mouse wheel + two-zone?
-
+NB. Set up jwikiviz.db 
+NB. Set up jwikiviz.db import framework
+NB. Implement migration of ancillary information (history, searches, bookmarks) when a new jwikiviz.db file arrives.
+NB. 
 NB. B Items
 NB. Support parallel download of forum and wiki documents.
 NB. Add a "Search" label.
@@ -18,7 +18,7 @@ NB. Spider the Vocabulary--don't use the spreadsheet.
 NB. Standalone application.
 
 NB. ============= Database ===============
-dbFile =: jpath '~temp/cache.db'
+dbFile =: jpath '~temp/jwikiviz.db'
 db =: ''
 
 dbError =: 3 : 0
@@ -57,7 +57,7 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
-wd       'cc scrollConfig combolist;'
+NB. wd       'cc scrollConfig combolist;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
 wd     'cc vocContext isigraph;'
@@ -75,8 +75,8 @@ NB.    (1) Simultaneous scroll/select, full width.
 NB.    (2) Left mouse scroll, right select.
 NB.    (3) Left mouse scroll, right numb.
 NB.    (4) Two-finger scroll, mouse select, full width.
-ScrollConfig =: 0
-wd 'set scrollConfig items "0. Scroll + Select (Full Width)" "1. Scroll Left, Right Select" "2. Scroll + Select (Left Only)" "3. Scroll Wheel (Full Width)"'
+ScrollConfig =: 2
+NB. wd 'set scrollConfig items "0. Scroll + Select (Full Width)" "1. Scroll Left, Right Select" "2. Scroll + Select (Left Only)" "3. Scroll Wheel (Full Width)"'
 )
 
 layoutForm =: 3 : 0
@@ -90,7 +90,7 @@ if. EmphasizeBrowserFlag do.
 	vocContextWidth =. 175
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.65) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
@@ -101,8 +101,8 @@ else.
 	vocContextWidth =. <. 825 >. winW % 2
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
-	wd 'set scrollConfig maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.65) , controlHeight) , ';'
+NB. 	wd 'set scrollConfig maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
@@ -168,6 +168,7 @@ vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
 NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 log 'vizform_vocContext_mmove'
+if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 deemphasizeBrowser ''
 invalidateDisplay ''
@@ -585,7 +586,7 @@ resetBookmarkButton ''
 queueUrl =: 3 : 0
 NB. y A url to queue for delayed loading ; A title
 log 'queueUrl ' , (0 {:: y) , ' ' , 1 {:: y
-if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
+NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
 loadPage QueuedUrl
