@@ -30,7 +30,7 @@ NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 table =: > <;._2 &. > ,&TAB &. > < ;._2 LF ,~ vocab
 col0 =. ". &. > {."1 table
 table =: }: col0 ,. (}:"1 }."1 table) ,. -.&CR &. > {:"1 table  NB. Stray CRs in the links column.
-glyphColumn =. fixQuotes &. > 3 {"1 table
+glyphColumn =. 3 {"1 table
 VocTable =: (0 1 2 {"1 table) ,. glyphColumn ,. 4 5 6 7 {"1 table
 cols =. ;: 'groupnum pos row glyph monadicrank label dyadicrank link'
 data =: (< > 0 {"1 table) , (< 1 {"1 table) , (< > ". &. > 2 {"1 table) , (< 3 {"1 table) , (< 4 {"1 table) , (< 5 {"1 table) , (< 6 {"1 table) , (< 7 {"1 table)
@@ -179,10 +179,10 @@ vocab =: 0 : 0
 6	Verb	24	}.		Drop	1 _	https://code.jsoftware.com/wiki/Vocabulary/curlyrtdot#dyadic
 6	Verb	24	}:	_	Curtail		https://code.jsoftware.com/wiki/Vocabulary/curlyrtco
 6	Control	24	{{ }}		DirectDefinition		https://code.jsoftware.com/wiki/Vocabulary/DirectDefinition
-7	Conjunction	25	""""		Rank		https://code.jsoftware.com/wiki/Vocabulary/quote
-7	Conjunction	25	""""	"u""n"	Assign		https://code.jsoftware.com/wiki/Vocabulary/quote
-7	Conjunction	25	""""	"m""n"	Constant		https://code.jsoftware.com/wiki/Vocabulary/quotem
-7	Conjunction	25	""""	"u""v m""v"	Copy		https://code.jsoftware.com/wiki/Vocabulary/quotev
+7	Conjunction	25	"		Rank		https://code.jsoftware.com/wiki/Vocabulary/quote
+7	Conjunction	25	"	u"n	Assign		https://code.jsoftware.com/wiki/Vocabulary/quote
+7	Conjunction	25	"	m"n	Constant		https://code.jsoftware.com/wiki/Vocabulary/quotem
+7	Conjunction	25	"	u"v m"v	Copy		https://code.jsoftware.com/wiki/Vocabulary/quotev
 7	Verb	25	".	1	Do		https://code.jsoftware.com/wiki/Vocabulary/quotedot
 7	Verb	25	".		Numbers	_ _	https://code.jsoftware.com/wiki/Vocabulary/quotedot#dyadic
 7	Verb	25	":	_	Default Format		https://code.jsoftware.com/wiki/Vocabulary/quoteco
@@ -231,26 +231,27 @@ vocab =: 0 : 0
 9	Verb	35	j.		Complex	0 0	https://code.jsoftware.com/wiki/Vocabulary/jdot#dyadic
 9	Verb	35	L.	_	Level Of		https://code.jsoftware.com/wiki/Vocabulary/lcapdot
 9	Verb	36	L:	_	Level At	_ _	https://code.jsoftware.com/wiki/Vocabulary/lcapco
+9	Verb	36	m.		Modular arithmetic	https://code.jsoftware.com/wiki/Vocabulary/mdot
 9	Adverb	36	M.	mu	Memo	lu ru	https://code.jsoftware.com/wiki/Vocabulary/mcapdot
-9	Control	36	NB.		Comment		https://code.jsoftware.com/wiki/Vocabulary/ncapbcapdot
+9	Control	37	NB.		Comment		https://code.jsoftware.com/wiki/Vocabulary/ncapbcapdot
 9	Verb	37	o.	0	Pi Times		https://code.jsoftware.com/wiki/Vocabulary/odot
 9	Verb	37	o.		Circle Function	0 0	https://code.jsoftware.com/wiki/Vocabulary/odot#dyadic
 9	Verb	37	p.	1	Roots		https://code.jsoftware.com/wiki/Vocabulary/pdot
 9	Verb	37	p.		Polynomials	1 0	https://code.jsoftware.com/wiki/Vocabulary/pdot#dyadic
-9	Verb	37	p..	1	Polynomial Deriv		https://code.jsoftware.com/wiki/Vocabulary/pdotdot
-9	Verb	37	p..		Polynomial Int	0 1	https://code.jsoftware.com/wiki/Vocabulary/pdotdot#dyadic
+9	Verb	38	p..	1	Polynomial Deriv		https://code.jsoftware.com/wiki/Vocabulary/pdotdot
+9	Verb	38	p..		Polynomial Int	0 1	https://code.jsoftware.com/wiki/Vocabulary/pdotdot#dyadic
 10	Verb	38	p:	0	Primes	_ _	https://code.jsoftware.com/wiki/Vocabulary/pco
 10	Verb	38	q:	0	Prime Factors		https://code.jsoftware.com/wiki/Vocabulary/qco
 10	Verb	38	q:		Prime Exponents	0 0	https://code.jsoftware.com/wiki/Vocabulary/qco#dyadic
-10	Verb	38	r.	0	Angle		https://code.jsoftware.com/wiki/Vocabulary/rdot
-10	Verb	38	r.		Polar	0 0	https://code.jsoftware.com/wiki/Vocabulary/rdot#dyadic
+10	Verb	39	r.	0	Angle		https://code.jsoftware.com/wiki/Vocabulary/rdot
+10	Verb	39	r.		Polar	0 0	https://code.jsoftware.com/wiki/Vocabulary/rdot#dyadic
 10	Verb	39	s:	_	Symbol	_ _	https://code.jsoftware.com/wiki/Vocabulary/sco
 10	Conjunction	39	S:	_	Spread	_ _	https://code.jsoftware.com/wiki/Vocabulary/scapco
-10	Conjunction	39	t.	_	Run as task	_ _	https://code.jsoftware.com/wiki/Vocabulary/tdot
+10	Conjunction	40	t.	_	Run as task	_ _	https://code.jsoftware.com/wiki/Vocabulary/tdot
 10	Verb	40	T.	_	Set Debug Thread		https://code.jsoftware.com/wiki/Vocabulary/tcapdot
 10	Verb	40	T.		Threads/tasks	_ _	https://code.jsoftware.com/wiki/Vocabulary/tcapdot#dyadic
 10	Verb	40	u:	_	Unicode	_ _	https://code.jsoftware.com/wiki/Vocabulary/uco
-10	Verb	40	x:	_	Extended Precision	_ _	https://code.jsoftware.com/wiki/Vocabulary/xco
+10	Verb	41	x:	_	Extended Precision	_ _	https://code.jsoftware.com/wiki/Vocabulary/xco
 10	Verb	41	Z:	_	Terminate Fold	_ _	https://code.jsoftware.com/wiki/Vocabulary/zcapco
 10	Verb	41	_9: to 9:	_	Constant Functions	_ _	https://code.jsoftware.com/wiki/Vocabulary/zeroco
 10	Conjunction	42	(u v)	_	Hook	_ _	https://code.jsoftware.com/wiki/Vocabulary/hook
