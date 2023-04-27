@@ -231,7 +231,7 @@ vocab =: 0 : 0
 9	Verb	35	j.		Complex	0 0	https://code.jsoftware.com/wiki/Vocabulary/jdot#dyadic
 9	Verb	35	L.	_	Level Of		https://code.jsoftware.com/wiki/Vocabulary/lcapdot
 9	Verb	36	L:	_	Level At	_ _	https://code.jsoftware.com/wiki/Vocabulary/lcapco
-9	Verb	36	m.		Modular arithmetic	https://code.jsoftware.com/wiki/Vocabulary/mdot
+9	Verb	36	m.		Modular arithmetic		https://code.jsoftware.com/wiki/Vocabulary/mdot
 9	Adverb	36	M.	mu	Memo	lu ru	https://code.jsoftware.com/wiki/Vocabulary/mcapdot
 9	Control	37	NB.		Comment		https://code.jsoftware.com/wiki/Vocabulary/ncapbcapdot
 9	Verb	37	o.	0	Pi Times		https://code.jsoftware.com/wiki/Vocabulary/odot

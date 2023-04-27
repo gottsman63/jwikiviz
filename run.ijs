@@ -1462,6 +1462,8 @@ end.
 targetDbFile frename stageDbFile
 'rwxrwxrwx' (1!:7) < targetDbFile
 dbOpenDb ''
+loadVoc ''
+loadHistoryMenu ''
 NB. end.
 )
 
