@@ -118,12 +118,12 @@ vocab =: 0 : 0
 4	Conjunction	14	:		Monad / Dyad		https://code.jsoftware.com/wiki/Vocabulary/cou
 4	Conjunction	14	:.	mu	Assign Obverse	lu ru	https://code.jsoftware.com/wiki/Vocabulary/codot
 4	Conjunction	14	::	_	Assign Adverse	_ _	https://code.jsoftware.com/wiki/Vocabulary/coco
-4	Verb	15	","	_	Ravel		https://code.jsoftware.com/wiki/Vocabulary/comma
-4	Verb	15	","		Append	_ _	https://code.jsoftware.com/wiki/Vocabulary/comma#dyadic
-4	Verb	15	",."	_	Ravel Items		https://code.jsoftware.com/wiki/Vocabulary/commadot
-4	Verb	15	",."		Stitch	_ _	https://code.jsoftware.com/wiki/Vocabulary/commadot#dyadic
-4	Verb	15	",:"	_	Itemize		https://code.jsoftware.com/wiki/Vocabulary/commaco
-4	Verb	15	",:"		Laminate	_ _	https://code.jsoftware.com/wiki/Vocabulary/commaco#dyadic
+4	Verb	15	,	_	Ravel		https://code.jsoftware.com/wiki/Vocabulary/comma
+4	Verb	15	,		Append	_ _	https://code.jsoftware.com/wiki/Vocabulary/comma#dyadic
+4	Verb	15	,.	_	Ravel Items		https://code.jsoftware.com/wiki/Vocabulary/commadot
+4	Verb	15	,.		Stitch	_ _	https://code.jsoftware.com/wiki/Vocabulary/commadot#dyadic
+4	Verb	15	,:	_	Itemize		https://code.jsoftware.com/wiki/Vocabulary/commaco
+4	Verb	15	,:		Laminate	_ _	https://code.jsoftware.com/wiki/Vocabulary/commaco#dyadic
 4	Verb	16	;	_	Raze		https://code.jsoftware.com/wiki/Vocabulary/semi
 4	Verb	16	;		Link	_ _	https://code.jsoftware.com/wiki/Vocabulary/semi#dyadic
 4	Conjunction	16	;. ;.0 ;.+1 +2 ;.+3		Cut		https://code.jsoftware.com/wiki/Vocabulary/semidot
@@ -183,10 +183,10 @@ vocab =: 0 : 0
 7	Conjunction	25	""""	"u""n"	Assign		https://code.jsoftware.com/wiki/Vocabulary/quote
 7	Conjunction	25	""""	"m""n"	Constant		https://code.jsoftware.com/wiki/Vocabulary/quotem
 7	Conjunction	25	""""	"u""v m""v"	Copy		https://code.jsoftware.com/wiki/Vocabulary/quotev
-7	Verb	25	"""."	1	Do		https://code.jsoftware.com/wiki/Vocabulary/quotedot
-7	Verb	25	"""."		Numbers	_ _	https://code.jsoftware.com/wiki/Vocabulary/quotedot#dyadic
-7	Verb	25	""":"	_	Default Format		https://code.jsoftware.com/wiki/Vocabulary/quoteco
-7	Verb	25	""":"		Format	1 _	https://code.jsoftware.com/wiki/Vocabulary/quoteco#dyadic
+7	Verb	25	".	1	Do		https://code.jsoftware.com/wiki/Vocabulary/quotedot
+7	Verb	25	".		Numbers	_ _	https://code.jsoftware.com/wiki/Vocabulary/quotedot#dyadic
+7	Verb	25	":	_	Default Format		https://code.jsoftware.com/wiki/Vocabulary/quoteco
+7	Verb	25	":		Format	1 _	https://code.jsoftware.com/wiki/Vocabulary/quoteco#dyadic
 7	Conjunction	26	`		Tie		https://code.jsoftware.com/wiki/Vocabulary/grave
 7	Conjunction	27	@	mv	Atop	lv rv	https://code.jsoftware.com/wiki/Vocabulary/at
 7	Conjunction	27	@.	mv	Agenda	lv rv	https://code.jsoftware.com/wiki/Vocabulary/atdot

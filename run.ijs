@@ -6,18 +6,17 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Implement migration of ancillary information (history, searches, bookmarks) when a new jwikiviz.db file arrives.
-NB. Animated webview transition...?
 NB. Test transfer of Bookmarks records
 NB. Set up download of jwikiviz.db (with versioning)
-NB. Scroll/Select should have some padding above.
+NB. Can I force update of gethttp?
+NB. Standalone application with new (mmove-fixed) binaries.
 NB. 
 NB. B Items
+NB. Animated webview transition...?
 NB. Support parallel download of forum and wiki documents.
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
-NB. Standalone application.
 
 NB. ============= Database ===============
 db =: ''
