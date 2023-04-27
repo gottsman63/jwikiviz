@@ -8,6 +8,9 @@ coinsert 'jgl2'
 NB. A Items
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new jwikiviz.db file arrives.
 NB. Animated webview transition...?
+NB. Test transfer of Bookmarks records
+NB. Set up download of jwikiviz.db (with versioning)
+NB. Scroll/Select should have some padding above.
 NB. 
 NB. B Items
 NB. Support parallel download of forum and wiki documents.
@@ -722,7 +725,7 @@ case. 1 do. NB. (1) Left mouse scroll, right select.
 	end.	
 case. 2 do. NB. (3) Left mouse scroll/select, right numb.
 	if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-		scrollIndex =. 0 >. (window -~ # strings) <. <. (# strings) * (yy -~ {: VocMouseXY) % h
+		scrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
 	end.	
 case. 3 do. NB. (4) Two-finger scroll, mouse select, full width.
 	if. VocMouseXY pointInRect rect do.
@@ -1459,6 +1462,7 @@ NB.	smoutput dbError ''
 end.
 targetDbFile frename stageDbFile
 'rwxrwxrwx' (1!:7) < targetDbFile
+dbOpenDb ''
 NB. end.
 )
 
