@@ -6,9 +6,8 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Set up jwikiviz.db 
-NB. Set up jwikiviz.db import framework
 NB. Implement migration of ancillary information (history, searches, bookmarks) when a new jwikiviz.db file arrives.
+NB. Animated webview transition...?
 NB. 
 NB. B Items
 NB. Support parallel download of forum and wiki documents.
@@ -18,15 +17,16 @@ NB. Spider the Vocabulary--don't use the spreadsheet.
 NB. Standalone application.
 
 NB. ============= Database ===============
-dbFile =: jpath '~temp/jwikiviz.db'
 db =: ''
+stageDbFile =: jpath '~temp/stage.db'
+targetDbFile =: jpath '~temp/jwikiviz.db'
 
 dbError =: 3 : 0
 sqlerror__db ''
 )
 
 dbOpenDb =: 3 : 0
-db =: sqlopen_psqlite_ dbFile
+db =: sqlopen_psqlite_ targetDbFile
 )
 
 log =: 3 : 0
@@ -742,7 +742,7 @@ glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect rect
-if. (maxLineCount < # strings) *. (ScrollConfig = 1) +. ScrollConfig = 2 do.
+if. (ScrollConfig = 1) +. ScrollConfig = 2 do.
 	glrgb ColumnGuideColor
 	glbrush ''
 	glpen 0
@@ -1430,6 +1430,37 @@ glrect DisplayDetailRect
 ((300 + {. DisplayDetailRect) , 5) drawVocSections 7 8 9 10 11
 )
 NB. ============================= End Voc ===============================
+
+transferDatabase =: 3 : 0
+NB. Open the target db (tdb) and read all of the user records.  
+NB. Write them to the staging db (db).
+NB. Delete the target db, then rename the staging db
+NB.try.
+if. fexist targetDbFile do.
+	sdb =. sqlopen_psqlite_ stageDbFile
+	tdb =. sqlopen_psqlite_ targetDbFile
+	cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
+	historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
+	wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid > 1000000'
+	smoutput '$ wiki' ; $ wiki
+	smoutput '$ cats' ; $ cats
+	smoutput '$ historyMenu' ; $ historyMenu
+	catCols =. ;: 'level parentid categoryid category parentseq count link'
+	wikiCols =. ;: 'title categoryid link'
+	sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
+	sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
+	sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
+	sqlclose__sdb ''
+	sqlclose__tdb ''
+NB. catchd. catcht.
+NB. 	smoutput (13!:12) ''
+NB.	smoutput dbError ''
+	ferase targetDbFile
+end.
+targetDbFile frename stageDbFile
+'rwxrwxrwx' (1!:7) < targetDbFile
+NB. end.
+)
 
 FrameTimeStamps =: ''
 

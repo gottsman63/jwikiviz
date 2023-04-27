@@ -1,3 +1,5 @@
+clear ''
+
 load 'data/sqlite'
 load 'web/gethttp'
 load 'regex'
@@ -567,7 +569,7 @@ db =: sqlopen_psqlite_ stageDbFile
 )
 
 setupDb =: 3 : 0
-try. (1!:55) < dbFile catch. end.
+try. (1!:55) < stageDbFile catch. end.
 db =: sqlcreate_psqlite_ stageDbFile
 sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
@@ -575,34 +577,6 @@ sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
-)
-
-transferDatabase =: 3 : 0
-NB. Open the target db (tdb) and read all of the user records.  
-NB. Write them to the staging db (db).
-NB. Delete the target db, then rename the staging db
-NB.try.
-if. fexist targetDbFile do.
-	dbOpenDb ''
-	tdb =. sqlopen_psqlite_ targetDbFile
-	cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
-	historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
-	wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid > 1000000'
-	smoutput '$ wiki' ; $ wiki
-	smoutput '$ cats' ; $ cats
-	smoutput '$ historyMenu' ; $ historyMenu
-	catCols =. ;: 'level parentid categoryid category parentseq count link'
-	wikiCols =. ;: 'title categoryid link'
-	sqlinsert__db 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
-	sqlinsert__db 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
-	sqlinsert__db 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
-NB. catchd. catcht.
-NB. 	smoutput (13!:12) ''
-NB.	smoutput dbError ''
-	ferase targetDbFile
-end.
-targetDbFile frename stageDbFile
-NB. end.
 )
 
 setup =: 3 : 0
