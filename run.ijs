@@ -77,7 +77,6 @@ NB.    (1) Simultaneous scroll/select, full width.
 NB.    (2) Left mouse scroll, right select.
 NB.    (3) Left mouse scroll, right numb.
 NB.    (4) Two-finger scroll, mouse select, full width.
-ScrollConfig =: 2
 NB. wd 'set scrollConfig items "0. Scroll + Select (Full Width)" "1. Scroll Left, Right Select" "2. Scroll + Select (Left Only)" "3. Scroll Wheel (Full Width)"'
 )
 
@@ -509,6 +508,7 @@ PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 EmphasizeBrowserFlag =: 0
 LogFlag =: 0
+ScrollConfig =: 2
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
@@ -1443,7 +1443,7 @@ if. fexist targetDbFile do.
 	tdb =. sqlopen_psqlite_ targetDbFile
 	cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
 	historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
-	wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid > 1000000'
+	wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
 	smoutput '$ wiki' ; $ wiki
 	smoutput '$ cats' ; $ cats
 	smoutput '$ historyMenu' ; $ historyMenu
@@ -1463,7 +1463,7 @@ targetDbFile frename stageDbFile
 'rwxrwxrwx' (1!:7) < targetDbFile
 dbOpenDb ''
 loadVoc ''
-loadHistoryMenu ''
+NB. loadHistoryMenu ''
 NB. end.
 )
 
