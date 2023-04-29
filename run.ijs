@@ -20,15 +20,30 @@ NB. Spider the Vocabulary--don't use the spreadsheet.
 
 NB. ============= Database ===============
 db =: ''
-stageDbFile =: jpath '~temp/stage.db'
-targetDbFile =: jpath '~temp/jwikiviz.db'
+stageDbFile =: 'jwikiviz.stage.db'
+stageDbPath =: jpath '~temp/' , stageDbFile
+targetDbPath =: jpath '~temp/jwikiviz.db'
+curlTracePath =: jpath '~temp/jwikiviz.trace'
+
+clearTrace =: 3 : 0
+'' (1!:2) < tracePath
+)
+
+trace =: 3 : 0
+LF (1!:3) < tracePath
+y (1!:3) < tracePath
+)
 
 dbError =: 3 : 0
 sqlerror__db ''
 )
 
 dbOpenDb =: 3 : 0
-db =: sqlopen_psqlite_ targetDbFile
+try.
+	db =: sqlopen_psqlite_ targetDbPath
+catcht.
+	smoutput 'Error opening database'
+end.
 )
 
 log =: 3 : 0
@@ -509,6 +524,7 @@ MWheelOffset =: 0
 EmphasizeBrowserFlag =: 0
 LogFlag =: 0
 ScrollConfig =: 2
+UploadAcct =: '12a1yBS'
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
@@ -1433,39 +1449,42 @@ glrect DisplayDetailRect
 )
 NB. ============================= End Voc ===============================
 
-transferDatabase =: 3 : 0
+NB. ============================ Database Management ====================
+downloadLatestStageDatabase =: 3 : 0
+if. fexist targetDbPath do.
+	('-o "' , stageDbPath , '" -z "' , targetDbPath , '"') gethttp 'https://upcdn.io/12a1yBS/raw/uploads/' , stageDbFile
+else.
+	('-o "' , stageDbPath , '"') gethttp 'https://upcdn.io/12a1yBS/raw/uploads/' , stageDbFile
+end.
+)
+
+downloadAndTransferDatabase =: 3 : 0
 NB. Open the target db (tdb) and read all of the user records.  
 NB. Write them to the staging db (db).
 NB. Delete the target db, then rename the staging db
-NB.try.
-if. fexist targetDbFile do.
-	sdb =. sqlopen_psqlite_ stageDbFile
-	tdb =. sqlopen_psqlite_ targetDbFile
-	cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
-	historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
-	wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
-	smoutput '$ wiki' ; $ wiki
-	smoutput '$ cats' ; $ cats
-	smoutput '$ historyMenu' ; $ historyMenu
-	catCols =. ;: 'level parentid categoryid category parentseq count link'
-	wikiCols =. ;: 'title categoryid link'
-	sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
-	sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
-	sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
-	sqlclose__sdb ''
-	sqlclose__tdb ''
-NB. catchd. catcht.
-NB. 	smoutput (13!:12) ''
-NB.	smoutput dbError ''
-	ferase targetDbFile
+downloadLatestStageDatabase ''
+if. fexist stageDbPath do.
+	if. fexist targetDbPath do.
+		sdb =. sqlopen_psqlite_ stageDbPath
+		tdb =. sqlopen_psqlite_ targetDbPath
+		cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
+		historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
+		wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
+		catCols =. ;: 'level parentid categoryid category parentseq count link'
+		wikiCols =. ;: 'title categoryid link'
+		sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
+		sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
+		sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
+		sqlclose__sdb ''
+		sqlclose__tdb ''
+		(1!:55) < targetDbPath 
+	end.
+	targetDbPath frename stageDbPath
+	'rw-rw-rw-' (1!:7) < targetDbPath
 end.
-targetDbFile frename stageDbFile
-'rwxrwxrwx' (1!:7) < targetDbFile
 dbOpenDb ''
-loadVoc ''
-NB. loadHistoryMenu ''
-NB. end.
 )
+NB. ====================================================================
 
 FrameTimeStamps =: ''
 
@@ -1482,6 +1501,7 @@ dbOpenDb ''
 loadVoc ''
 
 go =: 3 : 0
+downloadAndTransferDatabase ''
 clearLog ''
 buildForm ''
 layoutForm ''
