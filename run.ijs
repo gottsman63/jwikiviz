@@ -1299,7 +1299,7 @@ NB. ==================== End Table of Contents ====================
 NB. ====================== NuVoc ========================
 loadVoc =: 3 : 0
 log 'loadVoc'
-VocTable =: > 1 { sqlreadm__db 'select * from vocabulary'
+try. VocTable =: > 1 { sqlreadm__db 'select * from vocabulary' catch. end.
 )
 
 calcCellDimensions =: 3 : 0
@@ -1502,6 +1502,7 @@ loadVoc ''
 
 go =: 3 : 0
 downloadAndTransferDatabase ''
+loadVoc ''
 clearLog ''
 buildForm ''
 layoutForm ''
