@@ -339,7 +339,7 @@ NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
 NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
 NB. smoutput (1!:1) < fname
 log 'Searching wiki for ' , y , '...'
-url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , urlencode y
+url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=5000&offset=0&profile=default&search=' , urlencode y
 html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
@@ -370,7 +370,7 @@ try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
-url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030'
+url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=5000'
 html =. gethttp url
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html

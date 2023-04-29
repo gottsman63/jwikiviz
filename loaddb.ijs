@@ -9,7 +9,6 @@ Months =: ;:'January February March April May June July August September October
 
 appDir =: jpath '~temp/loaddb'
 stageDbFile =: jpath '~temp/stage.db'
-targetDbFile =: jpath '~temp/jwikiviz.db'
 wikiDir =: appDir , '/code.jsoftware.com/wiki'
 codeSearchFile =: appDir , '/codesearch.html'
 forumDir =: appDir , '/forums'
