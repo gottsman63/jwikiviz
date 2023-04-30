@@ -7,10 +7,9 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Can I force update of gethttp?
-NB. "Get Latest..." button with check, explanation and options.
-NB. Fix use of sqlreadm__db
-NB. 
+
 NB. B Items
+NB. Fix use of sqlreadm__db
 NB. Animated webview transition...?
 NB. Support parallel download of forum and wiki documents.
 NB. Add a "Search" label.
@@ -474,6 +473,7 @@ SectionColor =: 0 0 0
 LabelColor =: 0 102 204
 ColumnGuideColor =: 245 253 198
 SelectionColor =: 0 0 0
+HoverColor =: 255 0 0 
 BarColor =: 245 195 150
 
 NB. BackgroundColor =: 148 210 189
@@ -672,25 +672,28 @@ PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime
 
 registerRectLink =: 4 : 0
 NB. x xx yy width height
-NB. y A url or * to be evaluated ; an optional title
+NB. y A url or * to be evaluated ; a title title ; loadMode (0 indicates hover, 1 indicates click)
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
-if. isFrozen '' do. return. end.
-if. VocMouseClickXY pointInRect x do.
-	PageLoadFreezeTime =: (6!:1) ''
-	PageLoadFreezeRect =: x
-	emphasizeBrowser ''
-	perpetuateAnimation ''
-else.
-	if. -. VocMouseXY pointInRect x do. return. end.
-	if. 2 = # y do. 'urlCommand name' =. y else. 'urlCommand name' =. (; y) ; '----' end.
+if. -. VocMouseXY pointInRect x do. return. end.
+x drawReversibleSelection HoverColor
+'urlCommand name loadMode' =. y
+if. loadMode = 0 do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
+		invalidateDisplay ''
 	else. 
 		queueUrl urlCommand ; name
 	end.
-	x drawReversibleSelection SelectionColor
+elseif. VocMouseClickXY pointInRect x do.
+	emphasizeBrowser ''
+	if. '*' = {. urlCommand do.
+		". }. urlCommand
+		invalidateDisplay ''
+	else. 
+		queueUrl urlCommand ; name
+	end.
 end.
 )
 
@@ -714,7 +717,7 @@ end.
 NB. ============================== Scroller Field ===============================
 drawScrollerField =: 4 : 0
 NB. x xx yy width height
-NB. y strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
+NB. y strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex ; loadMode
 NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's a page link, not a heading.
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
@@ -726,31 +729,15 @@ NB.    (3) Left mouse scroll, right numb.
 NB.    (4) Two-finger scroll, mouse select, full width.
 log 'drawScrollerField ' , (": x) , ": $ y
 rect =. x
-'strings links ratios levels selectedIndex scrollIndex' =. y
+'strings links ratios levels selectedIndex scrollIndex loadMode' =. y
 'xx yy w h' =. rect
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 5
 NB. glfont TocFont
-select. ScrollConfig
-case. 0 do. NB. (0) Simultaneous scroll/select, full width
-	if. VocMouseXY pointInRect rect do.
-		scrollIndex =. 0 >. (window -~ # strings) <. <. (# strings) * (yy -~ {: VocMouseXY) % h	
-	end.
-case. 1 do. NB. (1) Left mouse scroll, right select.
-	if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-		scrollIndex =. 0 >. (window -~ # strings) <. <. (# strings) * (yy -~ {: VocMouseXY) % h
-	end.	
-case. 2 do. NB. (3) Left mouse scroll/select, right numb.
-	if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-		scrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
-	end.	
-case. 3 do. NB. (4) Two-finger scroll, mouse select, full width.
-	if. VocMouseXY pointInRect rect do.
-		scrollIndex =. 0 >. (window -~ # strings) <. scrollIndex + MWheelOffset  NB. Consume any scroll events.
-		MWheelOffset =: 0
-	end.
-end.
+if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
+	scrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
+end.	
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
@@ -791,13 +778,7 @@ for_i. i. # strings do.
 	glclip xx , yy ,  w , h
 	if. lineHeight >: TocLineHeight do. (> i { origins) drawStringAt > i { strings end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	if. (ScrollConfig = 0) +. ScrollConfig = 3 do.
-		if. VocMouseXY pointInRect rect do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.
-	elseif. ScrollConfig = 1 do.
-		if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.
-	elseif. ScrollConfig = 2 do.
-		if. VocMouseXY pointInRect xx , yy , (-: w) , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; > i { strings end.		
-	end.
+	if. VocMouseXY pointInRect xx , yy , (-: w) , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.		
 end.
 glclip 0 0 10000 100000
 scrollIndex
@@ -814,7 +795,7 @@ glfont getTocFontForLevel level
 (xx , yy) drawStringAt name
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
-adjRect registerRectLink command ; name
+adjRect registerRectLink command ; name ; 1
 )
 
 drawTocEntryChildrenColumn =: 4 : 0
@@ -925,8 +906,12 @@ yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthStrings =. months { ShortMonths
 monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
 monthOrigins drawStringAt &. > monthStrings
-(<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) registerRectLink &. > '*setTocEntryForumYear '&, &. > ": &. > <"0 years
-(<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) registerRectLink &. > '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
+rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) 
+yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
+rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 0
+rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) 
+monthCommands =. '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
+rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 0
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
 TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
 (TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
@@ -940,12 +925,12 @@ subject =. TocEntryForumSubjectIndex { subjects
 ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
 NB. smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
 authors =. 3 {"1 ForumAuthorEntries
-links =.   4 {"1 ForumAuthorEntries
+NB. links =.   4 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex
+ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1
+ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
@@ -1012,7 +997,7 @@ if. fullSizeColCount < # columnRects do.
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
 headerColumn =. > {. columnGroups
-parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ratios ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex
+parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ratios ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex ; 0
 TocEntryChildScrollIndex =: (> {. columnRects) drawScrollerField parms
 (}. columnRects) drawTocEntryChildrenColumn &. > }. columnGroups
 ''
@@ -1040,7 +1025,7 @@ subcatColWidth =. <. width % 3
 detailX =. xx + subcatColWidth + margin
 detailWidth =. width - subcatColWidth + margin
 commandLinks =. '*setTocEntryTagSubcatIndex '&, &. > ": &. > <"0 i. # subcats
-scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex
+scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex ; 0
 TocEntryTagScrollIndex =: ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) drawScrollerField scrollEntries
 parentId =. > 7 { TocEntryTagSubcatIndex { subcatEntries
 tocWikiDocs =. getTocWikiDocs parentId  NB. (level parentid categoryid category parentSeq count link) ; table of title ; link
@@ -1135,7 +1120,7 @@ levels =. (] - <./) > 0 {"1 entries
 maxCount =. >./ > 4 {"1 entries
 indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
-parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex
+parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 0
 TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. EmphasizeBrowserFlag do. return. end.
 entry =. TocOutlineRailSelectedIndex { entries
@@ -1344,7 +1329,7 @@ glfont VocValenceFont
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
-((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label
+((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label ; 1
 NB. end.
 0
 )
@@ -1384,7 +1369,7 @@ if. selected do.
 	(xStart, yStart, width, height) drawHighlight SelectionColor
 end.
 coords drawStringAt &. > ; &. > lineTokens
-(xStart , yStart , width , height) registerRectLink '*selectVocGlyph ''' , glyph , ''''
+(xStart , yStart , width , height) registerRectLink ('*selectVocGlyph ''' , glyph , '''') ; glyph ; 0
 ''
 )
 
@@ -1438,8 +1423,8 @@ selectVocGlyph =: 3 : 0
 NB. y A glyph
 log 'selectVocGlyph ' , y
 VocSelectedGlyph =: , y
-entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
-queueUrl n =: (> 7 { entry) ; > 5 { entry
+NB. entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
+NB. queueUrl n =: (> 7 { entry) ; > 5 { entry
 )
 
 drawVoc =: 3 : 0
@@ -1522,17 +1507,14 @@ downloadDialog =: 3 : 0
 status =. {. , checkForNewerDatabase ''
 select. status
 case. 0 do.
-	smoutput 'case 0'
 	wdinfo 'Local Database Status' ; 'Your local database is up to date.'
 	1
 case. 1 do.
-	smoutput 'case 1'
-	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is available.  Download?"'
+	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is available.  Download (to ~temp)?"'
 	if. result -: 'yes' do. downloadAndTransferDatabase'' end.
 	1
 case. 2 do.
-	smoutput 'case 2'
-	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download; No to quit."'
+	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download (to ~temp); No to quit."'
 	if. result -: 'yes' do. 
 		downloadAndTransferDatabase ''
 		1
