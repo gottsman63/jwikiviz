@@ -588,17 +588,25 @@ sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, gl
 sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE admin (key TEXT, value TEXT)'
-sqlinsert__db 'admin' ; (;: 'key value') ; < 'Create' ; getCurlDate ''
+)
+
+writeStartTime =: 3 : 0
+sqlinsert__db 'admin' ; (;: 'key value') ; < 'CrawlStart' ; getCurlDate ''
+)
+
+writeEndTime =: 3 : 0
+sqlinsert__db 'admin' ; (;: 'key value') ; < 'CrawlEnd' ; getCurlDate ''
 )
 
 uploadDb =: 3 : 0
 auth =. (1!:1) < jpath '~temp/upload.auth'
-('-H "Authorization: Bearer ' , auth , '" -H "Content-Type: application/octet-stream" --data-binary @' , stageDbFile) gethttp 'https://api.upload.io/v2/accounts/12a1yBS/uploads/binary?filePath=/uploads/jwikiviz.stage.db'
+(' -H "Authorization: Bearer ' , auth , '" -H "Content-Type: application/octet-stream" --data-binary @' , stageDbFile) gethttp 'https://api.upload.io/v2/accounts/12a1yBS/uploads/binary?filePath=/uploads/jwikiviz.stage.db'
 )
 
 setup =: 3 : 0
 setupTempDirectory ''
 setupDb ''
+writeStartTime ''
 setupTables ''
 processCategory ''
 loadVoc ''
@@ -607,5 +615,6 @@ NB. (loadForum t. 0) &. > ;: 'chat database general source programming beta'
 loadTagCategories ''
 loadForum &. > ;: 'programming general beta chat source database '
 finishLoadingForums ''
+writeEndTime ''
 uploadDb ''
 )

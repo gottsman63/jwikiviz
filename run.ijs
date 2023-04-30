@@ -6,10 +6,9 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Test transfer of Bookmarks records
-NB. Set up download of jwikiviz.db (with versioning)
 NB. Can I force update of gethttp?
-NB. Standalone application with new (mmove-fixed) binaries.
+NB. "Get Latest..." button with check, explanation and options.
+NB. Fix use of sqlreadm__db
 NB. 
 NB. B Items
 NB. Animated webview transition...?
@@ -52,12 +51,16 @@ sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') 
 if. 0 = ? 200 do.
 	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
 	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
-	sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; JVERSION
 end.
 )
 
 clearLog =: 3 : 0
 sqlcmd__db 'delete from log'
+)
+
+initAdmin =: 3 : 0
+sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'qscreen' ; wd 'qscreen'
+sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'JVERSION' ; JVERSION
 )
 NB. =======================================
 
@@ -1450,12 +1453,39 @@ glrect DisplayDetailRect
 NB. ============================= End Voc ===============================
 
 NB. ============================ Database Management ====================
-downloadLatestStageDatabase =: 3 : 0
-if. fexist targetDbPath do.
-	('-o "' , stageDbPath , '" -z "' , targetDbPath , '"') gethttp 'https://upcdn.io/12a1yBS/raw/uploads/' , stageDbFile
-else.
-	('-o "' , stageDbPath , '"') gethttp 'https://upcdn.io/12a1yBS/raw/uploads/' , stageDbFile
+uploadAcct =: '12a1yBS'
+
+checkForNewerDatabase =: 3 : 0
+NB. Return 1 if a newer database is available.  
+NB. Return 2 is a newer database is required.
+NB. Return 0 if the local database is up to date.
+if. -. fexist targetDbPath do. 
+	2 
+	return. 
 end.
+try. 
+	crawlEnd =. > {: sqlreadm__db 'select value from admin where key = "CrawlEnd"' 
+	if. 0 = # crawlEnd do. 
+		2
+	return. 
+	end.
+catcht.
+	2
+	return.
+end.
+head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile
+curlDateString =: n {.~ LF i.~ n =. (6 + I. 'date: ' E. head) }. head
+'day date month year time zone' =. < ;._2 curlDateString , ' '
+'Y M D' =. year ; (": >: (;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec') i. < month) ; date
+'hh mm ss' =. <;._2 time , ':'
+lastCrawlTime =. (6!:18) lct =: Y , '-' , (_2 {. '0' , M) , '-' , (_2 {. '0' , D) , 'T' , hh , ':' , mm , ':' , ss , '.000000+00:00'
+localDbTime =. (6!:18) ldt =: > crawlEnd
+diffInMinutes =. (lastCrawlTime - localDbTime) % 1e9 * 60
+diffInMinutes > 60
+)
+
+downloadLatestStageDatabase =: 3 : 0
+('-o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 )
 
 downloadAndTransferDatabase =: 3 : 0
@@ -1481,8 +1511,35 @@ if. fexist stageDbPath do.
 	end.
 	targetDbPath frename stageDbPath
 	'rw-rw-rw-' (1!:7) < targetDbPath
+	try. (1!:22) < targetDbPath catch. end.
 end.
 dbOpenDb ''
+sqlclose__db ''
+dbOpenDb ''
+)
+
+downloadDialog =: 3 : 0
+status =. {. , checkForNewerDatabase ''
+select. status
+case. 0 do.
+	smoutput 'case 0'
+	wdinfo 'Local Database Status' ; 'Your local database is up to date.'
+	1
+case. 1 do.
+	smoutput 'case 1'
+	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is available.  Download?"'
+	if. result -: 'yes' do. downloadAndTransferDatabase'' end.
+	1
+case. 2 do.
+	smoutput 'case 2'
+	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download; No to quit."'
+	if. result -: 'yes' do. 
+		downloadAndTransferDatabase ''
+		1
+	else.
+		0
+	end.
+end.
 )
 NB. ====================================================================
 
@@ -1491,17 +1548,14 @@ FrameTimeStamps =: ''
 getFrameRate =: 3 : 0
 FrameTimeStamps =: (t =. (6!:1) '' ) , FrameTimeStamps
 fps =. # FrameTimeStamps =: FrameTimeStamps #~ (t - 1) < FrameTimeStamps
-NB. glfont 'arial bold 24'
-NB. glrgb HighlightColor
-NB. gltextcolor ''
-NB. 10 0 drawStringAt (": fps) , ' fps'
 )
 
 dbOpenDb ''
 loadVoc ''
 
 go =: 3 : 0
-downloadAndTransferDatabase ''
+if. -. downloadDialog '' do. return. end.
+initAdmin ''
 loadVoc ''
 clearLog ''
 buildForm ''
