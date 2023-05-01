@@ -9,6 +9,8 @@ NB. A Items
 NB. Can I force update of gethttp?  Raul's email...
 NB. Bob's approach to Forums.
 NB. Forum browsing really doesn't work on a small screen.
+NB. Should we be clearing?  Creating our own namespace?  Won't we interfere with others?
+NB. Packaging an add-on
 
 NB. B Items
 NB. Fix use of sqlreadm__db
