@@ -1527,8 +1527,11 @@ FrameTimeStamps =: (t =. (6!:1) '' ) , FrameTimeStamps
 fps =. # FrameTimeStamps =: FrameTimeStamps #~ (t - 1) < FrameTimeStamps
 )
 
-dbOpenDb ''
-loadVoc ''
+manageLoad =: 3 : 0
+try. wd 'pclose' catch. end.
+)
+
+manageLoad ''
 
 go =: 3 : 0
 if. -. downloadDialog '' do. return. end.
