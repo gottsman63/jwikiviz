@@ -174,7 +174,7 @@ smoutput LogFlag
 
 vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
-NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
+if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 log 'vizform_vocContext_mmove'
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
@@ -505,6 +505,7 @@ TagCatString =: '*Tags'
 TagHiddenCatId =: 500000
 QueuedUrl =: ''
 QueuedUrlTime =: 0
+SuppressMouseHandlingStart =: 0
 PageLoadFreezeTime =: 0
 PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
@@ -661,9 +662,10 @@ NB. y A url or * to be evaluated ; a title ; loadMode (0 indicates hover, 1 indi
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
-if. -. VocMouseXY pointInRect x do. return. end.
-x drawReversibleSelection HoverColor
 'urlCommand name loadMode' =. y
+if. isFrozen '' do. 0 return. end.
+if. -. VocMouseXY pointInRect x do. 0 return. end.
+x drawReversibleSelection HoverColor
 if. loadMode = 0 do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
@@ -680,6 +682,13 @@ NB.		invalidateDisplay ''
 		queueUrl urlCommand ; name
 	end.
 end.
+if. VocMouseClickXY pointInRect x do.
+	PageLoadFreezeTime =: (6!:1) ''
+	SuppressMouseHandlingStart =: PageLoadFreezeTime
+	PageLoadFreezeRect =: x
+	emphasizeBrowser ''
+end.
+0
 )
 
 drawReversibleSelection =: 4 : 0
@@ -780,7 +789,7 @@ glfont getTocFontForLevel level
 (xx , yy) drawStringAt name
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
-adjRect registerRectLink command ; name ; 1
+adjRect registerRectLink command ; name ; 0
 )
 
 drawTocEntryChildrenColumn =: 4 : 0
@@ -915,7 +924,7 @@ subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subj
 NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
 ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
+ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 0
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
@@ -1314,7 +1323,7 @@ glfont VocValenceFont
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
-((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label ; 1
+((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label ; 0
 NB. end.
 0
 )
@@ -1408,8 +1417,8 @@ selectVocGlyph =: 3 : 0
 NB. y A glyph
 log 'selectVocGlyph ' , y
 VocSelectedGlyph =: , y
-NB. entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
-NB. queueUrl n =: (> 7 { entry) ; > 5 { entry
+entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
+queueUrl n =: (> 7 { entry) ; > 5 { entry
 )
 
 drawVoc =: 3 : 0
@@ -1434,8 +1443,9 @@ if. -. fexist targetDbPath do.
 	return. 
 end.
 try. 
-	crawlEnd =. > {: sqlreadm__db 'select value from admin where key = "CrawlEnd"' 
-	if. 0 = # crawlEnd do. 
+	dbOpenDb ''
+	localHash =. , > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
+	if. 0 = # localHash do. 
 		2
 	return. 
 	end.
@@ -1443,15 +1453,9 @@ catcht.
 	2
 	return.
 end.
-head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile
-curlDateString =: n {.~ LF i.~ n =. (6 + I. 'date: ' E. head) }. head
-'day date month year time zone' =. < ;._2 curlDateString , ' '
-'Y M D' =. year ; (": >: (;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec') i. < month) ; date
-'hh mm ss' =. <;._2 time , ':'
-lastCrawlTime =. (6!:18) lct =: Y , '-' , (_2 {. '0' , M) , '-' , (_2 {. '0' , D) , 'T' , hh , ':' , mm , ':' , ss , '.000000+00:00'
-localDbTime =. (6!:18) ldt =: > crawlEnd
-diffInMinutes =. (lastCrawlTime - localDbTime) % 1e9 * 60
-diffInMinutes > 60
+head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+remoteHash =. n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
+-. localHash -: remoteHash
 )
 
 downloadLatestStageDatabase =: 3 : 0
@@ -1483,9 +1487,13 @@ if. fexist stageDbPath do.
 	'rw-rw-rw-' (1!:7) < targetDbPath
 	try. (1!:22) < targetDbPath catch. end.
 end.
+head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+hash =: n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
+try. (1!:22) < targetDbPath catch. end.
 dbOpenDb ''
 sqlclose__db ''
 dbOpenDb ''
+sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
 )
 
 downloadDialog =: 3 : 0
