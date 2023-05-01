@@ -6,7 +6,9 @@ load 'regex'
 load 'gl2'
 coinsert 'jgl2'
 NB. A Items
-NB. Can I force update of gethttp?
+NB. Can I force update of gethttp?  Raul's email...
+NB. Bob's approach to Forums.
+NB. Forum browsing really doesn't work on a small screen.
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -64,7 +66,6 @@ sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'JVERSION' ; JVERSION
 NB. =======================================
 
 NB. ==================== Form =====================
-NB. FormMouseXY =: 0 0
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
 
@@ -76,7 +77,6 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
-NB. wd       'cc scrollConfig combolist;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
 wd     'cc vocContext isigraph;'
@@ -90,11 +90,6 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
-NB.    (1) Simultaneous scroll/select, full width.
-NB.    (2) Left mouse scroll, right select.
-NB.    (3) Left mouse scroll, right numb.
-NB.    (4) Two-finger scroll, mouse select, full width.
-NB. wd 'set scrollConfig items "0. Scroll + Select (Full Width)" "1. Scroll Left, Right Select" "2. Scroll + Select (Left Only)" "3. Scroll Wheel (Full Width)"'
 )
 
 layoutForm =: 3 : 0
@@ -160,11 +155,6 @@ wd 'timer 0'
 wd 'pclose'
 )
 
-vizform_scrollConfig_select =: 3 : 0
-ScrollConfig =: ". scrollConfig_select
-invalidateDisplay ''
-)
-
 vizform_bookmark_button =: 3 : 0
 log 'vizform_bookmark_button'
 bookmark ''
@@ -195,11 +185,6 @@ invalidateDisplay ''
 vizform_vocContext_mblup =: 3 : 0
 log 'vizform_vocContext_mblup'
 VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
-invalidateDisplay ''
-)
-
-vizform_vocContext_mwheel =: 3 : 0
-MWheelOffset =: MWheelOffset + 11 { ". > (1 {"1 wdq) {~ ({."1 wdq) i. < 'sysdata'
 invalidateDisplay ''
 )
 
@@ -672,7 +657,7 @@ PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime
 
 registerRectLink =: 4 : 0
 NB. x xx yy width height
-NB. y A url or * to be evaluated ; a title title ; loadMode (0 indicates hover, 1 indicates click)
+NB. y A url or * to be evaluated ; a title ; loadMode (0 indicates hover, 1 indicates click)
 NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
@@ -682,7 +667,7 @@ x drawReversibleSelection HoverColor
 if. loadMode = 0 do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
-		invalidateDisplay ''
+NB.		invalidateDisplay ''
 	else. 
 		queueUrl urlCommand ; name
 	end.
@@ -690,7 +675,7 @@ elseif. VocMouseClickXY pointInRect x do.
 	emphasizeBrowser ''
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
-		invalidateDisplay ''
+NB.		invalidateDisplay ''
 	else. 
 		queueUrl urlCommand ; name
 	end.
@@ -727,7 +712,7 @@ NB.    (1) Simultaneous scroll/select, full width.
 NB.    (2) Left mouse scroll, right select.
 NB.    (3) Left mouse scroll, right numb.
 NB.    (4) Two-finger scroll, mouse select, full width.
-log 'drawScrollerField ' , (": x) , ": $ y
+log 'drawScrollerField ' , (": x)
 rect =. x
 'strings links ratios levels selectedIndex scrollIndex loadMode' =. y
 'xx yy w h' =. rect
@@ -929,7 +914,7 @@ NB. links =.   4 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1
+ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
 ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
