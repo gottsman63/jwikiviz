@@ -1,3 +1,5 @@
+cocurrent 'jwikiviz'
+
 clear ''
 
 load 'data/sqlite'
@@ -231,10 +233,10 @@ if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { getHistoryMenu '') , '"' e
 PerpetuateAnimationStartTime =: 0
 
 sys_timer_z_ =: 3 : 0
-log_base_ 'sys_timer_z_'
+log_jwikiviz_ 'sys_timer_z_'
 try.
 NB. 	checkQueuedUrlTime_base_ ''
-	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_base_ do. invalidateDisplay_base_ '' end.
+	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_jwikiviz_ do. invalidateDisplay_jwikiviz_ '' end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError ''
@@ -1542,4 +1544,8 @@ buildForm ''
 layoutForm ''
 loadHistoryMenu ''
 wd 'pshow'
+)
+
+go_z_ =: 3 : 0
+go_jwikiviz_ ''
 )
