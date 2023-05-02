@@ -14,7 +14,6 @@ NB. Forum browsing really doesn't work on a small screen.
 NB. Packaging an add-on
 NB. Must I delete the targetDB?
 NB. Create a shortcut option
-NB. Window default (not frozen) dimensions...how?
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -1503,7 +1502,7 @@ if. fexist stageDbPath do.
 		sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
 		sqlclose__sdb ''
 		sqlclose__tdb ''
-		(1!:55) < targetDbPath 
+NB. 		(1!:55) < targetDbPath 
 	end.
 	targetDbPath frename stageDbPath
 NB.	'rw-rw-rw-' (1!:7) < targetDbPath
