@@ -1559,7 +1559,7 @@ case. 2 do.
 		0
 	end.
 case. 3 do.
-	wdinfo '' ; 'Could not connect to the CDN.  Please be sure you have in internet connection.'
+	wdinfo '' ; 'Could not connect to the CDN.  Please be sure you have an internet connection.'
 	1
 end.
 )
