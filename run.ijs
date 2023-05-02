@@ -14,8 +14,7 @@ NB. Forum browsing really doesn't work on a small screen.
 NB. Packaging an add-on
 NB. Must I delete the targetDB?
 NB. Create a shortcut option
-NB. What happens when gethttp fails during the --head check?
-NB. Win default (not frozen) dimensions...how?
+NB. Window default (not frozen) dimensions...how?
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -112,6 +111,7 @@ if. EmphasizeBrowserFlag do.
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.65) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+	wd 'set vocContext minwh 1 1;'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
@@ -122,8 +122,8 @@ else.
 	browserWidth =. winW - vocContextWidth
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.65) , controlHeight) , ';'
-NB. 	wd 'set scrollConfig maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+	wd 'set vocContext minwh 770 780;'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
