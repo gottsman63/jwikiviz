@@ -1488,7 +1488,7 @@ if. fexist stageDbPath do.
 		(1!:55) < targetDbPath 
 	end.
 	targetDbPath frename stageDbPath
-	'rw-rw-rw-' (1!:7) < targetDbPath
+NB.	'rw-rw-rw-' (1!:7) < targetDbPath
 	try. (1!:22) < targetDbPath catch. end.
 end.
 head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
