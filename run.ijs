@@ -73,9 +73,10 @@ shortcutInfo =: 3 : 0
 smoutput ' '
 smoutput 'NB. Create a shortcut for JWikiViz:'
 smoutput 'open ''~config/userkeys.cfg'''
-smoutput 'NB. Append the line: Ctrl+H;1;load...'
+smoutput 'NB. Append the line: Ctrl+Shift+H;1;JWikiViz;load ''~addons/gottsman63/jwikiviz/run.ijs'''
 smoutput ' '
 smoutput 'browse_j_ ''https://code.jsoftware.com/wiki/Guides/Qt_IDE/Configure/User_Keys'' NB. More information.'
+NB.    load '~addons/gottsman63/jwikiviz/run.ijs'
 )
 
 NB. ==================== Form =====================
