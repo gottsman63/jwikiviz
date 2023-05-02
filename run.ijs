@@ -9,10 +9,7 @@ load 'gl2'
 coinsert 'jgl2'
 NB. A Items
 NB. Can I force update of gethttp?  Raul's email...
-NB. Bob's approach to Forums.
-NB. Packaging an add-on
-NB. Create a shortcut option
-NB. Fix git
+NB. Tests...of something.
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -247,7 +244,7 @@ loadPage (". history_select) { getHistoryMenu ''
 
 vizform_launch_button =: 3 : 0
 log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
-browse_j_ > 0 { 0 { getHistoryMenu ''
+launch_jbrowser_ > 0 { 0 { getHistoryMenu ''
 )
 
 PerpetuateAnimationStartTime =: 0
