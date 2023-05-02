@@ -897,7 +897,7 @@ glbrush ''
 glrect xx , yy , width , height
 colWidth =. <. -: width - +: margin
 colHeight =. height
-subjRect =. (xx + margin + 100) , yy , colWidth, colHeight
+subjRect =. (xx + margin + 110) , yy , colWidth, colHeight
 authRect =. subjRect + (colWidth + margin) , 0 0 0
 years =. \:~ ~. > {."1 ForumCacheTable
 if. 0 = # years do. return. end.
