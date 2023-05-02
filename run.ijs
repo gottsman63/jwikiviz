@@ -12,9 +12,7 @@ NB. Can I force update of gethttp?  Raul's email...
 NB. Bob's approach to Forums.
 NB. Forum browsing really doesn't work on a small screen.
 NB. Packaging an add-on
-NB. Use browse_j_
 NB. Must I delete the targetDB?
-NB. Static for search or a default string
 NB. Create a shortcut option
 NB. What happens when gethttp fails during the --head check?
 NB. Win default (not frozen) dimensions...how?
@@ -1443,11 +1441,22 @@ NB. ============================= End Voc ===============================
 NB. ============================ Database Management ====================
 uploadAcct =: '12a1yBS'
 
+dbExists =: 3 : 0
+NB. Return 1 if the target db exists.
+fexist targetDbPath
+)
+
+isOnTheNetwork =: 3 : 0
+NB. Return 1 if we can connect to the CDN.
+0 < # ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+)
+
 checkForNewerDatabase =: 3 : 0
 NB. Return 1 if a newer database is available.  
 NB. Return 2 is a newer database is required.
+NB. Return 3 if we don't get any data back.
 NB. Return 0 if the local database is up to date.
-if. -. fexist targetDbPath do. 
+if. -. dbExists '' do. 
 	2 
 	return. 
 end.
@@ -1463,6 +1472,10 @@ catcht.
 	return.
 end.
 head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+if. 0 = # head do. 
+	3 
+	return. 
+end.
 remoteHash =. n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
 -. localHash -: remoteHash
 )
@@ -1516,13 +1529,21 @@ case. 1 do.
 	if. result -: 'yes' do. downloadAndTransferDatabase'' end.
 	1
 case. 2 do.
-	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download (to ~temp); No to quit."'
-	if. result -: 'yes' do. 
-		downloadAndTransferDatabase ''
-		1
+	if. isOnTheNetwork'' do.
+		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download (to ~temp); No to quit."'
+		if. result -: 'yes' do. 
+			downloadAndTransferDatabase ''
+			1
+		else.
+			0
+		end.
 	else.
+		wdinfo '' ; 'Cannot connect to the CDN and a new database is required.  Please be sure you have an internet connection.  OK to exit.'
 		0
 	end.
+case. 3 do.
+	wdinfo '' ; 'Could not connect to the CDN.  Please be sure you have in internet connection.'
+	1
 end.
 )
 NB. ====================================================================
