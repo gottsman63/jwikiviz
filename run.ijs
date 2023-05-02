@@ -915,14 +915,20 @@ end.
 if. (xx < {. VocMouseXY) *. ({. VocMouseXY) < xx + 40 do. ForumMonthBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight end.
 yearBumpArray =. (ForumYearBumpCount # 0) , 30 # 3 * timeLineHeight
 monthBumpArray =. (ForumMonthBumpCount # 0) , 12 # 3 * timeLineHeight
-yearOrigins =. (xx + margin) ,. ((# years) {. yearBumpArray) + yy + margin + timeLineHeight * i. # years
+dateFlag =. 0
+if. dateFlag do.
+	monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
+	yearOrigins =. (xx + margin) ,. ((# years) {. yearBumpArray) + yy + margin + timeLineHeight * i. # years
+else.
+	monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. yy + margin + (timeLineHeight * years i. TocEntryForumYear) + timeLineHeight * i.12
+	yearOrigins =. (xx + margin) ,. yy + margin + timeLineHeight * i. # years
+end.
 yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
 gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthStrings =. months { ShortMonths
-monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
 monthOrigins drawStringAt &. > monthStrings
 rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) 
 yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
