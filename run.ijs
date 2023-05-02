@@ -10,10 +10,9 @@ coinsert 'jgl2'
 NB. A Items
 NB. Can I force update of gethttp?  Raul's email...
 NB. Bob's approach to Forums.
-NB. Forum browsing really doesn't work on a small screen.
 NB. Packaging an add-on
-NB. Must I delete the targetDB?
 NB. Create a shortcut option
+NB. Fix git
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -68,7 +67,16 @@ initAdmin =: 3 : 0
 sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'qscreen' ; wd 'qscreen'
 sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'JVERSION' ; JVERSION
 )
-NB. =======================================
+NB. ===============================================
+
+shortcutInfo =: 3 : 0
+smoutput ' '
+smoutput 'NB. Create a shortcut for JWikiViz:'
+smoutput 'open ''~config/userkeys.cfg'''
+smoutput 'NB. Append the line: Ctrl+H;1;load...'
+smoutput ' '
+smoutput 'browse_j_ ''https://code.jsoftware.com/wiki/Guides/Qt_IDE/Configure/User_Keys'' NB. More information.'
+)
 
 NB. ==================== Form =====================
 VocMouseXY =: 0 0
@@ -80,6 +88,7 @@ wd 'pc vizform;'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
+wd       'cc shortcut button;cn Shortcut;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
@@ -107,8 +116,9 @@ vocContextHeight =. winH >. 760
 if. EmphasizeBrowserFlag do.
 	vocContextWidth =. 175
 	browserWidth =. winW - vocContextWidth
+	wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
 	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.65) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext minwh 1 1;'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
@@ -119,8 +129,9 @@ if. EmphasizeBrowserFlag do.
 else.
 	vocContextWidth =. <. 825 >. winW % 2
 	browserWidth =. winW - vocContextWidth
+	wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.65) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set vocContext minwh 770 780;'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
@@ -165,6 +176,12 @@ vizform_bookmark_button =: 3 : 0
 log 'vizform_bookmark_button'
 bookmark ''
 invalidateDisplay ''
+)
+
+vizform_shortcut_button =: 3 : 0
+log 'shortcut'
+shortcutInfo ''
+wdinfo 'The terminal has instructions for adding a shortcut to the IDE''s userkeys.cfg file.'
 )
 
 vizform_clearSearches_button =: 3 : 0
@@ -1574,3 +1591,6 @@ wd 'pshow'
 go_z_ =: 3 : 0
 go_jwikiviz_ ''
 )
+
+cocurrent 'base'
+go ''
