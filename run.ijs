@@ -11,8 +11,13 @@ NB. A Items
 NB. Can I force update of gethttp?  Raul's email...
 NB. Bob's approach to Forums.
 NB. Forum browsing really doesn't work on a small screen.
-NB. Should we be clearing?  Creating our own namespace?  Won't we interfere with others?
 NB. Packaging an add-on
+NB. Use browse_j_
+NB. Must I delete the targetDB?
+NB. Static for search or a default string
+NB. Create a shortcut option
+NB. What happens when gethttp fails during the --head check?
+NB. Win default (not frozen) dimensions...how?
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -227,7 +232,7 @@ loadPage (". history_select) { getHistoryMenu ''
 
 vizform_launch_button =: 3 : 0
 log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
-if. IFUNIX do. (2!:1) 'open -a Safari "' , (> 0 { 0 { getHistoryMenu '') , '"' end.
+browse_j_ > 0 { 0 { getHistoryMenu ''
 )
 
 PerpetuateAnimationStartTime =: 0
