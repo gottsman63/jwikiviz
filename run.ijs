@@ -131,7 +131,7 @@ else.
 	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
 	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
 	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set vocContext minwh 770 780;'
+	wd 'set vocContext minwh 770 680;'
 	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
 	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
 	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
@@ -464,14 +464,11 @@ setTocOutlineRailSelectedIndex index
 )
 
 NB. ================== Drawing ====================
-VocMinWidth =: 800
-VocMinHeight =: 900
 MaxCellWidth =: 100
 MinColWidth =: 200
 CellMargin =: 5
-CellLineHeight =: 25
+CellLineHeight =: 22
 DocumentLineHeight =: 26
-DocumentFont =: 'arial bold 18'
 SectionFont =: 'arial bold 16'
 
 BackgroundColor =: 255 255 255
@@ -482,20 +479,6 @@ SelectionColor =: 0 0 0
 HoverColor =: 255 0 0 
 BarColor =: 245 195 150
 
-NB. BackgroundColor =: 148 210 189
-NB. SectionColor =: 155 34 38
-NB. LabelColor =: 0 18 25
-NB. ColumnGuideColor =: 10 147 150
-NB. SelectionColor =: 0 95 115
-NB. BarColor =: 233 216 166
-
-NB. BackgroundColor =: 255 255 255
-NB. SectionColor =: 238 170 170
-NB. LabelColor =: 0 0 0
-NB. ColumnGuideColor =: 204 238 255
-NB. SelectionColor =: 0 0 0
-NB. BarColor =: 238 170 170
-
 PageFreezeColor =: 0 18 25
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
@@ -504,7 +487,7 @@ DocumentSectionSelectedIndex =: _1
 VocTable =: '' NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 POSColors =: 221 204 255 , 204 238 255 , 238 255 204 , 255 204 238 , 221 221 221 ,: 238 170 170
 POSNames =: ;: 'Verb Adverb Conjunction Noun Copula Control'
-VocCellFont =: 'consolas 16 bold'
+VocCellFont =: 'consolas 14 bold'
 VocValenceFont =: 'arial 14'
 CategoryIndex =: 0
 CategoryTable =: ''
