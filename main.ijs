@@ -1,5 +1,10 @@
 cocurrent 'jwikiviz'
 
+VERSION =: '1.0.0'
+VERSIONDATE =: 2023-05-02'
+DBG =: 0
+TBP =: ''
+
 clear ''
 
 load 'data/sqlite'
@@ -456,7 +461,6 @@ CellLineHeight =: 25
 DocumentLineHeight =: 26
 DocumentFont =: 'arial bold 18'
 SectionFont =: 'arial bold 16'
-DBG =: 1
 
 BackgroundColor =: 255 255 255
 SectionColor =: 0 0 0

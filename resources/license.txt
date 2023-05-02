@@ -1,0 +1,5 @@
+Licensing
+
+The J executable and related portions of the package are copyrighted by Jsoftware, Inc., and subject to its warranty and license agreement (http://www.jsoftware.com/docs/help802/warranty.htm)
+
+This software requires the Qt toolkit (http://qt-project.org/), copyright 2014 Digia Plc. The Qt libraries included in the Windows and OSX distributions are licensed under LGPL 2.1. The Windows distribution includes the curl executable (http://curl.haxx.se/), which is subject to the MIT/X open software license, copyright 1996-2013 Daniel Stenberg.
