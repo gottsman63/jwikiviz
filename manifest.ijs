@@ -15,8 +15,13 @@ data/sqlite
 web/gethttp
 )
 
-FOLDER=: 'gottsman63/jwikiviz'
+FOLDER=: '~Projects/jwikiviz'
 
 FILES=: 0 : 0
 run.ijs
+about.ijs
+build.ijs
+loaddb.ijs
+main.ijs
+manifest.ijs
 )

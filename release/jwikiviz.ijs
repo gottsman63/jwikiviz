@@ -1,3 +1,4 @@
+NB. About dialog
 cocurrent 'jwikiviz'
 
 clear ''
