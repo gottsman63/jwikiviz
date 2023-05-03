@@ -821,7 +821,6 @@ TocEntryForumMonth =: ''
 
 setTocEntryForumMonth =: 3 : 0
 NB. y The month whose posts we'll display
-smoutput 'setTocEntryForumMonth' ; y
 TocEntryForumMonth =: y
 setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
@@ -850,8 +849,6 @@ TocEntryForumAuthorIndex =: 0
 
 setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
-smoutput 'setTocEntryForumAuthorIndex' ; y
-smoutput '...$ ForumAuthorEntries' ; $ ForumAuthorEntries
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
 queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
@@ -903,9 +900,6 @@ monthIndexes =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1
 ForumMonthStrings =: monthIndexes { ShortMonths
 if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {. ForumMonthStrings end.
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
-smoutput 'ForumMonthStrings' ; ForumMonthStrings
-smoutput 'TocEntryForumMonth' ; TocEntryForumMonth
-smoutput 'monthIndex' ; monthIndex ; $ monthIndex
 NB. if. (xx > {. VocMouseXY) +. ({. VocMouseXY) > {. subjRect do. 
 NB. 	ForumYearBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight
 NB. 	ForumMonthBumpCount =: ForumYearBumpCount
@@ -946,7 +940,6 @@ subjects =: ~. 2 {"1 entries
 ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
 NB. ratios =. authorCounts % >./ authorCounts =. > # &. > (2 {"1 entries) </. entries
 subjects =. ~. allSubjects
-smoutput '$ subjects' ; $ subjects
 subject =. TocEntryForumSubjectIndex { subjects 
 ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
 NB. smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
