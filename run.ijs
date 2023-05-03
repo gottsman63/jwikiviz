@@ -1506,7 +1506,7 @@ if. fexist stageDbPath do.
 		sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
 		sqlclose__sdb ''
 		sqlclose__tdb ''
-NB. 		(1!:55) < targetDbPath 
+ 		(1!:55) < targetDbPath 
 	end.
 	targetDbPath frename stageDbPath
 NB.	'rw-rw-rw-' (1!:7) < targetDbPath

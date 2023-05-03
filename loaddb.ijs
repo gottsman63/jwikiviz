@@ -587,7 +587,7 @@ sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
-sqlcmd__db 'CREATE TABLE admin (key TEXT, value TEXT)'
+sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
 )
 
 writeStartTime =: 3 : 0
