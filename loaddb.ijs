@@ -15,13 +15,24 @@ forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 
-fixQuotes =: 3 : 0
-NB. y A glyph that may have stray quotation marks
-NB. Strip them.
-if. 2 >: # y do. y return. end.
-if. '"""' -: 0 1 _1 { y do. 2 }. _1 }. y return. end.
-if. '""' -: 0 _1 { y do. 1 }. _1 }. y return. end.
-y
+generateDatabaseReport =: 3 : 0
+NB. Write a report on the newly-created database to the wiki.
+dbOpenDb ''
+forumCount =. , > > {: sqlreadm__db 'select count(*) from forums'
+categoryCount =. , > > {: sqlreadm__db 'select count(*) from categories'
+wikiCount =. , > > {: sqlreadm__db 'select count(*) from wiki'
+vocCount =. , > > {: sqlreadm__db 'select count(*) from vocabulary'
+logCount =. , > > {: sqlreadm__db 'select count(*) from log'
+historyCount =. , > > {: sqlreadm__db 'select count(*) from history'
+adminCount =. , > > {: sqlreadm__db 'select count(*) from admin'
+out =. getCurlDate ''
+out =. out , LF , ('Forums: ' , ": forumCount)
+out =. out , LF , ('Categories: ' , ": categoryCount)
+out =. out , LF , ('Wiki: ' , ": wikiCount)
+out =. out , LF , ('Vocabulary: ' , ": vocCount)
+out =. out , LF , ('Log: ' , ": logCount)
+out =. out , LF , ('History: ' , ": historyCount)
+out =. out , LF , ('Admin: ' , ": adminCount)
 )
 
 loadVoc =: 3 : 0
@@ -291,14 +302,6 @@ dbError =: 3 : 0
 sqlerror__db ''
 )
 
-createThreads =: 3 : 0
-while. (<: {: 8 T. '') > 1 T. '' do. 0 T. '' end.
-)
-
-createThreads =: 3 : 0
-while. (1 T. '') < <: {: 8 T. '' do. 0 T. '' end.
-)
-
 loadAncillaryPages =: 3 : 0
 try.
 smoutput 'loadAncillaryPages'
@@ -502,7 +505,7 @@ forumId =. 1 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
 cols =. ;: 'level parentid categoryid category parentseq count link'
 data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< nextCatId # links) , (< , forumNames) , (< i. # links) , (< 0 #~ # forumNames) , < , links
-smoutput data
+NB. smoutput data
 sqlinsert__db 'categories';cols;<data
 )
 
@@ -573,9 +576,6 @@ NB. Return a string date that cURL's -z (--time-cond) option will recognize.
 json =. gethttp 'http://worldtimeapi.org/api/timezone/GMT'
 'offset length' =. {: (rxcomp '"datetime":"([^"]+)"') rxmatch json
 length {. offset }. json
-NB. 'year month day hour minute second' =. (6!:0) ''
-NB. monthString =. > month { ;: 'null Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
-NB. (": day) , ' ' , monthString , ' ' , (": year) , ' ' , (_2 {. '0' , ": hour) , ':' , (_2 {. '0' , ": minute) , ':00 '
 )
 
 setupDb =: 3 : 0

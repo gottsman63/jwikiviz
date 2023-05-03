@@ -10,6 +10,9 @@ coinsert 'jgl2'
 NB. A Items
 NB. Can I force update of gethttp?  Raul's email...
 NB. Tests...of something.
+NB. Server task that updates jwikiviz.db and writes a wiki page (which you could monitor with email).
+NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
+NB. JWikiViz wiki page with the latest reports appearing at the bottom.  Sent note to Bob.
 
 NB. B Items
 NB. Fix use of sqlreadm__db
@@ -157,6 +160,7 @@ layoutForm ''
 vizform_default =: 3 : 0
 eventType =. > {: 5 { wdq
 if. eventType -: 'close' do. wd 'pclose ;' end.
+NB. smoutput wdq
 NB. (> {: 5 { wdq) (1!:2) 2
 )
 
