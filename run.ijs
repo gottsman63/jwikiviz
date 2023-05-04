@@ -9,11 +9,13 @@ load 'gl2'
 coinsert 'jgl2'
 
 NB. *** Wiki Meeting Discussion Items ***
-NB. gethttp and qtide both need to be up-to-date
 NB. Why is the text suddenly blurry?
 NB. Graphic design status?
+NB. Expanded test user base?
+NB. Testing?
 
 NB. *** A Items ***
+NB. Rename run.ijs to jwikiviz.ijs
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -71,7 +73,22 @@ initAdmin =: 3 : 0
 sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'qscreen' ; wd 'qscreen'
 sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'JVERSION' ; JVERSION
 )
-NB. ===============================================
+NB. ================ gethttp version check ==========================
+checkGethttpVersion =: 3 : 0
+NB. Return 0 if the version of gethttp is too old.
+f =. jpath '~addons/web/gethttp/manifest.ijs'
+ol =. {: (rxcomp 'VERSION[ ]*=:[ ]*''(\d+\.\d+\.\d+)''') rxmatch mtext =. (1!:1) < f
+version =. +/ 100 10 1 * ". ;._2 (({: ol) {. ({. ol) }. mtext) , '.'
+if. version < 111 do.
+	wdinfo 'The web/gethttp addon is out of date.  Pleae update it using the text in the terminal.'
+	smoutput 'install ''web/gethttp'''
+	0
+else.
+	1
+end.
+)
+
+NB. =================================================================
 
 shortcutInfo =: 3 : 0
 smoutput ' '
@@ -1681,6 +1698,7 @@ try. wd 'pclose' catch. end.
 manageLoad ''
 
 go =: 3 : 0
+if. -. checkGethttpVersion '' do. return. end.
 if. -. downloadDialog '' do. return. end.
 initAdmin ''
 loadVoc ''
@@ -1696,4 +1714,5 @@ go_jwikiviz_ ''
 )
 
 cocurrent 'base'
+
 go ''
