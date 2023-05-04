@@ -143,7 +143,7 @@ else.
 	wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
 	wd 'set browser minwh 100 50;'
 end.
-wd 'timer 100'
+NB. wd 'timer 100'
 )
 
 emphasizeBrowser =: 3 : 0
@@ -161,7 +161,6 @@ layoutForm ''
 vizform_default =: 3 : 0
 eventType =. > {: 5 { wdq
 if. eventType -: 'close' do. wd 'pclose ;' end.
-NB. smoutput wdq
 NB. (> {: 5 { wdq) (1!:2) 2
 )
 
@@ -218,6 +217,11 @@ vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
+vizform_browser_mmove =: 3 : 0
+clearQueuedUrl ''
+emphasizeBrowser ''
+)
+
 vizform_browser_curl =: 3 : 0
 log 'vizform_browser_curl'
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
@@ -226,9 +230,9 @@ if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
 )
 
-vizform_mmove =: 3 : 0
-deemphasizeBrowser ''
-)
+NB. vizform_mmove =: 3 : 0
+NB. deemphasizeBrowser ''
+NB. )
 
 vizform_searchBox_button =: 3 : 0
 log 'vizform_searchBox_button'
@@ -257,16 +261,13 @@ PerpetuateAnimationStartTime =: 0
 sys_timer_z_ =: 3 : 0
 log_jwikiviz_ 'sys_timer_z_'
 try.
-NB. 	checkQueuedUrlTime_base_ ''
-	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_jwikiviz_ do. invalidateDisplay_jwikiviz_ '' end.
+	loadQueuedUrl_jwikiviz_ ''
+NB. 	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_jwikiviz_ do. invalidateDisplay_jwikiviz_ '' end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError ''
 end.
-)
-
-perpetuateAnimation =: 3 : 0
-PerpetuateAnimationStartTime =: (6!:1) ''
+wd 'timer 0'
 )
 
 wd 'timer 0'
@@ -514,6 +515,7 @@ TagCatString =: '*Tags'
 TagHiddenCatId =: 500000
 QueuedUrl =: ''
 QueuedUrlTime =: 0
+QueuedUrlTimeDelay =: 250
 SuppressMouseHandlingStart =: 0
 PageLoadFreezeTime =: 0
 PageLoadFreezeRect =: ''
@@ -608,7 +610,17 @@ log 'queueUrl ' , (0 {:: y) , ' ' , 1 {:: y
 NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
+wd 'timer ' , ": QueuedUrlTimeDelay
+)
+
+loadQueuedUrl =: 3 : 0
 loadPage QueuedUrl
+QueuedUrl =: ''
+)
+
+clearQueuedUrl =: 3 : 0
+NB. Do not, after all, load the queued url.  Used when the user has entered the webview.
+QueuedUrl =: ''
 )
 
 addToHistoryMenu =: 3 : 0
