@@ -106,7 +106,7 @@ VocMouseClickXY =: 0 0
 
 buildForm =: 3 : 0
 log 'buildForm'
-wd 'pc vizform;'
+wd 'pc vizform escclose;'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
@@ -192,6 +192,18 @@ vizform_close =: 3 : 0
 log 'vizform_close'
 wd 'timer 0'
 wd 'pclose'
+)
+
+vizform_escape =: 3 : 0
+vizform_close ''
+)
+
+vizform_browser_escape =: 3 : 0
+vizform_close ''
+)
+
+vizform_vocContext_escape =: 3 : 0
+vizform_close ''
 )
 
 vizform_bookmark_button =: 3 : 0
