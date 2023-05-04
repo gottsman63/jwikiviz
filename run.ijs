@@ -7,15 +7,18 @@ load 'web/gethttp'
 load 'regex'
 load 'gl2'
 coinsert 'jgl2'
-NB. A Items
-NB. Can I force update of gethttp?  Raul's email...
-NB. Tests...of something.
+
+NB. *** Wiki Meeting Discussion Items ***
+NB. gethttp and qtide both need to be up-to-date
+NB. Why is the text suddenly blurry?
+NB. Graphic design status?
+
+NB. *** A Items ***
+
+NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
-NB. JWikiViz wiki page with the latest reports appearing at the bottom.  Sent note to Bob.
-NB. Host file on jsoftware.  Run cron job on josftware server.
+NB. Tests...of something.
 NB. Compress the file?  It would save CDN bandwidth...goes from 8.2 to 1.7.  Or compress semantically (0 - Jsoftware, 1 - Jchat, ...)
-NB. 
-NB. B Items
 NB. Fix use of sqlreadm__db
 NB. Animated webview transition...?
 NB. Support parallel download of forum and wiki documents.
@@ -910,7 +913,7 @@ years =. \:~ ~. > {."1 ForumCacheTable
 if. 0 = # years do. return. end.
 monthIndexes =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
 ForumMonthStrings =: monthIndexes { ShortMonths
-if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {. ForumMonthStrings end.
+if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {: ForumMonthStrings end.
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
 NB. if. (xx > {. VocMouseXY) +. ({. VocMouseXY) > {. subjRect do. 
 NB. 	ForumYearBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight
