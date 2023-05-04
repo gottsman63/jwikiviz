@@ -35,6 +35,12 @@ out =. out , LF , ('History: ' , ": historyCount)
 out =. out , LF , ('Admin: ' , ": adminCount)
 )
 
+updateWikiBuildLog =: 3 : 0
+message =. generateDatabaseReport ''
+NB. $ curl -X PUT https://en.wikipedia.org/w/rest.php/v1/page/Wikipedia:Sandbox -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" --data '{"source": "Hello, world!", "comment": "Testing out the REST API", "latest": { "id": 555555555 }}'
+('-H "Content-Type: application/json" --data {"source": "Hello, world!", "comment": "Testing"}') gethttp 'https://code.jsoftware.com/rest.php/page/JWikiViz%20Crawl%20Log'
+)
+
 loadVoc =: 3 : 0
 NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 table =: > <;._2 &. > ,&TAB &. > < ;._2 LF ,~ vocab
