@@ -9,14 +9,11 @@ load 'gl2'
 coinsert 'jgl2'
 
 NB. *** Wiki Meeting Discussion Items ***
-NB. Why is the text suddenly blurry?
-NB. Graphic design status?
-NB. Expanded user base?
-NB. Testing?
 
 NB. *** A Items ***
-NB. Rename run.ijs to jwikiviz.ijs
+NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code).
 NB. Test Click-to-select
+NB. Fix the blurry text.
 NB. The *Search category's children don't immediately appear.
 NB. The intermediate "Wiki" entry for search has the wrong level.
 
@@ -736,7 +733,7 @@ elseif. VocMouseClickXY pointInRect x do.
 		". }. urlCommand
 NB.		invalidateDisplay ''
 	else. 
-		queueUrl urlCommand ; name
+		loadPage urlCommand ; name
 	end.
 end.
 if. VocMouseClickXY pointInRect x do.
