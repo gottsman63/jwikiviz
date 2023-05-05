@@ -13,7 +13,6 @@ NB. *** Wiki Meeting Discussion Items ***
 NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code).
 NB. The *Search category's children don't always immediately appear.
-NB. Bob's bug report.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -107,7 +106,7 @@ wd 'pc vizform escclose;'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
-wd       'cc shortcut button;cn Shortcut;'
+wd       'cc shortcut button;cn Shortcut...;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
