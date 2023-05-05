@@ -12,10 +12,8 @@ NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code).
-NB. Test Click-to-select
-NB. Fix the blurry text.
-NB. The *Search category's children don't immediately appear.
-NB. The intermediate "Wiki" entry for search has the wrong level.
+NB. The *Search category's children don't always immediately appear.
+NB. Bob's bug report.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -386,7 +384,7 @@ clearSearch term
 cols =. ;: 'level parentid categoryid category count parentseq link'
 NB. sqlinsert__db 'categories' ; cols ; < 2 ; (getTopCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; _1 ; 0 ; 'https://www.jsoftware.com'
 sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 NB. sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 )
 
@@ -398,7 +396,7 @@ NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
 NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
 NB. smoutput (1!:1) < fname
 log 'Searching wiki for ' , y , '...'
-url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=5000&offset=0&profile=default&search=' , urlencode y
+url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
 html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
@@ -429,7 +427,7 @@ try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
-url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=5000'
+url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=1000'
 html =. gethttp url
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
