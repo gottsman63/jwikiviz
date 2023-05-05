@@ -11,15 +11,17 @@ coinsert 'jgl2'
 NB. *** Wiki Meeting Discussion Items ***
 NB. Why is the text suddenly blurry?
 NB. Graphic design status?
-NB. Expanded test user base?
+NB. Expanded user base?
 NB. Testing?
 
 NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs
+NB. Test Click-to-select
+NB. The *Search category's children don't immediately appear.
+NB. The intermediate "Wiki" entry for search has the wrong level.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
-NB. Tests...of something.
 NB. Compress the file?  It would save CDN bandwidth...goes from 8.2 to 1.7.  Or compress semantically (0 - Jsoftware, 1 - Jchat, ...)
 NB. Fix use of sqlreadm__db
 NB. Animated webview transition...?
@@ -226,7 +228,6 @@ invalidateDisplay ''
 
 vizform_logcheck_button =: 3 : 0
 LogFlag =: ". logcheck
-smoutput LogFlag
 )
 
 vizform_vocContext_mmove =: 3 : 0
