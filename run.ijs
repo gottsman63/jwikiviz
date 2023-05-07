@@ -13,6 +13,8 @@ NB. *** Wiki Meeting Discussion Items ***
 NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code).
 NB. The *Search category's children don't always immediately appear.
+NB. Change the bookmark to install the addon?
+NB. {U|u}ploadAcct
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -934,6 +936,7 @@ colHeight =. height - dateHeight
 subjRect =. (xx + margin) , (yy + dateHeight) , colWidth, colHeight
 authRect =. subjRect + (colWidth + margin) , 0 0 0
 years =. \:~ ~. > {."1 ForumCacheTable
+TocEntryForumYear =: (years i. TocEntryForumYear) { years , {. years
 if. 0 = # years do. return. end.
 monthIndexes =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
 ForumMonthStrings =: monthIndexes { ShortMonths
