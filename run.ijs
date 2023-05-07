@@ -918,9 +918,7 @@ if. -. ForumCurrentName -: x do.
 	result =. > {: sqlreadm__db 'select year, month, subject, author, link from forums where forumname = "' , x , '" order by year desc, month asc'
 	ForumCacheTable =: 0 1 2 3 4 {"1 result
 	ForumCurrentName =: x
-NB.	TocEntryForumYear =: 2023
 	TocEntryForumSubjectIndex =: 0
-NB.	TocEntryForumMonthIndex =: 0
 	ForumAuthorEntries =: ''
 end.
 margin =. 5
@@ -942,24 +940,9 @@ monthIndexes =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1
 ForumMonthStrings =: monthIndexes { ShortMonths
 if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {: ForumMonthStrings end.
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
-NB. if. (xx > {. VocMouseXY) +. ({. VocMouseXY) > {. subjRect do. 
-NB. 	ForumYearBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight
-NB. 	ForumMonthBumpCount =: ForumYearBumpCount
-NB. end.
-NB. if. (xx < {. VocMouseXY) *. ({. VocMouseXY) < xx + 40 do. ForumMonthBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight end.
-NB. yearBumpArray =. (ForumYearBumpCount # 0) , 30 # 3 * timeLineHeight
-NB. monthBumpArray =. (ForumMonthBumpCount # 0) , 12 # 3 * timeLineHeight
 timeLineHeight =. 20
 yearOrigins =. (xx + margin + 30 * i. # years) ,. yy + margin
 monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + 45 * i.12) ,. yy + margin + timeLineHeight
-NB. dateFlag =. 0
-NB. if. dateFlag do.
-NB. 	monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
-NB. 	yearOrigins =. (xx + margin) ,. ((# years) {. yearBumpArray) + yy + margin + timeLineHeight * i. # years
-NB. else.
-NB. 	monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. yy + margin + (timeLineHeight * years i. TocEntryForumYear) + timeLineHeight * i.12
-NB. 	yearOrigins =. (xx + margin) ,. yy + margin + timeLineHeight * i. # years
-NB. end.
 yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
 gltextcolor ''
@@ -973,22 +956,17 @@ rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight)
 monthCommands =. '*setTocEntryForumMonth '''&, &. > ": &. > ,&'''' &. > ForumMonthStrings
 rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 0
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
-NB. TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # ForumMonthStrings
 (monthIndex { monthRects) drawHighlight SelectionColor
 calendarMonthIndex =. ShortMonths i. < TocEntryForumMonth
 entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. calendarMonthIndex = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
 if. 0 = # entries do. return. end.
 subjects =: ~. 2 {"1 entries
 ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
-NB. ratios =. authorCounts % >./ authorCounts =. > # &. > (2 {"1 entries) </. entries
 subjects =. ~. allSubjects
 subject =. TocEntryForumSubjectIndex { subjects 
 ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
-NB. smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
 authors =. 3 {"1 ForumAuthorEntries
-NB. links =.   4 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
-NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
 ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
 ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 0
