@@ -910,7 +910,7 @@ NB. x The name of the forum
 NB. y xx yy width height
 NB. Display the contents of the forum
 NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
-log 'drawTocEntryForum ' , x
+log 'drawTocEntryForum ' , x , ' ' , (": TocEntryForumYear) , ' ' , ": TocEntryForumMonth
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 ForumName =: x
 'xx yy width height' =. y
