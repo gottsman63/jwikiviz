@@ -11,10 +11,10 @@ coinsert 'jgl2'
 NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
-NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code).
+NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code)...?
 NB. The *Search category's children don't always immediately appear.
-NB. Change the bookmark to install the addon?
 NB. {U|u}ploadAcct
+NB. Auto-update the addon using Raul's approach.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -25,6 +25,35 @@ NB. Support parallel download of forum and wiki documents.
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
+
+NB. ===================== Version Updates =====================
+addonPath =. '~addons/gottsman63/jwikiviz/manifest.ijs'
+githubUrl =. 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
+
+manifest_version=: {{
+  cocurrent temp=. cocreate''
+  try.   0!:100 y
+  catch. VERSION =. 'none'
+  end.
+  coerase temp
+  VERSION
+}}
+
+versionCheckDialog =: 3 : 0
+try.
+	v1 =. manifest_version addonPath
+	v2 =. manifest_version gethttp githubUrl
+	if. v1 -: v2 do. 0 return. end.
+catch.
+	0 return.
+end.
+result =. wd 'mb query mb_yes =mb_no "New Version Available" "A new version is available.  Install?"'
+if. result -: 'no' do. return. end.
+9!:29]1
+9!:27'{{)n load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz''}}'
+1
+)
+NB. ===========================================================
 
 NB. ============= Database ===============
 db =: ''
@@ -1630,8 +1659,7 @@ if. fexist stageDbPath do.
  		(1!:55) < targetDbPath 
 	end.
 	targetDbPath frename stageDbPath
-NB.	'rw-rw-rw-' (1!:7) < targetDbPath
-	try. (1!:22) < targetDbPath catch. end.
+	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 end.
 head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 hash =: n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
@@ -1686,6 +1714,7 @@ try. wd 'pclose' catch. end.
 manageLoad ''
 
 go =: 3 : 0
+
 if. -. checkGethttpVersion '' do. return. end.
 if. -. downloadDialog '' do. return. end.
 initAdmin ''
