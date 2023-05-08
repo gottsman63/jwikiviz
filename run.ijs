@@ -41,7 +41,7 @@ manifest_version=: {{
 versionCheckDialog =: 3 : 0
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
-	v2 =. manifest_version gethttp githubUrl
+	v2 =. manifest_version '-H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
 	if. v1 -: v2 do. 0 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
