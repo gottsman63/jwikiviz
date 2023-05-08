@@ -42,9 +42,10 @@ versionCheckDialog =: 3 : 0
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version gethttp githubUrl
+	smoutput 'Versions' ; v1 ; v2
 	if. v1 -: v2 do. 0 return. end.
 catch.
-	smoutput (13!:12) ''
+	smoutput 'Problem: ' , (13!:12) ''
 	0 return.
 end.
 result =. wd 'mb query mb_yes =mb_no "New Version Available" "A new version is available.  Install?"'
