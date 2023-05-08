@@ -49,7 +49,7 @@ catch.
 	0 return.
 end.
 result =. wd 'mb query mb_yes =mb_no "New Version Available" "A new version is available.  Install?"'
-if. result -: 'no' do. return. end.
+if. result -: 'no' do. 0 return. end.
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
 1
