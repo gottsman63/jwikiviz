@@ -27,8 +27,8 @@ NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
 
 NB. ===================== Version Updates =====================
-addonPath =. '~addons/gottsman63/jwikiviz/manifest.ijs'
-githubUrl =. 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
+addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
+githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
 
 manifest_version=: {{
   cocurrent temp=. cocreate''
@@ -41,16 +41,17 @@ manifest_version=: {{
 
 versionCheckDialog =: 3 : 0
 try.
-	v1 =. manifest_version addonPath
+	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version gethttp githubUrl
 	if. v1 -: v2 do. 0 return. end.
 catch.
+	smoutput (13!:12) ''
 	0 return.
 end.
 result =. wd 'mb query mb_yes =mb_no "New Version Available" "A new version is available.  Install?"'
 if. result -: 'no' do. return. end.
-9!:29]1
-9!:27'{{)n load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz''}}'
+(9!:29) 1
+(9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
 1
 )
 NB. ===========================================================
@@ -1714,7 +1715,7 @@ try. wd 'pclose' catch. end.
 manageLoad ''
 
 go =: 3 : 0
-
+if. versionCheckDialog'' do. return. end.
 if. -. checkGethttpVersion '' do. return. end.
 if. -. downloadDialog '' do. return. end.
 initAdmin ''
