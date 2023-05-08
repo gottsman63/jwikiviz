@@ -42,7 +42,6 @@ versionCheckDialog =: 3 : 0
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version gethttp githubUrl
-	smoutput 'Versions' ; v1 ; v2
 	if. v1 -: v2 do. 0 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
