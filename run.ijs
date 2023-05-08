@@ -13,8 +13,7 @@ NB. *** Wiki Meeting Discussion Items ***
 NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code)...?
 NB. The *Search category's children don't always immediately appear.
-NB. {U|u}ploadAcct
-NB. Auto-update the addon using Raul's approach.
+NB. Lose ScrollConfig variable.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -582,8 +581,6 @@ PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 EmphasizeBrowserFlag =: 0
 LogFlag =: 0
-ScrollConfig =: 2
-UploadAcct =: '12a1yBS'
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
@@ -827,12 +824,10 @@ glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect rect
-if. (ScrollConfig = 1) +. ScrollConfig = 2 do.
-	glrgb ColumnGuideColor
-	glbrush ''
-	glpen 0
-	glrect xx , yy , (<. -: w) , h
-end.
+glrgb ColumnGuideColor
+glbrush ''
+glpen 0
+glrect xx , yy , (<. -: w) , h
 scrollBarHeight =. <. h * window % # strings
 scrollBarOffset =. <. h * scrollIndex % # strings
 if. maxLineCount < # strings do.
