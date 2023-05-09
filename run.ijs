@@ -39,6 +39,7 @@ manifest_version=: {{
 }}
 
 appUpToDate =: 3 : 0
+log 'appUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version '-H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
@@ -53,7 +54,6 @@ end.
 
 updateAppVersion =: 3 : 0
 log 'updateAppVersion'
-smoutput 'updateAppVersion'
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
 )
@@ -151,7 +151,6 @@ wd 'set dbUpdate caption *' , dbCap
 
 vizform_appUpdate_button =: 3 : 0
 log 'vizform_appUpdate_button'
-smoutput 'vizform_appUpdate_button'
 updateAppVersion ''
 )
 
