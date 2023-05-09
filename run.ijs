@@ -42,15 +42,17 @@ appUpToDate =: 3 : 0
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version '-H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
-	if. v1 -: v2 do. 0 return. end.
+	smoutput 'JWikiViz Versions' ; v1 ; v2
+	if. v1 -: v2 do. 1 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
-	1 return.
+	0 return.
 end.
-1
+0
 )
 
 updateAppVersion =: 3 : 0
+log 'updateAppVersion'
 smoutput 'updateAppVersion'
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
@@ -150,7 +152,7 @@ wd 'set dbUpdate caption *' , dbCap
 vizform_appUpdate_button =: 3 : 0
 log 'appUpdate_button'
 smoutput 'appUpdate_button'
-NB. updateAppVersion ''
+updateAppVersion ''
 )
 
 vizform_dbUpdate_button =: 3 : 0
