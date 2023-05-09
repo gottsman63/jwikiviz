@@ -150,13 +150,13 @@ wd 'set dbUpdate caption *' , dbCap
 )
 
 vizform_appUpdate_button =: 3 : 0
-log 'appUpdate_button'
-smoutput 'appUpdate_button'
+log 'vizform_appUpdate_button'
+smoutput 'vizform_appUpdate_button'
 updateAppVersion ''
 )
 
 vizform_dbUpdate_button =: 3 : 0
-log 'dbUpdateButton'
+log 'vizform_dbUpdate_Button'
 downloadAndTransferDatabase ''
 )
 
