@@ -38,20 +38,22 @@ manifest_version=: {{
   VERSION
 }}
 
-versionCheckDialog =: 3 : 0
+appUpToDate =: 3 : 0
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version '-H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
 	if. v1 -: v2 do. 0 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
-	0 return.
+	1 return.
 end.
-result =. wd 'mb query mb_yes =mb_no "New Version Available" "A new version is available.  Install?"'
-if. result -: 'no' do. 0 return. end.
+1
+)
+
+updateAppVersion =: 3 : 0
+smoutput 'updateAppVersion'
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
-1
 )
 NB. ===========================================================
 
@@ -114,7 +116,6 @@ else.
 	1
 end.
 )
-
 NB. =================================================================
 
 shortcutInfo =: 3 : 0
@@ -131,6 +132,28 @@ NB. ==================== Form =====================
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
 
+setUpdateButtons =: 3 : 0
+if. appUpToDate '' do. appCap =. 'App is up to date' else. appCap =. 'New app version available' end.
+wd 'set appUpdate caption *' , appCap
+dbStatus =. checkForNewerDatabase ''
+select. dbStatus
+case. 0 do. dbCap =. 'Local database is up to date'
+case. 1 do. dbCap =. 'A newer database is available'
+case. 2 do. dbCap =. 'Database download required'
+case. 3 do. dbCap =. 'Offline (apparently)'
+end.
+wd 'set dbUpdate caption *' , dbCap
+)
+
+appUpdate_button =: 3 : 0
+smoutput 'appUpdate_button'
+updateAppVersion ''
+)
+
+dbUpdate_button =: 3 : 0
+downloadAndTransferDatabase ''
+)
+
 buildForm =: 3 : 0
 log 'buildForm'
 wd 'pc vizform escclose;'
@@ -142,6 +165,10 @@ wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
+wd     'bin h;'
+wd       'cc appUpdate button; cn *Wocka!;'
+wd       'cc dbUpdate button; cn *Haha!'
+wd     'bin z;'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
@@ -151,7 +178,7 @@ wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
 wd     'bin z;'
 wd     'cc browser webview;'
-wd   'bin z;'
+wd     'bin z;'
 wd 'bin z;'
 )
 
@@ -1666,15 +1693,13 @@ dbOpenDb ''
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
 )
 
-downloadDialog =: 3 : 0
+
+initialDbDownloadDialog =: 3 : 0
 status =. {. , checkForNewerDatabase ''
 select. status
 case. 0 do.
-	wdinfo 'Local Database Status' ; 'Your local database is up to date.'
 	1
 case. 1 do.
-	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is available.  Download (to ~temp)?"'
-	if. result -: 'yes' do. downloadAndTransferDatabase'' end.
 	1
 case. 2 do.
 	if. isOnTheNetwork'' do.
@@ -1690,8 +1715,8 @@ case. 2 do.
 		0
 	end.
 case. 3 do.
-	wdinfo '' ; 'Could not connect to the CDN.  Please be sure you have an internet connection.'
-	1
+	wdinfo '' ; 'Cannot connect to the CDN and a new database is required.  Please be sure you have an internet connection.  OK to exit.'
+	0
 end.
 )
 NB. ====================================================================
@@ -1710,14 +1735,15 @@ try. wd 'pclose' catch. end.
 manageLoad ''
 
 go =: 3 : 0
-if. versionCheckDialog'' do. return. end.
 if. -. checkGethttpVersion '' do. return. end.
-if. -. downloadDialog '' do. return. end.
+if. -. initialDbDownloadDialog '' do. return. end.
+dbOpenDb ''
 initAdmin ''
 loadVoc ''
 clearLog ''
 buildForm ''
 layoutForm ''
+setUpdateButtons ''
 loadHistoryMenu ''
 wd 'pshow'
 )
