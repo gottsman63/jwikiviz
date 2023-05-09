@@ -99,11 +99,13 @@ sqlcmd__db 'delete from log'
 )
 
 initAdmin =: 3 : 0
+log 'initAdmin'
 sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'qscreen' ; wd 'qscreen'
 sqlupsert__db 'admin' ; 'key' ; (;: 'key value') ; < 'JVERSION' ; JVERSION
 )
 NB. ================ gethttp version check ==========================
 checkGethttpVersion =: 3 : 0
+log 'checkGethttpVersion'
 NB. Return 0 if the version of gethttp is too old.
 f =. jpath '~addons/web/gethttp/manifest.ijs'
 ol =. {: (rxcomp 'VERSION[ ]*=:[ ]*''(\d+\.\d+\.\d+)''') rxmatch mtext =. (1!:1) < f
@@ -138,19 +140,21 @@ wd 'set appUpdate caption *' , appCap
 dbStatus =. checkForNewerDatabase ''
 select. dbStatus
 case. 0 do. dbCap =. 'Local database is up to date'
-case. 1 do. dbCap =. 'A newer database is available'
+case. 1 do. dbCap =. 'Click to load a new database'
 case. 2 do. dbCap =. 'Database download required'
 case. 3 do. dbCap =. 'Offline (apparently)'
 end.
 wd 'set dbUpdate caption *' , dbCap
 )
 
-appUpdate_button =: 3 : 0
+vizform_appUpdate_button =: 3 : 0
+log 'appUpdate_button'
 smoutput 'appUpdate_button'
-updateAppVersion ''
+NB. updateAppVersion ''
 )
 
-dbUpdate_button =: 3 : 0
+vizform_dbUpdate_button =: 3 : 0
+log 'dbUpdateButton'
 downloadAndTransferDatabase ''
 )
 
@@ -166,8 +170,8 @@ wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
 wd     'bin h;'
-wd       'cc appUpdate button; cn *Wocka!;'
-wd       'cc dbUpdate button; cn *Haha!'
+wd       'cc dbUpdate button; cn Haha!;'
+wd       'cc appUpdate button; cn Wocka!;'
 wd     'bin z;'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
@@ -178,7 +182,7 @@ wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
 wd     'bin z;'
 wd     'cc browser webview;'
-wd     'bin z;'
+wd   'bin z;'
 wd 'bin z;'
 )
 
@@ -221,6 +225,7 @@ NB. wd 'timer 100'
 )
 
 emphasizeBrowser =: 3 : 0
+log 'emphasizeBrowser'
 'w h' =. ". wd 'getp wh'
 if. w > 1500 do. return. end. 
 EmphasizeBrowserFlag =: 1
@@ -228,6 +233,7 @@ layoutForm ''
 )
 
 deemphasizeBrowser =: 3 : 0
+log 'deemphasizeBrowser'
 EmphasizeBrowserFlag =: 0
 layoutForm ''
 )
