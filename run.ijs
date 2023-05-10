@@ -31,8 +31,9 @@ githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifes
 
 manifest_version=: {{
   cocurrent temp=. cocreate''
+  VERSION =: 'none'
   try.   0!:100 y
-  catch. VERSION =. 'none'
+  catch. VERSION =: 'none'
   end.
   coerase temp
   VERSION
@@ -1646,12 +1647,10 @@ NB. Return 1 if we can connect to the CDN.
 checkForNewerDatabase =: 3 : 0
 NB. Return 1 if a newer database is available.  
 NB. Return 2 is a newer database is required.
-NB. Return 3 if we don't get any data back.
+NB. Return 3 if we're not on the network.
 NB. Return 0 if the local database is up to date.
-if. -. dbExists '' do. 
-	2 
-	return. 
-end.
+if. -. dbExists '' do. 2 return. end.
+if. -. isOnTheNetwork '' do. 3 return. end.
 try. 
 	dbOpenDb ''
 	localHash =. , > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
@@ -1664,7 +1663,7 @@ catcht.
 	return.
 end.
 head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-if. 0 = # head do. 
+if. 0 = # head do.
 	3 
 	return. 
 end.
@@ -1695,7 +1694,7 @@ if. fexist stageDbPath do.
 		sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
 		sqlclose__sdb ''
 		sqlclose__tdb ''
- 		(1!:55) < targetDbPath 
+ 		(1!:55) < targetDbPath
 	end.
 	targetDbPath frename stageDbPath
 	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
@@ -1713,10 +1712,8 @@ sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
 initialDbDownloadDialog =: 3 : 0
 status =. {. , checkForNewerDatabase ''
 select. status
-case. 0 do.
-	1
-case. 1 do.
-	1
+case. 0 do. 1
+case. 1 do. 1
 case. 2 do.
 	if. isOnTheNetwork'' do.
 		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download (to ~temp); No to quit."'
@@ -1731,8 +1728,8 @@ case. 2 do.
 		0
 	end.
 case. 3 do.
-	wdinfo '' ; 'Cannot connect to the CDN and a new database is required.  Please be sure you have an internet connection.  OK to exit.'
-	0
+	wdinfo '' ; 'Cannot connect to the CDN.  Please be sure you have an internet connection.'
+	1
 end.
 )
 NB. ====================================================================
