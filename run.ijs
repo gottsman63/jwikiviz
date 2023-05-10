@@ -157,6 +157,7 @@ updateAppVersion ''
 vizform_dbUpdate_button =: 3 : 0
 log 'vizform_dbUpdate_Button'
 downloadAndTransferDatabase ''
+setUpdateButtons ''
 )
 
 buildForm =: 3 : 0
@@ -1698,7 +1699,6 @@ dbOpenDb ''
 sqlclose__db ''
 dbOpenDb ''
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
-setUpdateButtons ''
 )
 
 
