@@ -1698,6 +1698,7 @@ dbOpenDb ''
 sqlclose__db ''
 dbOpenDb ''
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
+setUpdateButtons ''
 )
 
 
