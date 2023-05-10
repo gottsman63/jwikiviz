@@ -39,11 +39,15 @@ manifest_version=: {{
 }}
 
 appUpToDate =: 3 : 0
+NB. Return 0 if the app is out of date.
+NB. Return 1 if the app is up to date.
+NB. Return 2 if we failed to get a remote version number.
 log 'appUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
-	v2 =. manifest_version '-H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
+	v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
 	smoutput 'JWikiViz Versions' ; v1 ; v2
+	if. v2 -: 'none' do. 2 return. end.
 	if. v1 -: v2 do. 1 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
@@ -137,7 +141,11 @@ VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
 
 setUpdateButtons =: 3 : 0
-if. appUpToDate '' do. appCap =. 'App is up to date' else. appCap =. 'New app version available' end.
+select. appUpToDate '' 
+case. 0 do. appCap =. 'New app version available'
+case. 1 do. appCap =. 'App is up to date' 
+case. 2 do. appCap =. 'Offline (apparently)'
+end.
 wd 'set appUpdate caption *' , appCap
 dbStatus =. checkForNewerDatabase ''
 select. dbStatus
@@ -493,7 +501,7 @@ log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
 url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=1000'
-html =. gethttp url
+html =. '-s' gethttp url
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
 termId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
@@ -1632,7 +1640,7 @@ fexist targetDbPath
 
 isOnTheNetwork =: 3 : 0
 NB. Return 1 if we can connect to the CDN.
-0 < # ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+0 < # ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 )
 
 checkForNewerDatabase =: 3 : 0
@@ -1655,7 +1663,7 @@ catcht.
 	2
 	return.
 end.
-head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 if. 0 = # head do. 
 	3 
 	return. 
@@ -1665,7 +1673,7 @@ remoteHash =. n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
 )
 
 downloadLatestStageDatabase =: 3 : 0
-('-o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 )
 
 downloadAndTransferDatabase =: 3 : 0
@@ -1692,7 +1700,7 @@ if. fexist stageDbPath do.
 	targetDbPath frename stageDbPath
 	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 end.
-head =. ('--head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+head =. ('-s --head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 hash =: n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
 try. (1!:22) < targetDbPath catch. end.
 dbOpenDb ''
