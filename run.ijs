@@ -342,7 +342,7 @@ try.
 	search searchBox
 	wd 'set searchBox text ""'
 	invalidateDisplay ''
-catch.
+catch. catcht.
 	log (13!:12) ''
 	log dbError ''
 end.
@@ -395,7 +395,6 @@ if. (w < 200) +. h < 200 do.
 end.
 setDisplayRects ''
 drawToc ''
-drawPageLoadFreezeRect ''
 VocMouseClickXY =: 0 0
 glclip 0 0 10000 10000
 catcht. catch. 
@@ -455,11 +454,12 @@ NB. Save parent ; child.
 log 'addSearchToToc ' , ": y
 term =.  y
 clearSearch term
+searchCatId =. , > > {: sqlreadm__db 'select categoryid from categories where parentid = ' , ": SearchHiddenCatId
+searchCount =. , > > {: sqlreadm__db 'select count(parentseq) from categories where parentid = ' , ": searchCatId
+parentSeq =. 10000 - searchCount
 cols =. ;: 'level parentid categoryid category count parentseq link'
-NB. sqlinsert__db 'categories' ; cols ; < 2 ; (getTopCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; _1 ; 0 ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; 0 ; 0 ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; 0 ; parentSeq ; 'https://www.jsoftware.com'
 sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-NB. sqlinsert__db 'categories' ; cols ; < 2 ; (termParentId getCategoryId term) ; (< 'Forums') ; 0 ; 1 ; 'https://www.jsoftware.com/forumsearch.htm'
 )
 
 searchWiki =: 3 : 0
@@ -470,14 +470,18 @@ NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
 NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
 NB. smoutput (1!:1) < fname
 log 'Searching wiki for ' , y , '...'
-url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
+NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
+url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&for=' , urlencode y
+smoutput url
 html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
 wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 = # offsetLengths do.
-	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 2
+	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
+	links =. ''
+	titles =. ''
 else.
 	ol =. 1 2 {"2 offsetLengths
 	linkOffsets =. 0 {"(1) 0 {"2 ol
@@ -491,7 +495,11 @@ else.
 	sqlinsert__db 'wiki';wikiCols;<data
 	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
 end.
-# offsetLengths
+if. 0 < # links do.
+NB. 	smoutput 'Loading first wiki result' ; (> {. links) ; {. titles
+	queueUrl ({. links) , ({. titles)
+end.
+links ,. titles
 )
 
 searchForums =: 3 : 0
@@ -540,7 +548,7 @@ parms =. 'categories' ; ('categoryid = ' , ": otherTermId) ; (;: 'count level') 
 sqlupdate__db parms
 catcht.
 	log (13!:12) ''
-	log 'Db Error (if any): ' , dbError ''
+	log 'searchForums Db Error (if any): ' , dbError ''
 end.
 )
 
@@ -551,24 +559,27 @@ try.
 	log 'Searching for ' , y
 	addSearchToToc y
 	clearCache ''
-	selectSearch ''
 	invalidateDisplay ''
 	wd 'msgs'
-	searchWiki y
+	wikiResults =. searchWiki y
 	searchForums y
 	clearCache ''
+	selectFirstSearchResult {. wikiResults
 	invalidateDisplay ''
 catcht.
 	log (13!:12) ''
-	log 'Db Error (if any): ' , dbError ''
+	log 'search Db Error (if any): ' , dbError ''
 end.
 )
 
-selectSearch=: 3 : 0
-log 'selectSearch'
-NB. Select '*Search' in the Table of Contents (TOC).
+selectFirstSearchResult=: 3 : 0
+NB. y link ; title
+log 'selectFirstSearchResult'
+NB. Select first search result in the Table of Contents (TOC).
 index =. (< SearchCatString) i.~ 3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth NB. Table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
 setTocOutlineRailSelectedIndex index
+setTocEntryChildCategoryIndex 1
+queueUrl y
 )
 
 NB. ================== Drawing ====================
@@ -583,11 +594,11 @@ BackgroundColor =: 255 255 255
 SectionColor =: 0 0 0
 LabelColor =: 0 102 204
 ColumnGuideColor =: 245 253 198
+ColumnBorderColor =: 220 220 220
 SelectionColor =: 0 0 0
 HoverColor =: 255 0 0 
 BarColor =: 245 195 150
 
-PageFreezeColor =: 0 18 25
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
 DocumentSectionGeometry =: '' NB. index x y width height label sectionName columnId url
@@ -602,7 +613,7 @@ CategoryTable =: ''
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
 TocFont =: 'arial 13'
 NB. TocBoldFont =: 'arial bold 14'
-TocLineHeight =: 21
+TocLineHeight =: 25
 TocScrollIndex =: 0
 MaxTocDepth =: 3
 DisplayListRect =: 10 10 100 100
@@ -629,8 +640,8 @@ LogFlag =: 0
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
 NB. Return the string specification of the font to use.
-if. y < 0 do. 'arial 13' return. end.
-fonts =. 'arial bold 15' ; 'arial bold 13' ; 'arial 13'
+if. y < 0 do. 'arial 16' return. end.
+fonts =. 'arial bold 17' ; 'arial bold 14' ; 'arial 14'
 > (y <. <: # fonts) { fonts
 )
 
@@ -787,13 +798,14 @@ NB. Record this for mouse processing: highlighting and loading urls.
 NB. Note that since we're frame-based, we re-register rect/links on every frame.  So we 
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
 'urlCommand name loadMode' =. y
-if. isFrozen '' do. 0 return. end.
+NB. if. isFrozen '' do. 0 return. end.
 if. -. VocMouseXY pointInRect x do. 0 return. end.
-x drawReversibleSelection HoverColor
+if. loadMode = 1 do.
+	x drawReversibleSelection HoverColor
+end.
 if. loadMode = 0 do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
-NB.		invalidateDisplay ''
 	else. 
 		queueUrl urlCommand ; name
 	end.
@@ -801,16 +813,10 @@ elseif. VocMouseClickXY pointInRect x do.
 	emphasizeBrowser ''
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
-NB.		invalidateDisplay ''
 	else. 
 		loadPage urlCommand ; name
 	end.
-end.
-if. VocMouseClickXY pointInRect x do.
-	PageLoadFreezeTime =: (6!:1) ''
-	SuppressMouseHandlingStart =: PageLoadFreezeTime
-	PageLoadFreezeRect =: x
-	emphasizeBrowser ''
+	x drawReversibleSelection SelectionColor
 end.
 0
 )
@@ -823,15 +829,6 @@ x drawHighlight y
 NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. ReversibleSelections =: ReversibleSelections , x end.
 )
 
-drawPageLoadFreezeRect =: 3 : 0
-if. isFrozen '' do.
-	glrgb PageFreezeColor
-	glpen 5
-	glrgba 0 0 0 0
-	glbrush ''
-	glrect PageLoadFreezeRect
-end.
-)
 NB. ============================== Scroller Field ===============================
 drawScrollerField =: 4 : 0
 NB. x xx yy width height
@@ -840,11 +837,6 @@ NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's 
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
-NB. Scroll/Select Configurations
-NB.    (1) Simultaneous scroll/select, full width.
-NB.    (2) Left mouse scroll, right select.
-NB.    (3) Left mouse scroll, right numb.
-NB.    (4) Two-finger scroll, mouse select, full width.
 log 'drawScrollerField ' , (": x)
 rect =. x
 'strings links ratios levels selectedIndex scrollIndex loadMode' =. y
@@ -883,10 +875,12 @@ end.
 for_i. i. # strings do.
 	lineHeight =. i { heights
 	origin =. > i { origins
-	glrgb BarColor
+NB.	glrgb BarColor
+	glrgba 0 0 0 127
 	glbrush ''
 	glpen 0
-	if. 0 < i { ratios do. glrect (origin - margin , 0) , (<. (w - margin) * i { ratios) , lineHeight - 4 end.
+NB. 	if. 0 < i { ratios do. glrect (origin - margin , 0) , (<. (w - margin) * i { ratios) , lineHeight - 4 end.
+  	if. 0 < i { ratios do. glrect (origin - margin , -TocLineHeight - 12) , (<. (w - margin) * i { ratios) , 6 end.
 	glfont getTocFontForLevel i { levels
 	glrgb getTocColorForLevel i { levels
 	glbrush ''
@@ -911,7 +905,7 @@ glfont getTocFontForLevel level
 (xx , yy) drawStringAt name
 adjRect =. xx , yy , (maxWidth - 16) , height
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
-adjRect registerRectLink command ; name ; 0
+adjRect registerRectLink command ; name ; 1
 )
 
 drawTocEntryChildrenColumn =: 4 : 0
@@ -978,7 +972,7 @@ drawTocEntryForum =: 4 : 0
 NB. x The name of the forum
 NB. y xx yy width height
 NB. Display the contents of the forum
-NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
+NB. x y width height drawScrollerField strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x , ' ' , (": TocEntryForumYear) , ' ' , ": TocEntryForumMonth
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 ForumName =: x
@@ -1037,94 +1031,8 @@ ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable)
 authors =. 3 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 0
-if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
-glclip 0 0 10000 100000
-)
-
-drawTocEntryForumOld =: 4 : 0
-NB. x The name of the forum
-NB. y xx yy width height
-NB. Display the contents of the forum
-NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ; selectedIndex ; scrollIndex
-log 'drawTocEntryForum ' , x
-if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
-ForumName =: x
-'xx yy width height' =. y
-if. -. ForumCurrentName -: x do. 
-	result =. > {: sqlreadm__db 'select year, month, subject, author, link from forums where forumname = "' , x , '" order by year desc, month desc'
-	ForumCacheTable =: 0 1 2 3 4 {"1 result
-	ForumCurrentName =: x
-	TocEntryForumYear =: 2023
-	TocEntryForumSubjectIndex =: 0
-	TocEntryForumMonthIndex =: 0
-	ForumAuthorEntries =: ''
-end.
-margin =. 5
-glclip 0 0 10000 100000
-glrgb 0 0 0
-glpen 1
-glrgb BackgroundColor
-glbrush ''
-glrect xx , yy , width , height
-colWidth =. <. -: width - +: margin
-colHeight =. height
-subjRect =. (xx + margin + 110) , yy , colWidth, colHeight
-authRect =. subjRect + (colWidth + margin) , 0 0 0
-years =. \:~ ~. > {."1 ForumCacheTable
-if. 0 = # years do. return. end.
-months =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1 ForumCacheTable
-TocEntryForumMonthIndex =: TocEntryForumMonthIndex <. <: # months
-timeLineHeight =. 20
-month =. TocEntryForumMonthIndex { months
-if. (xx > {. VocMouseXY) +. ({. VocMouseXY) > {. subjRect do. 
-	ForumYearBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight
-	ForumMonthBumpCount =: ForumYearBumpCount
-end.
-if. (xx < {. VocMouseXY) *. ({. VocMouseXY) < xx + 40 do. ForumMonthBumpCount =: 0 >. <: <. (({: VocMouseXY) - yy) % timeLineHeight end.
-yearBumpArray =. (ForumYearBumpCount # 0) , 30 # 3 * timeLineHeight
-monthBumpArray =. (ForumMonthBumpCount # 0) , 12 # 3 * timeLineHeight
-dateFlag =. 0
-if. dateFlag do.
-	monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. (12 {. monthBumpArray) + yy + margin + timeLineHeight * i. 12
-	yearOrigins =. (xx + margin) ,. ((# years) {. yearBumpArray) + yy + margin + timeLineHeight * i. # years
-else.
-	monthOrigins =. (# months) {. <"1 (xx + margin + 45) ,. yy + margin + (timeLineHeight * years i. TocEntryForumYear) + timeLineHeight * i.12
-	yearOrigins =. (xx + margin) ,. yy + margin + timeLineHeight * i. # years
-end.
-yearStrings =: '`',. _2 {."1 ": ,.years
-glrgb SectionColor
-gltextcolor ''
-glfont SectionFont
-yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
-monthStrings =. months { ShortMonths
-monthOrigins drawStringAt &. > monthStrings
-rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) 
-yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
-rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 0
-rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) 
-monthCommands =. '*setTocEntryForumMonthIndex '&, &. > ": &. > <"0 i. # months
-rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 0
-((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
-TocEntryForumMonthIndex =. TocEntryForumMonthIndex <. <: # months
-(TocEntryForumMonthIndex { monthRects) drawHighlight SelectionColor
-entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. month = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
-if. 0 = # entries do. return. end.
-subjects =: ~. 2 {"1 entries
-ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
-NB. ratios =. authorCounts % >./ authorCounts =. > # &. > (2 {"1 entries) </. entries
-subjects =. ~. allSubjects
-subject =. TocEntryForumSubjectIndex { subjects 
-ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
-NB. smoutput '$ ForumAuthorEntries ; subject ; TocEntryForumAuthorIndex' ; ($ ForumAuthorEntries) ; subject ; TocEntryForumAuthorIndex
-authors =. 3 {"1 ForumAuthorEntries
-NB. links =.   4 {"1 ForumAuthorEntries
-subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
-NB. authorUrls =. ('https://www.jsoftware.com/pipermail/' , (}. x) , '/' , (": TocEntryForumYear) , '-' , (> month { Months) , '/')&, &. > links
-authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 0
+ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (1 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
+ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
@@ -1132,7 +1040,7 @@ glclip 0 0 10000 100000
 setTocEntryChildCategoryIndex =: 3 : 0
 NB. y Index of the category whose children should be displayed.
 TocEntryChildCategoryIndex =: y
-queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
+NB. queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
 
 TocEntryChildScrollIndex =: 0
@@ -1184,7 +1092,7 @@ glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 if. fullSizeColCount < # columnRects do.
-	glrgb ColumnGuideColor
+	glrgb ColumnBorderColor
 	glbrush ''
 	glpen 0
 	w =. width % # columnRects
@@ -1238,7 +1146,7 @@ compressedColWidth =. <. (detailWidth - colWidth) % <: # columnGroups
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =. <"1 <. (detailX + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
 if. fullSizeColCount < # columnRects do.
-	glrgb ColumnGuideColor
+	glrgb ColumnBorderColor
 	glbrush ''
 	glpen 0
 	w =. <. detailWidth % # columnRects
@@ -1283,7 +1191,7 @@ if. (1 < # categoryEntries) *. (# columnRects) > 2 * fullSizeColCount do.
 	return.
 end.
 if. fullSizeColCount < # columnRects do.
-	glrgb ColumnGuideColor
+	glrgb ColumnBorderColor
 	glbrush ''
 	glpen 0
 	w =. width % # columnRects
@@ -1523,7 +1431,7 @@ glfont VocValenceFont
 glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
-((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label ; 0
+((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label ; 1
 NB. end.
 0
 )
@@ -1618,7 +1526,7 @@ NB. y A glyph
 log 'selectVocGlyph ' , y
 VocSelectedGlyph =: , y
 entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
-queueUrl n =: (> 7 { entry) ; > 5 { entry
+NB. queueUrl n =: (> 7 { entry) ; > 5 { entry
 )
 
 drawVoc =: 3 : 0
