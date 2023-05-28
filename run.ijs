@@ -94,6 +94,7 @@ end.
 
 log =: 3 : 0
 if. -. LogFlag do. return. end.
+smoutput y
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
 if. 0 = ? 200 do.
 	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
@@ -332,10 +333,6 @@ if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
 )
 
-NB. vizform_mmove =: 3 : 0
-NB. deemphasizeBrowser ''
-NB. )
-
 vizform_searchBox_button =: 3 : 0
 log 'vizform_searchBox_button'
 try.
@@ -358,18 +355,31 @@ log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
 launch_jbrowser_ > 0 { 0 { getHistoryMenu ''
 )
 
-PerpetuateAnimationStartTime =: 0
+animate =: 3 : 0
+NB. y Number of frames to animate
+log 'animate ' , ": y
+wd 'timer 20'
+TimerCount =: y
+)
+
+TimerCount =: 0
 
 sys_timer_z_ =: 3 : 0
 log_jwikiviz_ 'sys_timer_z_'
 try.
-	loadQueuedUrl_jwikiviz_ ''
+if. TimerCount_jwikiviz_ > 0 do.
+	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
+	invalidateDisplay_jwikiviz_ ''
+	wd 'timer 20'
+else.
+	wd 'timer 0'
+end.
+NB.	loadQueuedUrl_jwikiviz_ ''
 NB. 	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_jwikiviz_ do. invalidateDisplay_jwikiviz_ '' end.
 catch.
 	smoutput (13!:12) ''
-	smoutput dbError ''
+	smoutput dbError_jwikiviz_ ''
 end.
-wd 'timer 0'
 )
 
 wd 'timer 0'
@@ -598,6 +608,8 @@ ColumnBorderColor =: 220 220 220
 SelectionColor =: 0 0 0
 HoverColor =: 255 0 0 
 BarColor =: 245 195 150
+CountColor =: 0 0 255
+CountFont =: 'arial 15'
 
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
@@ -721,7 +733,8 @@ log 'queueUrl ' , (0 {:: y) , ' ' , 1 {:: y
 NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
-wd 'timer ' , ": QueuedUrlTimeDelay
+NB. wd 'timer ' , ": QueuedUrlTimeDelay
+loadQueuedUrl ''
 )
 
 loadQueuedUrl =: 3 : 0
@@ -817,6 +830,7 @@ elseif. VocMouseClickXY pointInRect x do.
 		loadPage urlCommand ; name
 	end.
 	x drawReversibleSelection SelectionColor
+	invalidateDisplay ''
 end.
 0
 )
@@ -839,21 +853,27 @@ NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
 log 'drawScrollerField ' , (": x)
 rect =. x
-'strings links ratios levels selectedIndex scrollIndex loadMode' =. y
+'strings links counts levels selectedIndex scrollIndex loadMode' =. y
 'xx yy w h' =. rect
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
-margin =. 5
+margin =. 30
 NB. glfont TocFont
 if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-	scrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
+	tentativeScrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
+	if. scrollIndex ~: tentativeScrollIndex do.
+		if. scrollIndex > tentativeScrollIndex do. scrollIndex =. <: scrollIndex else. scrollIndex =. >: scrollIndex end.
+		animate 2
+	else.
+		scrollIndex =. tentativeScrollIndex
+	end.
 end.	
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
 ys =. <. }: +/\ 0 , heights
 heights =. <. heights
-origins =. <. (margin + xx) ,. margin + yy + ys
+origins =. <. (margin + xx) ,. 5 + yy + ys
 glrgb LabelColor
 gltextcolor ''
 glpen 1
@@ -875,20 +895,30 @@ end.
 for_i. i. # strings do.
 	lineHeight =. i { heights
 	origin =. > i { origins
-NB.	glrgb BarColor
-	glrgba 0 0 0 127
+	glrgb BarColor
 	glbrush ''
 	glpen 0
-NB. 	if. 0 < i { ratios do. glrect (origin - margin , 0) , (<. (w - margin) * i { ratios) , lineHeight - 4 end.
-  	if. 0 < i { ratios do. glrect (origin - margin , -TocLineHeight - 12) , (<. (w - margin) * i { ratios) , 6 end.
+	if. (lineHeight >: TocLineHeight) *. 0 < i { counts do.
+		glfont CountFont
+		glrgb CountColor
+		gltextcolor ''
+		countWidth =. {. glqextent c =. ": i { counts
+		(origin - (countWidth + 2) , 0) drawStringAt c
+	end.
 	glfont getTocFontForLevel i { levels
 	glrgb getTocColorForLevel i { levels
 	glbrush ''
 	gltextcolor''
-	glclip xx , yy ,  w , h
-	if. lineHeight >: TocLineHeight do. (> i { origins) drawStringAt > i { strings end.
+	glclip xx , yy , w , h
+	if. lineHeight >: TocLineHeight do. 
+		(> i { origins) drawStringAt > i { strings 
+	else.
+		stringWidth =. {. glqextent > i { strings
+		glpen 0
+		glrect (> i { origins) , stringWidth , 1
+	end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	if. VocMouseXY pointInRect xx , yy , (-: w) , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.		
+	if. VocMouseXY pointInRect xx , yy , w , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.		
 end.
 glclip 0 0 10000 100000
 scrollIndex
@@ -974,7 +1004,7 @@ NB. y xx yy width height
 NB. Display the contents of the forum
 NB. x y width height drawScrollerField strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x , ' ' , (": TocEntryForumYear) , ' ' , ": TocEntryForumMonth
-if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
+NB. if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 ForumName =: x
 'xx yy width height' =. y
 if. -. ForumCurrentName -: x do. 
@@ -1012,12 +1042,12 @@ gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthOrigins drawStringAt &. > ForumMonthStrings
-rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight) 
+rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight - 4) 
 yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
-rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 0
-rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) 
+rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 1
+rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight - 4) 
 monthCommands =. '*setTocEntryForumMonth '''&, &. > ": &. > ,&'''' &. > ForumMonthStrings
-rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 0
+rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 1
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
 (monthIndex { monthRects) drawHighlight SelectionColor
 calendarMonthIndex =. ShortMonths i. < TocEntryForumMonth
@@ -1031,7 +1061,7 @@ ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable)
 authors =. 3 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; ratios ; (1 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 0
+ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; authorCounts ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1
 ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
@@ -1099,7 +1129,7 @@ if. fullSizeColCount < # columnRects do.
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
 headerColumn =. > {. columnGroups
-parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; ratios ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex ; 0
+parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; counts ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex ; 1
 TocEntryChildScrollIndex =: (> {. columnRects) drawScrollerField parms
 (}. columnRects) drawTocEntryChildrenColumn &. > }. columnGroups
 ''
@@ -1127,7 +1157,7 @@ subcatColWidth =. <. width % 3
 detailX =. xx + subcatColWidth + margin
 detailWidth =. width - subcatColWidth + margin
 commandLinks =. '*setTocEntryTagSubcatIndex '&, &. > ": &. > <"0 i. # subcats
-scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex ; 0
+scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex ; 1
 TocEntryTagScrollIndex =: ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) drawScrollerField scrollEntries
 parentId =. > 7 { TocEntryTagSubcatIndex { subcatEntries
 tocWikiDocs =. getTocWikiDocs parentId  NB. (level parentid categoryid category parentSeq count link) ; table of title ; link
@@ -1222,7 +1252,8 @@ levels =. (] - <./) > 0 {"1 entries
 maxCount =. >./ > 4 {"1 entries
 indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
-parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 0
+NB. parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 0
+parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1
 TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. EmphasizeBrowserFlag do. return. end.
 entry =. TocOutlineRailSelectedIndex { entries
