@@ -473,15 +473,12 @@ NB. sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId term) 
 searchWiki =: 3 : 0
 NB. y Search term
 NB. Perform the search, parse the results, and update the "categories" and "wiki" tables.
-NB. Return the number of hits.
-NB. fname =. (jpath '~temp/S' , ": ? 100000) , '.txt'
-NB.  ('-o ' , fname) gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=70&offset=0&profile=default&search=' , (urlencode y)
-NB. smoutput (1!:1) < fname
+NB. Return the links ; titles.
 log 'Searching wiki for ' , y , '...'
 NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
 url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&for=' , urlencode y
 html =. gethttp url
-pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
+pat =. rxcomp 'mw-search-result-heading"><a href="([^"]+)">([^<]+)<'
 offsetLengths =.  pat rxmatches html
 NB. wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
@@ -499,15 +496,13 @@ else.
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
 	wikiCols =. ;: 'title categoryid link'
 	termParentId =. SearchHiddenCatId getCategoryId SearchCatString
-	wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
 	cols =. ;: 'level parentid categoryid category count parentseq link'
-	data =. titles ; (wikiId #~ # titles) ; < links
 	sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId y) ; (nextUserCatId 1) ; (< 'Wiki') ; (# titles) ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
-	sqlinsert__db 'wiki';wikiCols;<data
-NB. 	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
+	wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
+	data =. titles ; (wikiId #~ # titles) ; < links
+	sqlinsert__db 'wiki';wikiCols;<data	
 end.
 if. 0 < # links do.
-NB. 	smoutput 'Loading first wiki result' ; (> {. links) ; {. titles
 	queueUrl ({. links) , ({. titles)
 end.
 links ,. titles
@@ -552,8 +547,10 @@ if. 0 < # offsetLengths do.
 		data =. forumTitles ; (forumId #~ # forumLinks) ; < forumLinks
 		sqlinsert__db 'wiki';wikiCols;<data
 	end.
+	count =. {. , > > {: sqlreadm__db 'select sum(count) from categories where parentid = ' , ": termId
+else.
+	count =. 0
 end.
-count =. {. , > > {: sqlreadm__db 'select sum(count) from categories where parentid = ' , ": termId
 otherTermId =. (getTopCategoryId SearchCatString) getCategoryId y
 parms =. 'categories' ; ('categoryid = ' , ": otherTermId) ; (;: 'count level') ; < count ; 2
 sqlupdate__db parms
@@ -781,7 +778,8 @@ loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
 try.
 if. 0 = # y do. return. end.
-url =. > {. y
+'url title' =. y
+NB. url =. > {. y
 if. url -: '' do. return. end.
 url =. ('User_' ; 'User:') rxrplc url
 if. 'Category:' -: 9 {. url do.
@@ -793,7 +791,7 @@ if. url -: LastUrlLoaded do. return. end.
 LastUrlLoaded =: url
 log 'Loading url ' , url
 wd 'set browser url *' , url
-addToHistoryMenu (< url) , {: y
+addToHistoryMenu (< url) , < title
 catch.
 	smoutput (13!:12) ''
 end.
@@ -1070,7 +1068,6 @@ glclip 0 0 10000 100000
 setTocEntryChildCategoryIndex =: 3 : 0
 NB. y Index of the category whose children should be displayed.
 TocEntryChildCategoryIndex =: y
-smoutput 'setTocEntryChildCategoryIndex' ; y
 queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
 
@@ -1099,7 +1096,6 @@ indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
 levels =. (] - <./) > {."1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
 catLinks =. 6 {"1 categoryEntries
-smoutput 'catLinks' ; catLinks
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
 NB. cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 catTitles
 cleanCategories =. ('''';'''''')&rxrplc &. > catTitles
@@ -1119,7 +1115,7 @@ colWidth =. <. width % fullSizeColCount
 compressedColWidth =. <. (width - colWidth) % <: # columnGroups
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =: <"1 <. (xx + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
-glrgb 0 0 0
+glrgb 0 0 0 
 glpen 1
 glrgb BackgroundColor
 glbrush ''
