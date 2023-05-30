@@ -181,10 +181,7 @@ wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z'
-wd     'bin h;'
-wd       'cc dbUpdate button; cn Haha!;'
-wd       'cc appUpdate button; cn Wocka!;'
-wd     'bin z;'
+wd     'cc dbUpdate button; cn Haha!;'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
@@ -193,6 +190,7 @@ wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
 wd     'bin z;'
+wd     'cc appUpdate button; cn Wocka!;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
@@ -469,7 +467,7 @@ searchCount =. , > > {: sqlreadm__db 'select count(parentseq) from categories wh
 parentSeq =. 10000 - searchCount
 cols =. ;: 'level parentid categoryid category count parentseq link'
 sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; 0 ; parentSeq ; 'https://www.jsoftware.com'
-sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+NB. sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 )
 
 searchWiki =: 3 : 0
@@ -482,14 +480,13 @@ NB. smoutput (1!:1) < fname
 log 'Searching wiki for ' , y , '...'
 NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
 url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&for=' , urlencode y
-smoutput url
 html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading''><a href="([^"]+)" title="([^"]+)"'
 offsetLengths =.  pat rxmatches html
-wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
+NB. wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
 log '...received ' , (": # html) , ' bytes with ' , (": # offsetLengths) , ' hits.'
 if. 0 = # offsetLengths do.
-	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
+NB.	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < 0 ; 3
 	links =. ''
 	titles =. ''
 else.
@@ -501,9 +498,13 @@ else.
 	links =. 'https://code.jsoftware.com'&, &. > linkLengths <@{."0 1 linkOffsets }."0 1 html
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
 	wikiCols =. ;: 'title categoryid link'
+	termParentId =. SearchHiddenCatId getCategoryId SearchCatString
+	wikiId =. ((SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y) getCategoryId 'Wiki'
+	cols =. ;: 'level parentid categoryid category count parentseq link'
 	data =. titles ; (wikiId #~ # titles) ; < links
+	sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId y) ; (nextUserCatId 1) ; (< 'Wiki') ; (# titles) ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 	sqlinsert__db 'wiki';wikiCols;<data
-	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
+NB. 	sqlupdate__db 'categories' ; ('categoryid = ' , ": wikiId) ; ('count' ; 'level') ; < (# titles) ; 3
 end.
 if. 0 < # links do.
 NB. 	smoutput 'Loading first wiki result' ; (> {. links) ; {. titles
@@ -564,7 +565,6 @@ end.
 
 search =: 3 : 0
 NB. y A search term.
-log 'search ' , y
 try.
 	log 'Searching for ' , y
 	addSearchToToc y
@@ -1070,7 +1070,8 @@ glclip 0 0 10000 100000
 setTocEntryChildCategoryIndex =: 3 : 0
 NB. y Index of the category whose children should be displayed.
 TocEntryChildCategoryIndex =: y
-NB. queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
+smoutput 'setTocEntryChildCategoryIndex' ; y
+queueUrl (> TocEntryChildCategoryIndex { 1 {"1 TocEntryChildCategoryEntries) ; > TocEntryChildCategoryIndex { 0 {"1 TocEntryChildCategoryEntries
 )
 
 TocEntryChildScrollIndex =: 0
@@ -1098,8 +1099,10 @@ indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
 levels =. (] - <./) > {."1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
 catLinks =. 6 {"1 categoryEntries
+smoutput 'catLinks' ; catLinks
 catHighlightFlags =. (-TocEntryChildCategoryIndex) |. 1 , 0 #~ <: # catTitles
-cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 catTitles
+NB. cleanCategories =. ('''';'''''')&rxrplc &. > 1 {"1 catTitles
+cleanCategories =. ('''';'''''')&rxrplc &. > catTitles
 commandLinks =. ''''&, &. > ,&'''' &. > catLinks
 commandCategories =. ,&'''' &. > ''''&, &. > cleanCategories
 commands =. '*setTocEntryChildCategoryIndex '&, &. > <@":"0 i. # catLinks
