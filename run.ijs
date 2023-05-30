@@ -1094,7 +1094,6 @@ if. 1 = # $ tocWikiDocs do. '' return. end.
 ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent categoryid category parentSeq count link
-smoutput categoryEntries
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
 levels =. (] - <./) > {."1 categoryEntries
 catTitles =. indents , &. > 3 {"1 categoryEntries
@@ -1336,7 +1335,7 @@ if. (# WikiDocsCache) > index =. (0 {"1 WikiDocsCache) i. key do.
 else.
 	entry =. > {: sqlreadm__db 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid = ' , ": y
 	wikiDocs =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": y
-	result =. (< , entry) , < wikiDocs
+	result =. ,: (< , entry) , < wikiDocs
 	entries =. y getTocOutlineRailEntries 100
 	if. 0 < # entries do.
 		categories =. 3 {"1 entries
