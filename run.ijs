@@ -14,6 +14,8 @@ NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code)...?
 NB. The *Search category's children don't always immediately appear.
 NB. Lose ScrollConfig variable.
+NB. Zero search results need to be communicated better.
+NB. Show browser pane only on browser hover.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -821,7 +823,6 @@ if. loadMode = 0 do.
 		queueUrl urlCommand ; name
 	end.
 elseif. VocMouseClickXY pointInRect x do.
-	emphasizeBrowser ''
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
 	else. 
