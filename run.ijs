@@ -12,10 +12,6 @@ NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
 NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code)...?
-NB. The *Search category's children don't always immediately appear.
-NB. Lose ScrollConfig variable.
-NB. Zero search results need to be communicated better.
-NB. Show browser pane only on browser hover.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -468,7 +464,7 @@ searchCatId =. , > > {: sqlreadm__db 'select categoryid from categories where pa
 searchCount =. , > > {: sqlreadm__db 'select count(parentseq) from categories where parentid = ' , ": searchCatId
 parentSeq =. 10000 - searchCount
 cols =. ;: 'level parentid categoryid category count parentseq link'
-sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; 0 ; parentSeq ; 'https://www.jsoftware.com'
+sqlinsert__db 'categories' ; cols ; < 1 ; (termParentId =. SearchHiddenCatId getCategoryId SearchCatString) ; (nextUserCatId 1) ; (< term) ; _1 ; parentSeq ; 'https://www.jsoftware.com'
 NB. sqlinsert__db 'categories' ; cols ; < 3 ; (termParentId getCategoryId term) ; (nextUserCatId 1) ; (< 'Wiki') ; _1 ; 0 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 )
 
@@ -507,7 +503,8 @@ end.
 if. 0 < # links do.
 	queueUrl ({. links) , ({. titles)
 end.
-links ,. titles
+# links
+NB. links ,. titles
 )
 
 searchForums =: 3 : 0
@@ -560,6 +557,7 @@ catcht.
 	log (13!:12) ''
 	log 'searchForums Db Error (if any): ' , dbError ''
 end.
+count
 )
 
 search =: 3 : 0
@@ -570,10 +568,15 @@ try.
 	clearCache ''
 	invalidateDisplay ''
 	wd 'msgs'
-	wikiResults =. searchWiki y
-	searchForums y
+NB.	wikiResults =. searchWiki y
+	wikiCount =. searchWiki y
+	forumCount =. searchForums y
 	clearCache ''
-	selectFirstSearchResult {. wikiResults
+	if. 0 = wikiCount + forumCount do.
+		termCategoryId =. (SearchHiddenCatId getCategoryId SearchCatString) getCategoryId y
+		sqlupdate__db 'categories' ; ('categoryid = ' , ": termCategoryId) ; (;: 'count level') ; < (wikiCount + forumCount) ; 1
+	end.
+	selectFirstSearchResult ''
 	invalidateDisplay ''
 catcht.
 	log (13!:12) ''
@@ -582,13 +585,12 @@ end.
 )
 
 selectFirstSearchResult=: 3 : 0
-NB. y link ; title
 log 'selectFirstSearchResult'
 NB. Select first search result in the Table of Contents (TOC).
 index =. (< SearchCatString) i.~ 3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth NB. Table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
 setTocOutlineRailSelectedIndex index
 setTocEntryChildCategoryIndex 1
-queueUrl y
+NB. queueUrl y
 )
 
 NB. ================== Drawing ====================
@@ -897,7 +899,7 @@ for_i. i. # strings do.
 	glrgb BarColor
 	glbrush ''
 	glpen 0
-	if. (lineHeight >: TocLineHeight) *. 0 < i { counts do.
+	if. (lineHeight >: TocLineHeight) *. _1 < i { counts do.
 		glfont CountFont
 		glrgb CountColor
 		gltextcolor ''
@@ -1061,7 +1063,7 @@ authors =. 3 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
 ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; authorCounts ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (0 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
+ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (_1 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
@@ -1088,9 +1090,10 @@ log 'drawTocEntryChildrenWithTree ' , (": x) , ' ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 categoryId =. x
-tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parent category parentSeq count link) ; (table of title ; link)
+tocWikiDocs =. getTocWikiDocs categoryId NB. Table of (level parentid categoryid category parentSeq count link) ; table of title ; link
 if. 1 = # $ tocWikiDocs do. '' return. end.
-ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
+NB. ratios =. counts % maxCount =. >./ counts =. > # &. > 1 {"1 tocWikiDocs
+counts =. > 5 {"1 > {."1 tocWikiDocs
 margin =. 5
 categoryEntries =. > {."1 tocWikiDocs  NB. categoryEntries: table of level parent categoryid category parentSeq count link
 indents =. #&'  ' &. > <: &. > 0 {"1 categoryEntries
@@ -1202,6 +1205,8 @@ glbrush ''
 glrect xx , yy , width , height
 tocWikiDocs =. getTocWikiDocs x NB. Table of (level parentid categoryid category parentSeq count link) ; table of title ; link
 if. 0 = # tocWikiDocs do. '' return. end.
+topLevel =. > {. > {. {. tocWikiDocs
+if. topLevel < MaxTocDepth do. tocWikiDocs =. ,: {. tocWikiDocs end. NB. Don't show a subtree that's already visible in the left TOC pane.
 categoryEntries =. > {."1 tocWikiDocs
 catLinkFlag =. (3 6 {"1 categoryEntries) ,. <1 NB. Category ; Link ; Heading Flag
 documentTables =. {:"1 tocWikiDocs
@@ -1643,6 +1648,7 @@ dbOpenDb ''
 sqlclose__db ''
 dbOpenDb ''
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
+clearCache ''
 )
 
 
