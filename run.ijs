@@ -370,8 +370,6 @@ if. TimerCount_jwikiviz_ > 0 do.
 else.
 	wd 'timer 0'
 end.
-NB.	loadQueuedUrl_jwikiviz_ ''
-NB. 	if. 4 > ((6!:1) '') - PerpetuateAnimationStartTime_jwikiviz_ do. invalidateDisplay_jwikiviz_ '' end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError_jwikiviz_ ''
@@ -401,6 +399,8 @@ if. (w < 200) +. h < 200 do.
 end.
 setDisplayRects ''
 drawToc ''
+'vocW vocH' =. ". wd 'get vocContext wh'
+drawFloatingString vocW , vocH
 VocMouseClickXY =: 0 0
 glclip 0 0 10000 10000
 catcht. catch. 
@@ -801,6 +801,38 @@ catch.
 end.
 )
 
+NB. ========================= Floating Strings ===============================
+FloatingString =: ''
+FloatingStringRect =: ''
+
+registerFloatingString =: 4 : 0
+NB. x xx yy width height
+NB. y string ; font ; textColor
+FloatingStringRect =: x
+FloatingString =: y
+)
+
+drawFloatingString =: 3 : 0
+NB. y windowWidth windowHeight
+'windowWidth windowHeight' =. y
+if. 0 = # FloatingString do. return. end.
+'string font textColor' =. FloatingString
+glfont font
+glrgb 200 200 200
+glbrush ''
+glpen 0
+'xx yy width height' =. FloatingStringRect
+width =. width + 5
+newX =. width -~ (xx + width) <. windowWidth
+rect =. newX , yy , width , height 
+glrect rect
+glrgb textColor
+gltextcolor ''
+(2 {. rect) drawStringAt string
+FloatingStringRect =: ''
+FloatingString =: ''
+)
+
 NB. ======================== Mouse-Sensitive Areas ===========================
 isFrozen =: 3 : 0
 PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime
@@ -911,8 +943,15 @@ for_i. i. # strings do.
 	glbrush ''
 	gltextcolor''
 	glclip xx , yy , w , h
+	string =. > i { strings
+	origin =. > i { origins
 	if. lineHeight >: TocLineHeight do. 
-		(> i { origins) drawStringAt > i { strings 
+		stringWidth =. {. glqextent string
+		if. (VocMouseXY pointInRect origin , w , TocLineHeight) *. stringWidth >: (w - margin) do.
+			((origin + 0 1) , stringWidth , TocLineHeight - 2) registerFloatingString string ; (getTocFontForLevel i { levels) ; (getTocColorForLevel i { levels)
+		else.
+			origin drawStringAt string 
+		end.
 	else.
 		stringWidth =. {. glqextent > i { strings
 		glpen 0
@@ -921,7 +960,7 @@ for_i. i. # strings do.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
 	if. VocMouseXY pointInRect xx , yy , w , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.		
 end.
-glclip 0 0 10000 100000
+glclip 0 0 100000 100000
 scrollIndex
 )
 NB. ======================= Draw the TOC =========================
@@ -933,8 +972,12 @@ NB. y Highlight Flag ; Name ; Link/Command ; Level
 glrgb getTocColorForLevel level
 gltextcolor ''
 glfont getTocFontForLevel level
-(xx , yy) drawStringAt name
+nameWidth =. {. glqextent name
 adjRect =. xx , yy , (maxWidth - 16) , height
+if. (VocMouseXY pointInRect adjRect) *. nameWidth >: maxWidth do. 
+	(xx , yy , nameWidth , TocLineHeight) registerFloatingString name ; (getTocFontForLevel level) ; getTocColorForLevel level 
+end.
+(xx , yy) drawStringAt name
 if. highlightFlag do. adjRect drawHighlight SelectionColor end.
 adjRect registerRectLink command ; name ; 1
 )
