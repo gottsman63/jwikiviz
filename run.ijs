@@ -894,7 +894,8 @@ rect =. x
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 30
-NB. glfont TocFont
+if. VocMouseXY pointInRect xx , yy , (-: w) , h do. glcursor IDC_SIZEVER end.
+if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. glcursor IDC_POINTINGHAND end.
 if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
 	tentativeScrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
 	if. scrollIndex ~: tentativeScrollIndex do.
@@ -1051,7 +1052,7 @@ NB. y xx yy width height
 NB. Display the contents of the forum
 NB. x y width height drawScrollerField strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x , ' ' , (": TocEntryForumYear) , ' ' , ": TocEntryForumMonth
-NB. if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
+if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 ForumName =: x
 'xx yy width height' =. y
 if. -. ForumCurrentName -: x do. 
