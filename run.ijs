@@ -11,7 +11,7 @@ coinsert 'jgl2'
 NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
-NB. Rename run.ijs to jwikiviz.ijs (and change the shortcut code)...?
+NB. Put the cursor code back in for scroller fields.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -808,12 +808,14 @@ FloatingStringRect =: ''
 registerFloatingString =: 4 : 0
 NB. x xx yy width height
 NB. y string ; font ; textColor
+log 'registerFloatingString ' , ": x
 FloatingStringRect =: x
 FloatingString =: y
 )
 
 drawFloatingString =: 3 : 0
 NB. y windowWidth windowHeight
+log 'drawFloatingString ' , ": y
 'windowWidth windowHeight' =. y
 if. 0 = # FloatingString do. return. end.
 'string font textColor' =. FloatingString
@@ -829,6 +831,7 @@ glrect rect
 glrgb textColor
 gltextcolor ''
 (2 {. rect) drawStringAt string
+rect drawHighlight HoverColor
 FloatingStringRect =: ''
 FloatingString =: ''
 )
