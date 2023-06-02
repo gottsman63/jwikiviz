@@ -686,7 +686,7 @@ NB. y color (r g b) but no (a)
 NB. glrgb y
 color =. y , 255 NB. <. 255 * | 1 o. 2 * {: (6!:0) ''
 glrgba color
-glpen 2
+glpen 3
 glrgba 0 0 0 0
 glbrush ''
 glrect x
@@ -882,14 +882,14 @@ NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. Revers
 NB. ============================== Scroller Field ===============================
 drawScrollerField =: 4 : 0
 NB. x xx yy width height
-NB. y strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex ; loadMode
+NB. y strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex ; loadMode ; hoverCallback
 NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's a page link, not a heading.
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
 NB. Return the scrollIndex, which may have changed.
 log 'drawScrollerField ' , (": x)
 rect =. x
-'strings links counts levels selectedIndex scrollIndex loadMode' =. y
+'strings links counts levels selectedIndex scrollIndex loadMode hoverCallback' =. y
 'xx yy w h' =. rect
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
@@ -962,7 +962,8 @@ for_i. i. # strings do.
 		glrect (> i { origins) , stringWidth , 1
 	end.
 	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	if. VocMouseXY pointInRect xx , yy , w , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.		
+	if. VocMouseXY pointInRect xx , yy , w , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.
+	if. VocMouseXY pointInRect (origin , w , lineHeight) do. ". hoverCallback , ' ' , ": i end.		
 end.
 glclip 0 0 100000 100000
 scrollIndex
@@ -1109,8 +1110,8 @@ ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable)
 authors =. 3 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
-ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; authorCounts ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (_1 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1
+ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; authorCounts ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1 ; '<'
+ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (_1 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1 ; '<'
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
@@ -1179,7 +1180,7 @@ if. fullSizeColCount < # columnRects do.
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
 headerColumn =. > {. columnGroups
-parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; counts ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex ; 1
+parms =. (1 {"1 headerColumn) ; (2 {"1 headerColumn) ; counts ; levels ; TocEntryChildCategoryIndex ; TocEntryChildScrollIndex ; 1 ; '<'
 TocEntryChildScrollIndex =: (> {. columnRects) drawScrollerField parms
 (}. columnRects) drawTocEntryChildrenColumn &. > }. columnGroups
 ''
@@ -1207,7 +1208,7 @@ subcatColWidth =. <. width % 3
 detailX =. xx + subcatColWidth + margin
 detailWidth =. width - subcatColWidth + margin
 commandLinks =. '*setTocEntryTagSubcatIndex '&, &. > ": &. > <"0 i. # subcats
-scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex ; 1
+scrollEntries =. subcats ; commandLinks ; (0 #~ # subcats) ; (2 #~ # subcats) ; TocEntryTagSubcatIndex ; TocEntryTagScrollIndex ; 1 ; '<'
 TocEntryTagScrollIndex =: ((xx + margin) , (yy + margin) , subcatColWidth , height - +: margin) drawScrollerField scrollEntries
 parentId =. > 7 { TocEntryTagSubcatIndex { subcatEntries
 tocWikiDocs =. getTocWikiDocs parentId  NB. (level parentid categoryid category parentSeq count link) ; table of title ; link
@@ -1285,12 +1286,36 @@ columnRects drawTocEntryChildrenColumn &. > columnGroups
 
 TocOutlineRailSelectedIndex =: 0
 TocOutlineRailScrollIndex =: 0
+TocOutlineRailHoverIndex =: 0
 
 setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 queueUrl (> 6 { entry) ; > 3 { entry
+)
+
+setTocRailHoverIndex =: 3 : 0
+NB. y The index of the currently-hovered entry in the TOC rail.
+TocOutlineRailHoverIndex =: y
+)
+
+drawTocRailChildren =: 4 : 0
+NB. x Toc outline rail entry whose children need to be drawn.
+NB. y The rectangle in which to draw.
+entry =. x
+if.  +./ '*NuVoc' E. > 3 { entry do.
+	drawVoc ''
+elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
+	(> 3 { entry) drawTocEntryForum y
+elseif. TagCatString -: > 3 { entry do.
+	drawTocEntryTags y
+elseif. (< SearchCatString) = 3 { entry do.
+	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree y
+else.
+	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
+	categoryId drawTocEntryChildren y
+end.
 )
 
 drawTocRail =: 4 : 0
@@ -1305,21 +1330,14 @@ maxCount =. >./ > 4 {"1 entries
 indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
 linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
 NB. parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 0
-parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1
+parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1 ; 'setTocRailHoverIndex'
 TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. EmphasizeBrowserFlag do. return. end.
-entry =. TocOutlineRailSelectedIndex { entries
-if.  +./ '*NuVoc' E. > 3 { entry do.
-	drawVoc ''
-elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
-	(> 3 { entry) drawTocEntryForum DisplayDetailRect
-elseif. TagCatString -: > 3 { entry do.
-	drawTocEntryTags DisplayDetailRect
-elseif. (< SearchCatString) = 3 { entry do.
-	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree DisplayDetailRect
-else.
-	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
-	categoryId drawTocEntryChildren DisplayDetailRect
+(TocOutlineRailSelectedIndex { entries) drawTocRailChildren DisplayDetailRect
+if. (VocMouseXY pointInRect x) *. TocOutlineRailHoverIndex ~: TocOutlineRailSelectedIndex do.
+	delta =. 30 30 _60 _60
+	(TocOutlineRailHoverIndex { entries) drawTocRailChildren DisplayDetailRect + delta
+	if. 0 ~: TocOutlineRailHoverIndex do. (DisplayDetailRect + delta) drawHighlight HoverColor end.
 end.
 )
 
