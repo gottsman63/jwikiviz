@@ -11,7 +11,7 @@ coinsert 'jgl2'
 NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
-NB. Put the cursor code back in for scroller fields.
+NB. If there's a single column, just render the strings' entire width.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -979,7 +979,7 @@ gltextcolor ''
 glfont getTocFontForLevel level
 nameWidth =. {. glqextent name
 adjRect =. xx , yy , (maxWidth - 16) , height
-if. (VocMouseXY pointInRect adjRect) *. nameWidth >: maxWidth do. 
+if. (VocMouseXY pointInRect x) *. nameWidth >: maxWidth - 2 do. 
 	(xx , yy , nameWidth , TocLineHeight) registerFloatingString name ; (getTocFontForLevel level) ; getTocColorForLevel level 
 end.
 (xx , yy) drawStringAt name
@@ -1201,6 +1201,9 @@ NB. x y width height drawScrollerField strings ; links ; ratios ; headingFlags ;
 log 'drawTocEntryTags ' , ": y
 'xx yy width height' =. y
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
+glrgb BackgroundColor
+glbrush ''
+glrect y
 margin =. 5
 subcatEntries =. > {: sqlreadm__db 'select level, parentid, categoryid, category, parentseq, count, link, categoryid from categories where parentid = ' , ": TagHiddenCatId getCategoryId TagCatString
 subcats =. 3 {"1 subcatEntries
@@ -1233,7 +1236,11 @@ if. fullSizeColCount < # columnRects do.
 	w =. <. detailWidth % # columnRects
 	glrect <. (detailX + selectedColumnIndex * w) , yy , w , height
 end.
-columnRects drawTocEntryChildrenColumn &. > columnGroups
+if. 1 = # columnRects do.
+	(< 0 0 500 0 + , > columnRects) drawTocEntryChildrenColumn &. > columnGroups
+else.
+	columnRects drawTocEntryChildrenColumn &. > columnGroups
+end.
 )
 
 drawTocEntryChildren =: 4 : 0
@@ -1280,7 +1287,11 @@ if. fullSizeColCount < # columnRects do.
 	w =. width % # columnRects
 	glrect <. (xx + selectedColumnIndex * w) , yy , w , height
 end.
-columnRects drawTocEntryChildrenColumn &. > columnGroups
+if. 1 = # columnRects do.
+	(< y) drawTocEntryChildrenColumn &. > columnGroups
+else.
+	columnRects drawTocEntryChildrenColumn &. > columnGroups
+end.
 ''
 )
 
