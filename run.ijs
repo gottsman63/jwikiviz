@@ -961,8 +961,8 @@ for_i. i. # strings do.
 		glpen 0
 		glrect (> i { origins) , stringWidth , 1
 	end.
-	if. i = selectedIndex do. ((origin - margin , 0) , w , lineHeight) drawHighlight SelectionColor end.
-	if. VocMouseXY pointInRect xx , yy , w , h do. ((origin - margin , 0), w, lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.
+	if. i = selectedIndex do. (origin , (w - margin) , lineHeight) drawHighlight SelectionColor end.
+	if. VocMouseXY pointInRect xx , yy , w , h do. (origin, (w - margin) , lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.
 	if. VocMouseXY pointInRect (origin , w , lineHeight) do. ". hoverCallback , ' ' , ": i end.		
 end.
 glclip 0 0 100000 100000
@@ -979,7 +979,7 @@ gltextcolor ''
 glfont getTocFontForLevel level
 nameWidth =. {. glqextent name
 adjRect =. xx , yy , (maxWidth - 16) , height
-if. (VocMouseXY pointInRect x) *. nameWidth >: maxWidth - 2 do. 
+if. (VocMouseXY pointInRect x) *. nameWidth >: maxWidth - 6 do. 
 	(xx , yy , nameWidth , TocLineHeight) registerFloatingString name ; (getTocFontForLevel level) ; getTocColorForLevel level 
 end.
 (xx , yy) drawStringAt name
