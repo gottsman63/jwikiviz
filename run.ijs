@@ -11,7 +11,7 @@ coinsert 'jgl2'
 NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
-NB. If there's a single column, just render the strings' entire width.
+NB. Smooth transition to (de)emphasizing the web view.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -194,7 +194,33 @@ wd   'bin z;'
 wd 'bin z;'
 )
 
+LayoutRatio =: 0
+LayoutDirection =: 1
+
 layoutForm =: 3 : 0
+log 'layoutForm'
+'w h' =. ". wd 'getp wh'
+winW =. w - 40
+winH =. h - 45
+controlHeight =. 30
+vocContextHeight =. winH >. 760
+LayoutRatio =: 0.8 <. 0.2 >. LayoutRatio + 0.1 * LayoutDirection
+if. w > 1500 do. LayoutRatio =: 0.5 end.
+vocContextWidth =. <. winW * LayoutRatio
+browserWidth =. winW - vocContextWidth
+	wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
+	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
+	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+	wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
+	wd 'set vocContext minwh ' , (": 1 , 760) , ';'
+	wd 'set bookmark maxwh ' , (": (browserWidth * 0.15), controlHeight) , ';'
+	wd 'set history maxwh ' , (": (browserWidth * 0.6) , controlHeight) , ';'
+	wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
+	wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
+)
+
+layoutFormOld =: 3 : 0
 log 'layoutForm'
 'w h' =. ". wd 'getp wh'
 winW =. w - 40
@@ -234,16 +260,17 @@ NB. wd 'timer 100'
 
 emphasizeBrowser =: 3 : 0
 log 'emphasizeBrowser'
-'w h' =. ". wd 'getp wh'
-if. w > 1500 do. return. end. 
-EmphasizeBrowserFlag =: 1
-layoutForm ''
+if. LayoutDirection = _1 do. return. end.
+LayoutDirection =: _1
+animate 20
+NB. layoutForm ''
 )
 
 deemphasizeBrowser =: 3 : 0
 log 'deemphasizeBrowser'
-EmphasizeBrowserFlag =: 0
-layoutForm ''
+if. LayoutDirection = 1 do. return. end.
+LayoutDirection =: 1
+animate 20
 )
 
 vizform_default =: 3 : 0
@@ -366,6 +393,7 @@ try.
 if. TimerCount_jwikiviz_ > 0 do.
 	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
 	invalidateDisplay_jwikiviz_ ''
+	layoutForm_jwikiviz_ ''
 	wd 'timer 20'
 else.
 	wd 'timer 0'
@@ -647,7 +675,6 @@ PageLoadFreezeTime =: 0
 PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
-EmphasizeBrowserFlag =: 0
 LogFlag =: 0
 
 getTocFontForLevel =: 3 : 0
@@ -990,7 +1017,7 @@ adjRect registerRectLink command ; name ; 1
 drawTocEntryChildrenColumn =: 4 : 0
 NB. x xx yy width height
 NB. y Table of Name ; Link/Command ; Level
-NB. Render the column in black, with headings in SectionColor
+NB. Render the column
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
 margin =. 5
@@ -1343,6 +1370,7 @@ linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entri
 NB. parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 0
 parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1 ; 'setTocRailHoverIndex'
 TocOutlineRailScrollIndex =: x drawScrollerField parms
+if. 200 > 2 { DisplayDetailRect do. return. end.
 if. EmphasizeBrowserFlag do. return. end.
 (TocOutlineRailSelectedIndex { entries) drawTocRailChildren DisplayDetailRect
 if. (VocMouseXY pointInRect x) *. TocOutlineRailHoverIndex ~: TocOutlineRailSelectedIndex do.
