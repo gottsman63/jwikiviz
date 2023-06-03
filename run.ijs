@@ -1375,6 +1375,10 @@ if. EmphasizeBrowserFlag do. return. end.
 (TocOutlineRailSelectedIndex { entries) drawTocRailChildren DisplayDetailRect
 if. (VocMouseXY pointInRect x) *. TocOutlineRailHoverIndex ~: TocOutlineRailSelectedIndex do.
 	delta =. 30 30 _60 _60
+	glrgba 0 0 0 64
+	glbrush ''
+	glpen 0
+	glrect DisplayDetailRect + delta + 10 10 0 0
 	(TocOutlineRailHoverIndex { entries) drawTocRailChildren DisplayDetailRect + delta
 	if. 0 ~: TocOutlineRailHoverIndex do. (DisplayDetailRect + delta) drawHighlight HoverColor end.
 end.
