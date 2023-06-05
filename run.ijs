@@ -847,7 +847,7 @@ log 'drawFloatingString ' , ": y
 if. 0 = # FloatingString do. return. end.
 'string font textColor' =. FloatingString
 glfont font
-glrgb 200 200 200
+glrgb BackgroundColor
 glbrush ''
 glpen 0
 'xx yy width height' =. FloatingStringRect
