@@ -220,44 +220,6 @@ browserWidth =. winW - vocContextWidth
 	wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 )
 
-layoutFormOld =: 3 : 0
-log 'layoutForm'
-'w h' =. ". wd 'getp wh'
-winW =. w - 40
-winH =. h - 45
-controlHeight =. 30
-vocContextHeight =. winH >. 760
-if. EmphasizeBrowserFlag do.
-	vocContextWidth =. 175
-	browserWidth =. winW - vocContextWidth
-	wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
-	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set vocContext minwh 1 1;'
-	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
-	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
-	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
-	wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
-	wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
-else.
-	vocContextWidth =. <. 825 >. winW % 2
-	browserWidth =. winW - vocContextWidth
-	wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-	wd 'set clearSearches maxwh ' , (": <. (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
-	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set vocContext minwh 770 680;'
-	wd 'set vocContext maxwh ' , (": <. vocContextWidth , vocContextHeight) , ';'
-	wd 'set bookmark maxwh ' , (": <. (browserWidth * 0.15), controlHeight) , ';'
-	wd 'set history maxwh ' , (": <. (browserWidth * 0.6) , controlHeight) , ';'
-	wd 'set launch maxwh ' , (": <. (browserWidth * 0.15) , controlHeight) , ';'
-	wd 'set browser maxwh ' , (": (<. browserWidth) , winH - controlHeight) , ';'
-	wd 'set browser minwh 100 50;'
-end.
-NB. wd 'timer 100'
-)
-
 emphasizeBrowser =: 3 : 0
 log 'emphasizeBrowser'
 if. LayoutDirection = _1 do. return. end.
@@ -1371,10 +1333,9 @@ NB. parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; leve
 parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1 ; 'setTocRailHoverIndex'
 TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. 200 > 2 { DisplayDetailRect do. return. end.
-if. EmphasizeBrowserFlag do. return. end.
 (TocOutlineRailSelectedIndex { entries) drawTocRailChildren DisplayDetailRect
 if. (VocMouseXY pointInRect x) *. TocOutlineRailHoverIndex ~: TocOutlineRailSelectedIndex do.
-	delta =. 30 30 _60 _60
+	delta =. 0 0 0 0 NB. 30 30 _60 _60
 	glrgba 0 0 0 64
 	glbrush ''
 	glpen 0

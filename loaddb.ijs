@@ -345,7 +345,7 @@ NB. Retrieve the forum archive files and add them to the forums table.
 smoutput 'loadForum' ; y
 wd 'msgs'
 mainPageHtml =: gethttp 'https://www.jsoftware.com/pipermail/' , y , '/'
-ol =: {:"2 (rxcomp 'href="([^\"]+subject.html)"') rxmatches mainPageHtml
+ol =. {:"2 (rxcomp 'href="([^\"]+subject.html)"') rxmatches mainPageHtml
 offsets =. {."1 ol
 lengths =. {:"1 ol
 links =. ('https://www.jsoftware.com/pipermail/', y , '/')&, &. > lengths <@{."0 1 offsets }."0 1 mainPageHtml
@@ -401,7 +401,7 @@ count =. # headerCategories
 data3 =. (count # 1) ; (count # anchorId getCategoryId '*Tags') ; (nextCatId count) ; headerCategories ; (count # _1) ; (i. count) ; < count # < ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data3
 headerIds =. (anchorId getCategoryId '*Tags')&getCategoryId &. > headerCategories
-for_entry. k =: ((# categories) {. 15 # headerIds) ,. categories ,. links do.
+for_entry. k =. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
 	'headerId category link' =. entry
 	catHtml =. (2!:0) 'curl "' , link , '"'
 	catHtml =. (I. 'printfooter' E. catHtml) {. catHtml =. (I. 'mw-category-generated' E. catHtml) }. catHtml
@@ -533,7 +533,7 @@ getCategoryId =: 4 : 0
 NB. x Parent id
 NB. y Category name (category names are guaranteed to be unique) 
 NB. Return the rowid of the category
-result =. > {: sqlreadm__db 'select categoryid from categories where category = ''' , (n =: ('''' ; '''''') rxrplc y) , ''' and parentid = ' , ": x
+result =. > {: sqlreadm__db 'select categoryid from categories where category = ''' , (n =. ('''' ; '''''') rxrplc y) , ''' and parentid = ' , ": x
 if. 0 = # result do. _1 else. , > result end.
 )
 
