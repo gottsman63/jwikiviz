@@ -1334,6 +1334,7 @@ parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineR
 TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. 200 > 2 { DisplayDetailRect do. return. end.
 (TocOutlineRailSelectedIndex { entries) drawTocRailChildren DisplayDetailRect
+return.
 if. (VocMouseXY pointInRect x) *. TocOutlineRailHoverIndex ~: TocOutlineRailSelectedIndex do.
 	delta =. 0 0 0 0 NB. 30 30 _60 _60
 	glrgba 0 0 0 64
@@ -1770,7 +1771,7 @@ buildForm ''
 layoutForm ''
 setUpdateButtons ''
 loadHistoryMenu ''
-wd 'pshow'
+wd 'pshow maximized'
 )
 
 go_z_ =: 3 : 0
