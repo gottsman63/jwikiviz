@@ -43,7 +43,7 @@ log 'appUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
-	smoutput 'JWikiViz Versions' ; v1 ; v2
+NB.	smoutput 'JWikiViz Versions' ; v1 ; v2
 	if. v2 -: 'none' do. 2 return. end.
 	if. v1 -: v2 do. 1 return. end.
 catch.
@@ -55,6 +55,7 @@ end.
 
 updateAppVersion =: 3 : 0
 log 'updateAppVersion'
+sqlclose__db  ''
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
 )
@@ -128,7 +129,7 @@ shortcutInfo =: 3 : 0
 smoutput ' '
 smoutput 'NB. Create a shortcut for JWikiViz:'
 smoutput 'open ''~config/userkeys.cfg'''
-smoutput 'NB. Append the line: Ctrl+Shift+H;1;JWikiViz;load ''~addons/gottsman63/jwikiviz/run.ijs'''
+smoutput 'NB. Append the line: Ctrl+Shift+H;0;JWikiViz;load ''~addons/gottsman63/jwikiviz/run.ijs'''
 smoutput ' '
 smoutput 'browse_j_ ''https://code.jsoftware.com/wiki/Guides/Qt_IDE/Configure/User_Keys'' NB. More information.'
 NB.    load '~addons/gottsman63/jwikiviz/run.ijs'
