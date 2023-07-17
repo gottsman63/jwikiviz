@@ -11,13 +11,11 @@ coinsert 'jgl2'
 NB. *** Wiki Meeting Discussion Items ***
 
 NB. *** A Items ***
-NB. Smooth transition to (de)emphasizing the web view.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
 NB. Compress the file?  It would save CDN bandwidth...goes from 8.2 to 1.7.  Or compress semantically (0 - Jsoftware, 1 - Jchat, ...)
 NB. Fix use of sqlreadm__db
-NB. Animated webview transition...?
 NB. Support parallel download of forum and wiki documents.
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
@@ -194,7 +192,7 @@ wd   'bin z;'
 wd 'bin z;'
 )
 
-LayoutRatio =: 0
+LayoutRatio =: 1
 LayoutDirection =: 1
 
 layoutForm =: 3 : 0
