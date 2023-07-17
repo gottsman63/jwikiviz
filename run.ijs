@@ -1,6 +1,6 @@
-cocurrent 'jwikiviz'
+coerase <'jwikiviz'
 
-clear ''
+cocurrent 'jwikiviz'
 
 load 'data/sqlite'
 load 'web/gethttp'
@@ -592,7 +592,7 @@ SectionFont =: 'arial bold 16'
 BackgroundColor =: 255 255 255
 SectionColor =: 0 0 0
 LabelColor =: 0 102 204
-ColumnGuideColor =: 245 253 198
+ColumnGuideColor =: 220 220 220
 ColumnBorderColor =: 220 220 220
 SelectionColor =: 0 0 0
 HoverColor =: 255 0 0 
@@ -828,6 +828,8 @@ isFrozen =: 3 : 0
 PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime
 )
 
+LastUrlCommandSelected =: ''
+
 registerRectLink =: 4 : 0
 NB. x xx yy width height
 NB. y A url or * to be evaluated ; a title ; loadMode (0 indicates hover, 1 indicates click)
@@ -836,6 +838,9 @@ NB. Note that since we're frame-based, we re-register rect/links on every frame.
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
 'urlCommand name loadMode' =. y
 NB. if. isFrozen '' do. 0 return. end.
+if. urlCommand -: LastUrlCommandSelected do. 
+	x drawReversibleSelection SelectionColor 
+end.
 if. -. VocMouseXY pointInRect x do. 0 return. end.
 if. loadMode = 1 do.
 	x drawReversibleSelection HoverColor
@@ -843,17 +848,20 @@ end.
 if. loadMode = 0 do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
+		LastUrlCommandSelected =: urlCommand
 	else. 
 		queueUrl urlCommand ; name
+		LastUrlCommandSelected =: urlCommand
 	end.
 elseif. VocMouseClickXY pointInRect x do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
+		LastUrlCommandSelected =: urlCommand
 	else. 
 		loadPage urlCommand ; name
+		LastUrlCommandSelected =: urlCommand
 	end.
-	x drawReversibleSelection SelectionColor
-	invalidateDisplay ''
+NB.	invalidateDisplay ''
 end.
 0
 )
