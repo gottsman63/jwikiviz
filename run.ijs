@@ -862,7 +862,7 @@ elseif. VocMouseClickXY pointInRect x do.
 		loadPage urlCommand ; name
 		LastUrlCommandSelected =: urlCommand
 	end.
-NB.	invalidateDisplay ''
+	invalidateDisplay ''
 end.
 0
 )
