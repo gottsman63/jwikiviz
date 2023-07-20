@@ -9,8 +9,18 @@ load 'gl2'
 coinsert 'jgl2'
 
 NB. *** Wiki Meeting Discussion Items ***
+NB. In what environment does JWikiViz run? "JQt"? Something else?
+NB. Will inline images get through the mailing list engine?
+NB. How should we handle bug reports?  General feedback? "Bugs/Feedback" button that would do what?
+NB. Windows test.
+NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
+NB. Check the behavior of the cursor icon in the Forums section (especially).  
+NB. Test initial installation.  
+NB. Forum search result "jump to thread" feature.  
+NB. Look for more trace opportunities.  
+NB. Should we check for new versions at other times?
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -48,6 +58,7 @@ NB.	smoutput 'JWikiViz Versions' ; v1 ; v2
 	if. v1 -: v2 do. 1 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
+	log 'Problem: ' , (13!:12) ''
 	0 return.
 end.
 0
@@ -91,12 +102,12 @@ end.
 
 log =: 3 : 0
 if. -. LogFlag do. return. end.
-smoutput y
+NB. smoutput y
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
-if. 0 = ? 200 do.
-	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
-	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 1000
-end.
+NB. if. 0 = ? 200 do.
+NB.	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
+NB.	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 10000
+NB. end.
 )
 
 clearLog =: 3 : 0
@@ -142,7 +153,7 @@ VocMouseClickXY =: 0 0
 setUpdateButtons =: 3 : 0
 select. appUpToDate '' 
 case. 0 do. appCap =. 'New app version available'
-case. 1 do. appCap =. 'App is up to date' 
+case. 1 do. appCap =. 'Add-on up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
 end.
 wd 'set appUpdate caption *' , appCap
@@ -170,6 +181,7 @@ setUpdateButtons ''
 buildForm =: 3 : 0
 log 'buildForm'
 wd 'pc vizform escclose;'
+wd 'pn *J Documentation Viewer Add-On'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
@@ -362,6 +374,8 @@ end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError_jwikiviz_ ''
+	log (13!:12) ''
+	log dbError_jwikiviz_ ''
 end.
 )
 
@@ -662,10 +676,13 @@ drawStringAt =: 4 : 0
 NB. x originX originY
 NB. y A string
 try.
+NB.	log 'drawStringAt ' , (": x) , ' ' , y
 	gltextxy x
 	gltext y
 catch.
-	smoutput 'Could not drawStringAt' ; x ; y end.
+	smoutput 'Could not drawStringAt' ; x ; y
+	log 'Could not drawStringAt' ; x ; y 
+end.
 )
 
 drawHighlight =: 4 : 0 
@@ -703,12 +720,15 @@ if. isBookmarked url do. wd 'set bookmark text "Un-bookmark";' else. wd 'set boo
 )
 
 bookmark =: 3 : 0
-log 'bookmark'
+log 'bookmark '
 'url title' =. {. getHistoryMenu ''
+log '...(bookmark) '  , url , ' ' , title
 id =. (getTopCategoryId BookmarkCatString)
 if. isBookmarked url do.
+	log '...(bookmark) DELETING'
 	sqlcmd__db 'delete from wiki where categoryid = ' , (": id) , ' and link = "' , url , '"'
 else.
+	log '...(bookmark) ADDING'
 	sqlinsert__db 'wiki' ; (;: 'title categoryid link') ; < title ; id ; url
 end.
 clearCache ''
@@ -786,6 +806,7 @@ wd 'set browser url *' , url
 addToHistoryMenu (< url) , < title
 catch.
 	smoutput (13!:12) ''
+	log (13!:12) ''
 end.
 )
 
@@ -878,7 +899,7 @@ NB. if. ReversibleSelections -: '' do. ReversibleSelections =: ,: x else. Revers
 NB. ============================== Scroller Field ===============================
 drawScrollerField =: 4 : 0
 NB. x xx yy width height
-NB. y strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex ; loadMode ; hoverCallback
+NB. y strings ; links ; counts ; levels ; selectedIndex ; scrollIndex ; loadMode ; hoverCallback
 NB. The "levels" indicate indention (0...n).  A level of _1 indicates that it's a page link, not a heading.
 NB. Draw the strings and registerRectLink to highlight them and load pages.
 NB. Use VocMouseXY to update scrollOffset and selectedIndex.
@@ -887,6 +908,7 @@ log 'drawScrollerField ' , (": x)
 rect =. x
 'strings links counts levels selectedIndex scrollIndex loadMode hoverCallback' =. y
 'xx yy w h' =. rect
+log '...(drawScrollerField) ' , ": (# strings) , (# links) , (# levels) , selectedIndex , scrollIndex , loadMode
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 30
