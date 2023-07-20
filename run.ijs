@@ -152,8 +152,8 @@ VocMouseClickXY =: 0 0
 
 setUpdateButtons =: 3 : 0
 select. appUpToDate '' 
-case. 0 do. appCap =. 'New app version available'
-case. 1 do. appCap =. 'Add-on up to date' 
+case. 0 do. appCap =. 'New add-on version available'
+case. 1 do. appCap =. 'Add-on is up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
 end.
 wd 'set appUpdate caption *' , appCap
