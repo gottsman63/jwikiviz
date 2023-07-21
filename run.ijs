@@ -150,7 +150,12 @@ NB. ==================== Form =====================
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
 
+lastUpdateButtonCheckTime =: _10000000
+
 setUpdateButtons =: 3 : 0
+if. (((6!:1) '') - lastUpdateButtonCheckTime) < 60 * 60 do. return. end.
+smoutput 'Setting the update buttons'
+lastUpdateButtonCheckTime =: (6!:1) ''
 select. appUpToDate '' 
 case. 0 do. appCap =. 'New add-on version available'
 case. 1 do. appCap =. 'Add-on is up to date' 
@@ -309,6 +314,7 @@ invalidateDisplay ''
 vizform_vocContext_mblup =: 3 : 0
 log 'vizform_vocContext_mblup'
 VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
+setUpdateButtons ''
 invalidateDisplay ''
 )
 
@@ -477,7 +483,8 @@ NB. Perform the search, parse the results, and update the "categories" and "wiki
 NB. Return the links ; titles.
 log 'Searching wiki for ' , y , '...'
 NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
-url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&for=' , urlencode y
+NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&for=' , urlencode y
+url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&blk=100&offset=0&for=' , urlencode y
 html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading"><a href="([^"]+)">([^<]+)<'
 offsetLengths =.  pat rxmatches html
@@ -517,7 +524,7 @@ try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
-url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=1000'
+url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=100'
 html =. '-s' gethttp url
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
