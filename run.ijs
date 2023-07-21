@@ -154,9 +154,8 @@ lastUpdateButtonCheckTime =: _10000000
 
 setUpdateButtons =: 3 : 0
 if. (((6!:1) '') - lastUpdateButtonCheckTime) < 60 * 60 do. return. end.
-smoutput 'Setting the update buttons'
 lastUpdateButtonCheckTime =: (6!:1) ''
-select. appUpToDate '' 
+select. appUpToDate ''
 case. 0 do. appCap =. 'New add-on version available'
 case. 1 do. appCap =. 'Add-on is up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
@@ -1004,7 +1003,7 @@ gltextcolor ''
 glfont getTocFontForLevel level
 nameWidth =. {. glqextent name
 adjRect =. xx , yy , (maxWidth - 16) , height
-if. (VocMouseXY pointInRect x) *. nameWidth >: maxWidth - 6 do. 
+if. (VocMouseXY pointInRect x) *. nameWidth >: maxWidth - 16 do. 
 	(xx , yy , nameWidth , TocLineHeight) registerFloatingString name ; (getTocFontForLevel level) ; getTocColorForLevel level 
 end.
 (xx , yy) drawStringAt name
