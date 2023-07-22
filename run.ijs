@@ -153,8 +153,8 @@ VocMouseClickXY =: 0 0
 lastUpdateButtonCheckTime =: _10000000
 
 setUpdateButtons =: 3 : 0
-if. (((6!:1) '') - lastUpdateButtonCheckTime) < 60 * 60 do. return. end.
-lastUpdateButtonCheckTime =: (6!:1) ''
+NB. if. (((6!:1) '') - lastUpdateButtonCheckTime) < 60 * 60 do. return. end.
+NB. lastUpdateButtonCheckTime =: (6!:1) ''
 select. appUpToDate ''
 case. 0 do. appCap =. 'New add-on version available'
 case. 1 do. appCap =. 'Add-on is up to date' 
@@ -313,7 +313,7 @@ invalidateDisplay ''
 vizform_vocContext_mblup =: 3 : 0
 log 'vizform_vocContext_mblup'
 VocMouseClickXY =: 0 1 { ". > 1 { 13 { wdq
-setUpdateButtons ''
+NB. setUpdateButtons ''
 invalidateDisplay ''
 )
 
