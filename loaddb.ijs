@@ -350,7 +350,7 @@ offsets =. {."1 ol
 lengths =. {:"1 ol
 links =. ('https://www.jsoftware.com/pipermail/', y , '/')&, &. > lengths <@{."0 1 offsets }."0 1 mainPageHtml
 yearMonthHtml =. gethttp &. > links
-pat =. rxcomp '<LI><A HREF="([^"]+\.html)">\[J' , y , '\] ([^<]+)</A><A NAME="[^"]+">[^>]+</A>[^<]*<I>([^<]+)<'
+pat =. rxcomp '<LI><A HREF="([^"]+\.html)">[^ ]* ([^<]+)</A><A NAME="[^"]+">[^>]+</A>[^<]*<I>([^<]+)<'
 sqlcmd__db 'begin transaction'
 yearMonthPat =. rxcomp '<h1>([^ ]+) (\d\d\d\d)'
 cols =. ;: 'forumname year month subject author link'
@@ -366,7 +366,8 @@ for_boxedHtml. yearMonthHtml do.
 	subjects =. 1 {"1 matches
 	authors =. 2 {"1 matches
 	c =. # links
-	data =: (c # < 'J' , y) ; (c # year) ; (c # month) ; subjects ; authors ; < links
+  	data =: (c # < 'J' , y) ; (c # year) ; (c # month) ; subjects ; authors ; < links
+NB.	data =: (c # < {. y) ; (c # year) ; (c # month) ; subjects ; authors ; < links
 	sqlinsert__db 'forums' ; cols ; <data
 end.
 sqlcmd__db 'commit transaction'

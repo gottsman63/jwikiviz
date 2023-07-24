@@ -200,7 +200,7 @@ wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
-wd       'cc loadPost button; cn *Show in Context'
+wd       'cc loadPost button; cn *Show Post in Context'
 wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
@@ -494,7 +494,7 @@ NB. Return the links ; titles.
 log 'Searching wiki for ' , y , '...'
 NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Search&limit=1000&offset=0&profile=default&search=' , urlencode y
 NB. url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&for=' , urlencode y
-url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&blk=100&offset=0&for=' , urlencode y
+url =. 'https://code.jsoftware.com/mediawiki/index.php?title=Special%3AJwikiSearch&blk=300&offset=0&for=' , urlencode y
 html =. gethttp url
 pat =. rxcomp 'mw-search-result-heading"><a href="([^"]+)">([^<]+)<'
 offsetLengths =.  pat rxmatches html
@@ -534,7 +534,7 @@ try.
 log 'Searching forums for ' , y , '...'
 wikiCols =. ;: 'title categoryid link'
 NB. html =. (2!:0) 'curl "https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2030"'
-url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=100'
+url =.'https://www.jsoftware.com/cgi-bin/forumsearch.cgi?all=' , (urlencode y) , '&exa=&one=&exc=&add=&sub=&fid=&tim=0&rng=0&dbgn=1&mbgn=1&ybgn=1998&dend=31&mend=12&yend=2100&blk=300'
 html =. '-s' gethttp url
 pat =. rxcomp '(http://www.jsoftware.com/pipermail[^"]+)">\[([^\]]+)\] ([^<]+)</a>'
 offsetLengths =. pat rxmatches html
@@ -551,7 +551,8 @@ if. 0 < # offsetLengths do.
 	titleLengths =. 1 {"(1) 2 {"2 ol
 	links =. linkLengths <@{."0 1 linkOffsets }."0 1 html
 	links =. ('http://' ; 'https://')&rxrplc &. > links
-	forums =. forumLengths <@{."0 1 forumOffsets }."0 1 html
+	forums =. 'J'&, &. > > _3&{ &. > < ;. _2 &. > ,&'/' &. > links
+NB.	forums =. forumLengths <@{."0 1 forumOffsets }."0 1 html
 	titles =. titleLengths <@{."0 1 titleOffsets }."0 1 html
 	titleGroups =. forums </. titles
 	linkGroups =. forums </. links
@@ -559,7 +560,7 @@ if. 0 < # offsetLengths do.
 		fname =. > index { ~. forums
 		forumLinks =. > index { linkGroups
 		forumTitles =. > index { titleGroups
-		cols =. (;: 'level parentid categoryid category parentseq count link')
+		cols =. ;: 'level parentid categoryid category parentseq count link'
 		data =. 3 ; termId ; (nextUserCatId 1) ; fname ; (>: index) ; (# forumLinks) ; 'https://www.jsoftware.com/mailman/listinfo/' , }. fname
 		sqlinsert__db 'categories' ; cols ; < data
 		forumId =. termId getCategoryId fname
@@ -765,11 +766,12 @@ NB. y A url, possibly from a Forum
 NB. If it's from a Forum, return the forum name, link, month (Jan/Feb/...), and year.
 NB. If it's not from a Forum, return ''
 NB. Sample Forum url: https://www.jsoftware.com/pipermail/programming/2023-July/062652.html
-'link forumName piper' =. _1 _3 _4 { <;._2 y , '/'
-if. -. piper -: 'pipermail' do. '' return. end.
+if. 0  = +/ '/pipermail/' E. y do. '' return. end.
+'link forumName' =. _1 _3{ <;._2 y , '/'
 link =. 6 {. link
 forumName =. 'J' , forumName
 result =. , > {: sqlreadm__db 'select year, month from forums where forumname = "' , forumName , '" AND link = "' , link , '"'
+NB.  smoutput 'result' ; result
 'year monthIndex' =. result
 years =. , > {: sqlreadm__db 'select distinct year from forums where forumname = "' , forumName , '" order by year'
 forumName ; link ; (> monthIndex { ShortMonths) ; year
@@ -778,7 +780,7 @@ forumName ; link ; (> monthIndex { ShortMonths) ; year
 resetForumPostLoadButton =: 3 : 0
 NB. If the current page is a forum post, show the forum load button.
 NB. Note that we only want to do this if we're looking at Search results.
-LayoutForumPostLoadButtonEnable =: -. '' -: shouldShowPostLoadButton LastUrlLoaded
+LayoutForumPostLoadButtonEnable =: shouldShowPostLoadButton LastUrlLoaded
 layoutForm ''
 )
 
@@ -801,7 +803,7 @@ subjectIndex =. subjects i. < subject
 setTocEntryForumSubjectIndex subjectIndex
 authorIndex =. (< link) i.~ (4 {"1 ForumCacheTable) #~ (< subject) = 2 {"1 ForumCacheTable
 setTocEntryForumAuthorIndex authorIndex
-smoutput subjectIndex ; authorIndex ; (,.  subjects) ; subject
+NB. smoutput smoutput  'subjectIndex authorIndex subjects subject'  ; subjectIndex ; authorIndex ; (,.  subjects) ; subject
 invalidateDisplay ''
 )
 NB. ---------  End Managing URLs from the Forum --------
@@ -1179,7 +1181,7 @@ ForumMonthStrings =: monthIndexes { ShortMonths
 if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {: ForumMonthStrings end.
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
 timeLineHeight =. 20
-yearOrigins =. (xx + margin + 30 * i. # years) ,. yy + margin
+yearOrigins =. (xx + margin + 24 * i. # years) ,. yy + margin
 monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + 45 * i.12) ,. yy + margin + timeLineHeight
 yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
@@ -1187,7 +1189,7 @@ gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthOrigins drawStringAt &. > ForumMonthStrings
-rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 30 , TocLineHeight - 4) 
+rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 24 , TocLineHeight - 4) 
 yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 1
 rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight - 4) 
