@@ -21,6 +21,7 @@ NB. Test initial installation.
 NB. Forum search result "jump to thread" feature.  
 NB. Look for more trace opportunities.  
 NB. Should we check for new versions at other times?
+NB. Fix "TocEntryForumYear  =: 2023"
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -199,6 +200,7 @@ wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
+wd       'cc loadPost button; cn *Show in Context'
 wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
@@ -211,6 +213,7 @@ wd 'bin z;'
 
 LayoutRatio =: 1
 LayoutDirection =: 1
+LayoutForumPostLoadButtonEnable =: 0
 
 layoutForm =: 3 : 0
 log 'layoutForm'
@@ -223,16 +226,18 @@ LayoutRatio =: 0.8 <. 0.2 >. LayoutRatio + 0.1 * LayoutDirection
 if. w > 1500 do. LayoutRatio =: 0.5 end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
-	wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-	wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
-	wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-	wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
-	wd 'set vocContext minwh ' , (": 1 , 760) , ';'
-	wd 'set bookmark maxwh ' , (": (browserWidth * 0.15), controlHeight) , ';'
-	wd 'set history maxwh ' , (": (browserWidth * 0.6) , controlHeight) , ';'
-	wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
-	wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
+wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
+wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
+wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
+wd 'set vocContext minwh ' , (": 1 , 760) , ';'
+wd 'set loadPost maxwh ' , (": (browserWidth * 0.18), controlHeight) , ';'
+wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
+wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
+wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
+wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
+wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 )
 
 emphasizeBrowser =: 3 : 0
@@ -302,7 +307,7 @@ LogFlag =: ". logcheck
 
 vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
-if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
+NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 log 'vizform_vocContext_mmove'
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
@@ -332,6 +337,7 @@ url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
 if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
+resetForumPostLoadButton ''
 )
 
 vizform_searchBox_button =: 3 : 0
@@ -354,6 +360,11 @@ loadPage (". history_select) { getHistoryMenu ''
 vizform_launch_button =: 3 : 0
 log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
 launch_jbrowser_ > 0 { 0 { getHistoryMenu ''
+)
+
+vizform_loadPost_button =: 3 : 0
+log 'vizform_loadPost_button'
+loadForumPost ''
 )
 
 animate =: 3 : 0
@@ -742,6 +753,59 @@ invalidateDisplay ''
 resetBookmarkButton ''
 )
 
+NB. --------- Managing URLs from the Forum ---------
+shouldShowPostLoadButton =: 3 : 0
+NB. y A url, possibly from a Forum
+NB. Return 1 if the url is for a Forum post AND we're currently showing search results.
+1 *. -. '' -: reverseEngineerForumUrl y
+)
+
+reverseEngineerForumUrl =: 3 : 0
+NB. y A url, possibly from a Forum
+NB. If it's from a Forum, return the forum name, link, month (Jan/Feb/...), and year.
+NB. If it's not from a Forum, return ''
+NB. Sample Forum url: https://www.jsoftware.com/pipermail/programming/2023-July/062652.html
+'link forumName piper' =. _1 _3 _4 { <;._2 y , '/'
+if. -. piper -: 'pipermail' do. '' return. end.
+link =. 6 {. link
+forumName =. 'J' , forumName
+result =. , > {: sqlreadm__db 'select year, month from forums where forumname = "' , forumName , '" AND link = "' , link , '"'
+'year monthIndex' =. result
+years =. , > {: sqlreadm__db 'select distinct year from forums where forumname = "' , forumName , '" order by year'
+forumName ; link ; (> monthIndex { ShortMonths) ; year
+)
+
+resetForumPostLoadButton =: 3 : 0
+NB. If the current page is a forum post, show the forum load button.
+NB. Note that we only want to do this if we're looking at Search results.
+LayoutForumPostLoadButtonEnable =: -. '' -: shouldShowPostLoadButton LastUrlLoaded
+layoutForm ''
+)
+
+loadForumPost =: 3 : 0
+NB. Load the currently-displayed Forum post in the Forums section of the table of contents.
+NB. ForumCacheTable year ; month ; subject ; author ; link
+'forumName link month year' =. reverseEngineerForumUrl LastUrlLoaded
+entries =. 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
+setTocOutlineRailSelectedIndex (, 3 {"1 entries) i. < forumName
+resetForumCache forumName
+subject =. > (2 {"1 ForumCacheTable) {~ (4 {"1 ForumCacheTable) i. < link
+resetForumAuthorEntries < subject
+setTocEntryForumYear year
+setTocEntryForumMonth month
+calendarMonthIndex =. ShortMonths i. < TocEntryForumMonth
+entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. calendarMonthIndex = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
+allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. ~. 2 {"1 entries
+subjects =. ~. allSubjects
+subjectIndex =. subjects i. < subject
+setTocEntryForumSubjectIndex subjectIndex
+authorIndex =. (< link) i.~ (4 {"1 ForumCacheTable) #~ (< subject) = 2 {"1 ForumCacheTable
+setTocEntryForumAuthorIndex authorIndex
+smoutput subjectIndex ; authorIndex ; (,.  subjects) ; subject
+invalidateDisplay ''
+)
+NB. ---------  End Managing URLs from the Forum --------
+
 queueUrl =: 3 : 0
 NB. y A url to queue for delayed loading ; A title
 log 'queueUrl ' , (0 {:: y) , ' ' , 1 {:: y
@@ -1058,7 +1122,7 @@ setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
 'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
-queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
+queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
 )
 
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
@@ -1067,9 +1131,24 @@ ForumSubjectScrollIndex =: 0
 ForumAuthorScrollIndex =: 0
 ForumAuthorEntries =: ''  NB. Year ; Month ; Subject ; Author ; Link
 ForumMonthStrings =: ''
-ForumName =: ''
 ForumYearBumpCount =: 0
 ForumMonthBumpCount =: 0
+
+resetForumCache =: 3 : 0
+NB. y Forum name
+NB. Fill the forum cache with y's posts.
+NB. ForumCacheTable year ; month ; subject ; author ; link
+result =. > {: sqlreadm__db 'select year, month, subject, author, link from forums where forumname = "' , y , '" order by year desc, month asc'
+ForumCacheTable =: 0 1 2 3 4 {"1 result
+ForumCurrentName =: y
+TocEntryForumSubjectIndex =: 0
+ForumAuthorEntries =: ''
+)
+
+resetForumAuthorEntries =: 3 : 0
+NB. y Subject string  (boxed)
+ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = y  NB. Check all posts since conversations may span months.
+)
 
 drawTocEntryForum =: 4 : 0
 NB. x The name of the forum
@@ -1078,15 +1157,8 @@ NB. Display the contents of the forum
 NB. x y width height drawScrollerField strings ; links ; ratios ; levels ; selectedIndex ; scrollIndex
 log 'drawTocEntryForum ' , x , ' ' , (": TocEntryForumYear) , ' ' , ": TocEntryForumMonth
 if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
-ForumName =: x
 'xx yy width height' =. y
-if. -. ForumCurrentName -: x do. 
-	result =. > {: sqlreadm__db 'select year, month, subject, author, link from forums where forumname = "' , x , '" order by year desc, month asc'
-	ForumCacheTable =: 0 1 2 3 4 {"1 result
-	ForumCurrentName =: x
-	TocEntryForumSubjectIndex =: 0
-	ForumAuthorEntries =: ''
-end.
+if. -. ForumCurrentName -: x do. resetForumCache x end.
 margin =. 5
 glclip 0 0 10000 100000
 glrgb 0 0 0
@@ -1126,11 +1198,11 @@ rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 1
 calendarMonthIndex =. ShortMonths i. < TocEntryForumMonth
 entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. calendarMonthIndex = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
 if. 0 = # entries do. return. end.
-subjects =: ~. 2 {"1 entries
+subjects =. ~. 2 {"1 entries
 ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
 subjects =. ~. allSubjects
 subject =. TocEntryForumSubjectIndex { subjects 
-ForumAuthorEntries =: e /: 4 {"1 e =. ForumCacheTable #~ (2 {"1 ForumCacheTable) = subject  NB. Check all posts since conversations may span months.
+resetForumAuthorEntries subject
 authors =. 3 {"1 ForumAuthorEntries
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
