@@ -503,6 +503,8 @@ sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count paren
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Search' ; _1 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 30 ; '*Forums' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 40 ; '*Search' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 50 ; '*JSaurus' ; _1 ; 3 ; 'https://jsaurus.info/'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 60 ; '*JPlayground' ; _1 ; 3 ; 'https://jsoftware.github.io/j-playground/bin/html2/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1e6 ; '*Bookmarks' ; _1 ; 3 ; 'https://www.jsoftware.com/'
 )
 

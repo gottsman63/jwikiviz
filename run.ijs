@@ -231,7 +231,7 @@ wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , 
 wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
 wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
-wd 'set vocContext minwh ' , (": 1 , 760) , ';'
+NB. wd 'set vocContext minwh ' , (": 1 , 760) , ';'
 wd 'set loadPost maxwh ' , (": (browserWidth * 0.18), controlHeight) , ';'
 wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
