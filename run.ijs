@@ -352,6 +352,11 @@ catch. catcht.
 end.
 )
 
+vizform_searchBox_char =: 3 : 0
+log 'vizform_searchBox_char ' , searchBox
+liveSearch searchBox
+)
+
 vizform_history_select =: 3 : 0
 log 'vizform_history_select'
 loadPage (". history_select) { getHistoryMenu ''
@@ -658,6 +663,7 @@ ForumsCatString =: '*Forums'
 BookmarkCatString =: '*Bookmarks'
 SearchCatString =: '*Search'
 SearchHiddenCatId =: 200000
+LiveSearchCatString =: '*Live Search'
 TagCatString =: '*Tags'
 TagHiddenCatId =: 500000
 QueuedUrl =: ''
@@ -1127,6 +1133,77 @@ TocEntryForumAuthorIndex =: y
 queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
 )
 
+NB. ---------------------- Live Search ---------------------------
+indexDbFile =: '~temp/jsearch.db'
+liveSearchDb =: ''
+
+openLiveSearchDb =: 3 : 0
+if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ indexDbFile end.
+)
+
+jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco'
+jMnemonics =: , &. > 0 {"1 jEnglishDict
+jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
+  
+LiveSearchResults =: ''
+
+createQuery =: 3 : 0
+NB. y Text with J mnemonics and English words
+NB. Convert the J mnemonics to JEnglish.
+NB. Return a NEAR query of JEnglish tokens and English tokens
+raw =. ('''' ; '''''') rxrplc y
+rawTokens =. ;: raw
+hits =. jMnemonics i."1 0 rawTokens
+tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
+englishPortion =. tokens -. jEnglishWords
+jPortion =. tokens -. englishPortion	
+'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 30)'
+)
+
+translateToJ =: 3 : 0
+NB. y A string possibly containing JEnglish tokens
+tokens =. ;: y
+hits =. jEnglishWords i."1 0 tokens
+; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
+)
+
+liveSearch =: 3 : 0
+NB. y A mixed English/J query string
+NB. Treat the J code as a quoted phrase for query purposes.
+NB. Treat the English (non-J) tokens separately in the query.
+NB. Return a table of title ; Snippet ; Url
+openLiveSearchDb ''
+query =. createQuery y
+result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 15), url from jindex where body MATCH ''' , query , ''' order by rank'
+snippets =. translateToJ &. > 1 {"1 result
+results =. (0 {"1 result) ,. snippets ,. 2 {"1 result
+uniques =. (~: snippets) # results
+LiveSearchResults =: uniques
+smoutput LiveSearchResults
+)
+
+translateToJEnglish =: 3 : 0
+NB. y Text with J mnemonics and English words
+NB. Convert the J mnemonics to JEnglish.
+raw =. ('''' ; '''''') rxrplc y
+rawTokens =. ;: raw
+hits =. jMnemonics i."1 0 rawTokens
+string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+)
+
+drawTocEntryLiveSearch =: 3 : 0
+NB. y xx yy width height
+NB. Display the results of the current search against the local database.
+glclip 0 0 10000 100000
+glrgb 0 0 0
+glpen 1
+glrgb BackgroundColor
+glbrush ''
+glrect xx , yy , width , height
+if. LiveSearchResults -: '' do. return. end.
+)
+NB. ---------------------- End Live Search ------------------------
+
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
 ForumCurrentName =: ''
 ForumSubjectScrollIndex =: 0
@@ -1419,6 +1496,8 @@ elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent 
 	(> 3 { entry) drawTocEntryForum y
 elseif. TagCatString -: > 3 { entry do.
 	drawTocEntryTags y
+elseif. LiveSearchCatString -: > 3 { entry do.
+	drawTocEntryLiveSearch y
 elseif. (< SearchCatString) = 3 { entry do.
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree y
 else.
