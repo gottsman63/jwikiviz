@@ -355,6 +355,7 @@ end.
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox
 liveSearch searchBox
+animate 5
 )
 
 vizform_history_select =: 3 : 0
@@ -1145,7 +1146,7 @@ jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ;
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
   
-LiveSearchResults =: ''
+LiveSearchResults =: '' NB. Title ; Snippet ; URL
 
 createQuery =: 3 : 0
 NB. y Text with J mnemonics and English words
@@ -1174,12 +1175,11 @@ NB. Treat the English (non-J) tokens separately in the query.
 NB. Return a table of title ; Snippet ; Url
 openLiveSearchDb ''
 query =. createQuery y
-result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 15), url from jindex where body MATCH ''' , query , ''' order by rank'
+result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 15), url from jindex where body MATCH ''' , query , ''' order by rank limit 50'
 snippets =. translateToJ &. > 1 {"1 result
 results =. (0 {"1 result) ,. snippets ,. 2 {"1 result
 uniques =. (~: snippets) # results
 LiveSearchResults =: uniques
-smoutput LiveSearchResults
 )
 
 translateToJEnglish =: 3 : 0
@@ -1194,13 +1194,20 @@ string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
 NB. Display the results of the current search against the local database.
+'xx yy width height' =. y
 glclip 0 0 10000 100000
 glrgb 0 0 0
 glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
-if. LiveSearchResults -: '' do. return. end.
+if. 0 = # LiveSearchResults do. return. end.
+results =. (<. height % TocLineHeight) {. LiveSearchResults
+colWidth =. <. -: width - 10
+glclip xx , yy , colWidth , height
+snippetOrigins =. (xx + 5) ,. TocLineHeight * i. # results
+(<"1 snippetOrigins) drawStringAt &. > 1 {"1 results
+glclip 0 0 10000 100000
 )
 NB. ---------------------- End Live Search ------------------------
 
