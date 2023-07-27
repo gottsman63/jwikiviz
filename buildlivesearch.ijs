@@ -29,6 +29,7 @@ NB. Return plain text
 pat =. '<(?:"[^"]*"[''"]*|''[^'']*''[''"]*|[^''">])+>'
 raw =. (pat ; '') rxrplc y
 ('&amp;' ; '&') rxrplc y
+('&quot;' ; '"') rxrplc y
 )
 
 createQuery =: 3 : 0

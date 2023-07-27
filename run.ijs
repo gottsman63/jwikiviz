@@ -354,8 +354,7 @@ end.
 
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox
-liveSearch searchBox
-animate 5
+animate 3
 )
 
 vizform_history_select =: 3 : 0
@@ -652,7 +651,7 @@ CategoryIndex =: 0
 CategoryTable =: ''
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
 TocFont =: 'arial 13'
-NB. TocBoldFont =: 'arial bold 14'
+LiveSearchFont =: 'courier 14'
 TocLineHeight =: 25
 TocScrollIndex =: 0
 MaxTocDepth =: 3
@@ -705,8 +704,10 @@ NB.	log 'drawStringAt ' , (": x) , ' ' , y
 	gltextxy x
 	gltext y
 catch.
-	smoutput 'Could not drawStringAt' ; x ; y
-	log 'Could not drawStringAt' ; x ; y 
+	log 'drawStringAt ' , (": x) , ' ' , y
+	log 'Error in drawStringAt: ' , (13!:12) ''
+NB.	smoutput 'Could not drawStringAt' ; x ; y
+NB.	log 'Could not drawStringAt' ; x ; y 
 end.
 )
 
@@ -896,7 +897,7 @@ FloatingStringRect =: ''
 registerFloatingString =: 4 : 0
 NB. x xx yy width height
 NB. y string ; font ; textColor
-log 'registerFloatingString ' , ": x
+log 'registerFloatingString ' , (": x) 
 FloatingStringRect =: x
 FloatingString =: y
 )
@@ -919,7 +920,9 @@ glrect rect
 glrgb textColor
 gltextcolor ''
 (2 {. rect) drawStringAt string
-rect drawHighlight HoverColor
+NB. if. (2 { FloatingStringRect) < width do.
+	rect drawHighlight HoverColor
+NB. end.
 FloatingStringRect =: ''
 FloatingString =: ''
 )
@@ -1147,6 +1150,7 @@ jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
   
 LiveSearchResults =: '' NB. Title ; Snippet ; URL
+LastLiveSearchQuery =: ''
 
 createQuery =: 3 : 0
 NB. y Text with J mnemonics and English words
@@ -1158,7 +1162,7 @@ hits =. jMnemonics i."1 0 rawTokens
 tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
 englishPortion =. tokens -. jEnglishWords
 jPortion =. tokens -. englishPortion	
-'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 30)'
+'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 100)'
 )
 
 translateToJ =: 3 : 0
@@ -1169,17 +1173,20 @@ hits =. jEnglishWords i."1 0 tokens
 )
 
 liveSearch =: 3 : 0
-NB. y A mixed English/J query string
+NB. y Empty
 NB. Treat the J code as a quoted phrase for query purposes.
 NB. Treat the English (non-J) tokens separately in the query.
 NB. Return a table of title ; Snippet ; Url
-openLiveSearchDb ''
-query =. createQuery y
-result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 15), url from jindex where body MATCH ''' , query , ''' order by rank limit 50'
+if. searchBox -: LastLiveSearchQuery do. return. end.
+LastLiveSearchQuery =: searchBox
+try. openLiveSearchDb '' catch. return. end.
+query =. createQuery searchBox
+result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 8), url from jindex where body MATCH ''' , query , ''' order by rank limit 1000'
 snippets =. translateToJ &. > 1 {"1 result
 results =. (0 {"1 result) ,. snippets ,. 2 {"1 result
 uniques =. (~: snippets) # results
 LiveSearchResults =: uniques
+NB. smoutput LiveSearchResults
 )
 
 translateToJEnglish =: 3 : 0
@@ -1201,13 +1208,34 @@ glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
+glfont LiveSearchFont
+colSep =: 20
+liveSearch ''
 if. 0 = # LiveSearchResults do. return. end.
 results =. (<. height % TocLineHeight) {. LiveSearchResults
-colWidth =. <. -: width - 10
+titles =. 0 {"1 results
+snippets =. 1 {"1 results
+links =. 2 {"1 results
+colWidth =. <. -: width - colSep
 glclip xx , yy , colWidth , height
 snippetOrigins =. (xx + 5) ,. TocLineHeight * i. # results
-(<"1 snippetOrigins) drawStringAt &. > 1 {"1 results
+(<"1 snippetOrigins) drawStringAt &. > snippets
+titleOrigins =. (xx + colSep + colWidth) ,. TocLineHeight * i. # results
+glclip (xx + 5 + colWidth) , yy , colWidth , height
+(<"1 titleOrigins) drawStringAt &. > titles
 glclip 0 0 10000 100000
+(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. snippets ,. (# snippets) # < 1
+(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
+if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
+	title =. > titleIndex { titles
+	floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
+	floatRect registerFloatingString title ; LiveSearchFont ; 0 0 0
+end.
+if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
+	snippet =. > snippetIndex { snippets
+	floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
+	floatRect registerFloatingString snippet ; LiveSearchFont ; 0 0 0
+end.
 )
 NB. ---------------------- End Live Search ------------------------
 
