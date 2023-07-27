@@ -194,8 +194,11 @@ wd       'cc shortcut button;cn Shortcut...;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
-wd     'bin z'
-wd     'cc dbUpdate button; cn Haha!;'
+wd     'bin z;'
+wd     'bin h;'
+wd       'cc dbUpdate button; cn Haha!;'
+wd       'cc appUpdate button; cn Wocka!;'
+wd     'bin z;'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
@@ -205,15 +208,19 @@ wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
 wd     'bin z;'
-wd     'cc appUpdate button; cn Wocka!;'
+wd     'bin h;'
+wd       'cc shrinkBrowser button ; cn *> Shrink Browser <'
+wd       'cc expandBrowser button ; cn *< Expand Browser >'
+wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
 )
 
-LayoutRatio =: 1
-LayoutDirection =: 1
 LayoutForumPostLoadButtonEnable =: 0
+
+LayoutRatio =: 0.5
+LayoutRatioTarget =: 0.5
 
 layoutForm =: 3 : 0
 log 'layoutForm'
@@ -222,8 +229,14 @@ winW =. w - 40
 winH =. h - 45
 controlHeight =. 30
 vocContextHeight =. winH >. 760
-LayoutRatio =: 0.8 <. 0.2 >. LayoutRatio + 0.1 * LayoutDirection
-if. w > 1500 do. LayoutRatio =: 0.5 end.
+NB. LayoutRatio =: 0.8 <. 0.2 >. LayoutRatio + 0.1 * LayoutDirection
+NB. if. w > 1500 do. LayoutRatio =: 0.5 end.
+if. 0.1 < | LayoutRatioTarget - LayoutRatio do.
+	sgn =. LayoutRatioTarget - LayoutRatio
+	LayoutRatio =: LayoutRatio + sgn * 0.1 <. | LayoutRatioTarget - LayoutRatio
+else.
+	LayoutRatio =: LayoutRatioTarget
+end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
 wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
@@ -238,22 +251,33 @@ wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
 wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
+if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 )
 
-emphasizeBrowser =: 3 : 0
-log 'emphasizeBrowser'
-if. LayoutDirection = _1 do. return. end.
-LayoutDirection =: _1
-animate 20
-NB. layoutForm ''
+setLayoutRatioBrowser =: 3 : 0
+if. LayoutRatioTarget < 0.4 do. return. end.
+'w h' =. ". wd 'getp wh'
+centerW =. w * LayoutRatio
+if. w < 1500 do. NB. Small screen
+	LayoutRatioTarget =: 0.2
+else.
+	LayoutRatioTarget =: 0.5
+end.
+animate 2
 )
 
-deemphasizeBrowser =: 3 : 0
-log 'deemphasizeBrowser'
-if. LayoutDirection = 1 do. return. end.
-LayoutDirection =: 1
-animate 20
+setLayoutRatioToc =: 3 : 0
+if. LayoutRatioTarget > 0.6 do. return. end.
+'w h' =. ". wd 'getp wh'
+centerW =. w * LayoutRatio
+if. w < 1500 do. NB. Small screen
+	LayoutRatioTarget =: 0.8
+else.
+	LayoutRatioTarget =: 0.5
+end.
+animate 2
 )
+
 
 vizform_default =: 3 : 0
 eventType =. > {: 5 { wdq
@@ -281,6 +305,16 @@ vizform_close ''
 
 vizform_vocContext_escape =: 3 : 0
 vizform_close ''
+)
+
+vizform_expandBrowser_button =: 3 : 0
+LayoutRatioTarget =: 0.2
+animate 2
+)
+
+vizform_shrinkBrowser_button =: 3 : 0
+LayoutRatioTarget =: 0.8
+animate 2
 )
 
 vizform_bookmark_button =: 3 : 0
@@ -311,7 +345,7 @@ NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 log 'vizform_vocContext_mmove'
 if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
-deemphasizeBrowser ''
+setLayoutRatioToc ''
 invalidateDisplay ''
 )
 
@@ -328,7 +362,7 @@ trigger_paint ''
 
 vizform_browser_mmove =: 3 : 0
 clearQueuedUrl ''
-emphasizeBrowser ''
+setLayoutRatioBrowser ''
 )
 
 vizform_browser_curl =: 3 : 0
@@ -651,7 +685,7 @@ CategoryIndex =: 0
 CategoryTable =: ''
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
 TocFont =: 'arial 13'
-LiveSearchFont =: 'courier 14'
+LiveSearchFont =: 'courier 16'
 TocLineHeight =: 25
 TocScrollIndex =: 0
 MaxTocDepth =: 3
@@ -1181,7 +1215,7 @@ if. searchBox -: LastLiveSearchQuery do. return. end.
 LastLiveSearchQuery =: searchBox
 try. openLiveSearchDb '' catch. return. end.
 query =. createQuery searchBox
-result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 8), url from jindex where body MATCH ''' , query , ''' order by rank limit 1000'
+result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 15), url from jindex where body MATCH ''' , query , ''' order by rank limit 1000'
 snippets =. translateToJ &. > 1 {"1 result
 results =. (0 {"1 result) ,. snippets ,. 2 {"1 result
 uniques =. (~: snippets) # results
@@ -1212,7 +1246,7 @@ glfont LiveSearchFont
 colSep =: 20
 liveSearch ''
 if. 0 = # LiveSearchResults do. return. end.
-results =. (<. height % TocLineHeight) {. LiveSearchResults
+results =. ((# LiveSearchResults) <. <. height % TocLineHeight) {. LiveSearchResults
 titles =. 0 {"1 results
 snippets =. 1 {"1 results
 links =. 2 {"1 results
@@ -1226,6 +1260,7 @@ glclip (xx + 5 + colWidth) , yy , colWidth , height
 glclip 0 0 10000 100000
 (snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. snippets ,. (# snippets) # < 1
 (titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
+smoutput '# titleRects' ; # titleRects
 if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
 	title =. > titleIndex { titles
 	floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
