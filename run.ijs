@@ -1258,9 +1258,8 @@ titleOrigins =. (xx + colSep + colWidth) ,. TocLineHeight * i. # results
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 titleOrigins) drawStringAt &. > titles
 glclip 0 0 10000 100000
-(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. snippets ,. (# snippets) # < 1
+(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
 (titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
-smoutput '# titleRects' ; # titleRects
 if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
 	title =. > titleIndex { titles
 	floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
