@@ -9,10 +9,8 @@ load 'gl2'
 coinsert 'jgl2'
 
 NB. *** Wiki Meeting Discussion Items ***
-NB. In what environment does JWikiViz run? "JQt"? Something else?
-NB. Will inline images get through the mailing list engine?
 NB. How should we handle bug reports?  General feedback? "Bugs/Feedback" button that would do what?
-NB. Windows test.
+NB. Fix WGET.
 NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
@@ -1910,7 +1908,7 @@ fexist targetDbPath
 
 isOnTheNetwork =: 3 : 0
 NB. Return 1 if we can connect to the CDN.
-0 < # ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+0 < # gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/upload.test?cache=false'
 )
 
 checkForNewerDatabase =: 3 : 0
@@ -1931,7 +1929,11 @@ catcht.
 	2
 	return.
 end.
-head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+if. IFWGET_wgethttp_ do.
+	head =. '-S --spider -o -' gethttp '"https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false"'
+else.
+	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+end.
 if. 0 = # head do.
 	3 
 	return. 
