@@ -1930,7 +1930,7 @@ catcht.
 	return.
 end.
 if. IFWGET_wgethttp_ do.
-	head =. '-S --spider -o -' gethttp '"https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false"'
+	head =. '-S --save-headers -O -' gethttp '"https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false"'
 else.
 	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 end.
@@ -1943,7 +1943,11 @@ remoteHash =. n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
 )
 
 downloadLatestStageDatabase =: 3 : 0
-('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+if. IFWGET_wgethttp_ do.
+	('-O "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+else.
+	('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+end.
 )
 
 downloadAndTransferDatabase =: 3 : 0
@@ -1970,7 +1974,11 @@ if. fexist stageDbPath do.
 	targetDbPath frename stageDbPath
 	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 end.
-head =. ('-s --head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+if. IFWGET_wgethttp_ do.
+	head =. '-S -O -' gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+else.
+	head =. ('-s --head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+end.
 hash =: n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
 try. (1!:22) < targetDbPath catch. end.
 dbOpenDb ''
@@ -2035,6 +2043,12 @@ wd 'pshow maximized'
 
 go_z_ =: 3 : 0
 go_jwikiviz_ ''
+)
+
+test_z_ =: 3 : 0
+smoutput 'head' ; '-S --save-headers -O -' gethttp 'https://www.google.com?cache=false'
+k =. (2!:0) 'wget -S --save-headers -O - "https://www.google.com"'
+smoutput 'k' ; k
 )
 
 cocurrent 'base'
