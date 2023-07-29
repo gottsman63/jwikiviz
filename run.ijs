@@ -52,7 +52,8 @@ log 'appUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
-		v2 =. manifest_version '--header="Cache-Control: no-cache, no-store, must-revalidate" ' , gethttp githubUrl
+		v2 =. manifest_version c =. '-O - --header "Cache-Control: no-cache, no-store, must-revalidate" ' gethttp githubUrl
+smoutput 'v2' ; v2 ; c
 NB.		v2 =. manifest_version (2!:0) 'wget --header="Cache-Control: no-cache, no-store, must-revalidate"'
 	else.
 		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
@@ -1955,7 +1956,6 @@ NB. Fixing that would reduce the add-on's start-up time under Linux.
 else.
 	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 end.
-smoutput 'head' ; (# head) ; _50  ]\ 1000 {. head
 if. 0 = # head do.
 	3 
 	return. 
