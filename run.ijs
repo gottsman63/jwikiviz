@@ -53,7 +53,6 @@ try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
 		v2 =. manifest_version c =. '-O - --header "Cache-Control: no-cache, no-store, must-revalidate" ' gethttp githubUrl
-smoutput 'v2' ; v2 ; c
 NB.		v2 =. manifest_version (2!:0) 'wget --header="Cache-Control: no-cache, no-store, must-revalidate"'
 	else.
 		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
