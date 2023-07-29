@@ -44,11 +44,11 @@ manifest_version=: {{
   VERSION
 }}
 
-appUpToDate =: 3 : 0
+checkAppUpToDate =: 3 : 0
 NB. Return 0 if the app is out of date.
 NB. Return 1 if the app is up to date.
 NB. Return 2 if we failed to get a remote version number.
-log 'appUpToDate'
+log 'checkAppUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
@@ -159,7 +159,7 @@ lastUpdateButtonCheckTime =: _10000000
 setUpdateButtons =: 3 : 0
 NB. if. (((6!:1) '') - lastUpdateButtonCheckTime) < 60 * 60 do. return. end.
 NB. lastUpdateButtonCheckTime =: (6!:1) ''
-select. appUpToDate ''
+select. checkAppUpToDate ''
 case. 0 do. appCap =. 'New add-on version available'
 case. 1 do. appCap =. 'Add-on is up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
