@@ -51,7 +51,12 @@ NB. Return 2 if we failed to get a remote version number.
 log 'appUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
-	v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
+	if. IFWGET_wgethttp_ do.
+		v2 =. manifest_version '--header="Cache-Control: no-cache, no-store, must-revalidate" ' , gethttp githubUrl
+NB.		v2 =. manifest_version (2!:0) 'wget --header="Cache-Control: no-cache, no-store, must-revalidate"'
+	else.
+		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
+	end.
 NB.	smoutput 'JWikiViz Versions' ; v1 ; v2
 	if. v2 -: 'none' do. 2 return. end.
 	if. v1 -: v2 do. 1 return. end.
@@ -707,6 +712,7 @@ PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 LogFlag =: 0
+XFileHashLabel =: > IFWGET_wgethttp_ { 'x-file-hash: ' ; 'X-File-Hash: '
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
@@ -1923,22 +1929,13 @@ try.
 	localHash =. , > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
 	if. 0 = # localHash do. 
 		2
-	return. 
+		return. 
 	end.
 catcht.
 	2
 	return.
 end.
-if. IFWGET_wgethttp_ do.
-	head =. '-S --save-headers -O -' gethttp '"https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false"'
-else.
-	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-end.
-if. 0 = # head do.
-	3 
-	return. 
-end.
-remoteHash =. n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
+remoteHash =. getRemoteDatabaseHash ''
 -. localHash -: remoteHash
 )
 
@@ -1948,6 +1945,22 @@ if. IFWGET_wgethttp_ do.
 else.
 	('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 end.
+)
+
+getRemoteDatabaseHash =: 3 : 0
+if. IFWGET_wgethttp_ do.
+ 	head =. '-S -q --save-headers -O -' gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+NB. Note that this gethttp invocation, despite the options, returns the body of the file as well as the header.
+NB. Fixing that would reduce the add-on's start-up time under Linux.
+else.
+	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+end.
+smoutput 'head' ; (# head) ; _50  ]\ 1000 {. head
+if. 0 = # head do.
+	3 
+	return. 
+end.
+n {.~ LF i.~ n =. (13 + I. XFileHashLabel E. head) }. head
 )
 
 downloadAndTransferDatabase =: 3 : 0
@@ -1974,18 +1987,17 @@ if. fexist stageDbPath do.
 	targetDbPath frename stageDbPath
 	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 end.
-if. IFWGET_wgethttp_ do.
-	head =. '-S -O -' gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-else.
-	head =. ('-s --head') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-end.
-hash =: n {.~ LF i.~ n =. (13 + I. 'x-file-hash: ' E. head) }. head
+hash =. getRemoteDatabaseHash ''
+smoutput 'downloadLatestStageDatabase: ' ; hash
 try. (1!:22) < targetDbPath catch. end.
 dbOpenDb ''
 sqlclose__db ''
 dbOpenDb ''
+smoutput 'About to insert hash into admin table...'
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
+smoutput '...succeeded.'
 clearCache ''
+smoutput 'downloadLatestStageDatabase succeeded.'
 )
 
 
@@ -2046,6 +2058,7 @@ go_jwikiviz_ ''
 )
 
 test_z_ =: 3 : 0
+NB. 	head =. (2!:0) 'wget -S --save-headers -O - https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 smoutput 'head' ; '-S --save-headers -O -' gethttp 'https://www.google.com?cache=false'
 k =. (2!:0) 'wget -S --save-headers -O - "https://www.google.com"'
 smoutput 'k' ; k
