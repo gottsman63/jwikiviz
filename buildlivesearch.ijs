@@ -13,14 +13,18 @@ dbError =: 3 : 0
 sqlerror__db ''
 )
 
-createDatabase =: 3 : 0
+createIndexDatabase =: 3 : 0
 try. (1!:55) < indexDbFile catch. end.
 try.
 	db =: sqlcreate_psqlite_ indexDbFile
-	sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (title, url, body)'
+	sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (title, linksource, partiallink, body)'
 catcht.
 smoutput sqlerror__db ''
 end.
+)
+
+openIndexDatabase =: 3 : 0
+db =: sqlopen_psqlite_ indexDbFile
 )
 
 extractTextFromForumPost =: 3 : 0
@@ -81,12 +85,12 @@ snippets =. translateToJ &. > 1 {"1 result
 )
 
 saveDocument =: 3 : 0
-NB. y The URL of a document to index ; The title of a document from the Forum to index ; The html
-'url title html' =. y
-cols =. ;: 'title url body'
+NB. y url ; title ; linkSource ; partialLink ; html
+'url title linkSource partialLink html' =. y
+cols =. ;: 'title linksource partiallink body'
 text =: extractTextFromForumPost html
 jEnglishText =. translateToJEnglish title , ' ' , text
-sqlinsert__db 'jindex' ; cols ; < title ; url ; jEnglishText
+sqlinsert__db 'jindex' ; cols ; < title ; linkSource ; partialLink ; jEnglishText
 )
 
 translateToJEnglish =: 3 : 0
@@ -112,39 +116,45 @@ while. (10 <. <: {: 8 T. '') > 1 T. '' do. 0 T. 0 end.
 )
 
 getHtml =: 3 : 0
-NB. y Index of a url in UrlTitles
-(2!:1) 'curl -o "' , jpath '~temp/html/' , (": y) , '.html" ' , (> 0 { y { UrlTitles) , '&'
+NB. y urls
+NB. Return a list of boxed html, one for each url
+files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. # y
+urlSpec =. ; y ,. <' '
+outputSpec =. ; (<' -o ') ,. files
+command =. 'curl ' , outputSpec , ' ' , urlSpec
+(2!:0) command
+<@(1!:1)"0 files
+NB. (2!:0) 'curl -O "' , jpath '~temp/html/' , (": y) , '.html" ' , (> 0 { y { UrlTitles) NB. , '&'
 )
 
 server =: 3 : 0
-n =. i. # UrlTitles
-window =. 10
-getHtml"0 window {. n
-n =. window }. n
+window =. 50
 path =. jpath '~temp/html/'
-while. 1 do.
-	files =. , 0 {"1 (1!:0) < path , '*.html'
-	fullPaths =. path&, &. > files
-	indices =. > ".@-.&' '@": &. > a: -.~ <;._2 '0123456789' i. ; files
-	html =. <@(1!:1)"0 fullPaths
-	saveDocument"1 (indices { UrlTitles) ,. html
-	getHtml"0 (# indices) {. n
-	n =. (# indices) }. n 
-	(1!:55)"0 fullPaths
-	getHtml"0 (# indices) {. n
-	(6!:3) 1
+while. 0 < # UrlTitles do.
+	actualWindow =. window <. # UrlTitles
+	entries =. actualWindow {. UrlTitles NB. url ; title ; source ; partialLink
+	getHtmlTime =. (6!:2) 'html =. getHtml 0 {"1 entries'
+	saveDocumentTime =. (6!:2) 'saveDocument"1 entries ,. html'
+	UrlTitles =: actualWindow }. UrlTitles
+	smoutput 'getHtmlTime' ; getHtmlTime ; 'saveDocumentTime' ; saveDocumentTime
+	wd 'msgs'
 end.
 )
 
 buildDatabase =: 3 : 0
-createDatabase ''
+createIndexDatabase ''
+NB. openIndexDatabase ''
 wikiDb =: sqlopen_psqlite_ '~temp/jwikiviz.db'
 NB. result2 =. > {: sqlreadm__wikiDb 'select title, link from wiki '
 NB. urls2 =. 'https://code.jsoftware.com/'&, &. > 1 {"1 result2
 NB. (0 {"1 result2) saveUrl &. > urls2
-result =: > {: sqlreadm__wikiDb 'select forumname, year, month, subject, author, link from forums'
-urls =: convertToForumUrl"1 result
-titles =: 3 {"1 result
-UrlTitles =: urls ,. titles
+forumResult =: > {: sqlreadm__wikiDb 'select forumname, year, month, subject, author, link from forums'
+partialForumLinks =. 5 {"1 forumResult
+NB. alreadyLoadedPartialLinks =. > {: sqlreadm__db 'select partiallink from jindex where linksource = "F"'
+NB. (partialLinks i. alreadyLoadedPartialLinks) -. # partialLinks
+forumUrls =: convertToForumUrl"1 forumResult
+forumTitles =: 3 {"1 forumResult
+UrlTitles =: forumUrls ,. forumTitles ,. (< 'F') ,. partialForumLinks
+smoutput 5 {. UrlTitles
 server ''
 )
