@@ -23,6 +23,21 @@ smoutput sqlerror__db ''
 end.
 )
 
+extractTextFromForumPost =: 3 : 0
+NB. y The text of a Forum post
+startPost =. '<!--beginarticle-->'
+endPost =. '<!--endarticle-->'
+try.
+result =. p {.~ I. endPost E. p =. ((# startPost) + I. startPost E. y) }. y
+catch.
+smoutput 'Failure!'
+smoutput y
+''
+return.
+end.
+result
+)
+
 extractText =: 3 : 0
 NB. y HTML from which to extract plain text
 NB. Return plain text
@@ -65,14 +80,13 @@ snippets =. translateToJ &. > 1 {"1 result
 (0 {"1 result) ,. snippets ,. 2 {"1 result
 )
 
-saveUrl =: 4 : 0
-NB. x The title of a document to index
-NB. y The URL of a document to index
+saveDocument =: 3 : 0
+NB. y The URL of a document to index ; The title of a document from the Forum to index ; The html
+'url title html' =. y
 cols =. ;: 'title url body'
-html =. gethttp y
-text =: extractText html
-jEnglishText =. translateToJEnglish text
-sqlinsert__db 'jindex' ; cols ; < x ; y ; jEnglishText
+text =: extractTextFromForumPost html
+jEnglishText =. translateToJEnglish title , ' ' , text
+sqlinsert__db 'jindex' ; cols ; < title ; url ; jEnglishText
 )
 
 translateToJEnglish =: 3 : 0
@@ -93,13 +107,44 @@ months =. ;:'January February March April May June July August September October
 < 'https://www.jsoftware.com/pipermail/' , (}. name) , '/' , (": year) , '-' , (> month { months) , '/' , link , '.html'
 )
 
+threads =: 3 : 0
+while. (10 <. <: {: 8 T. '') > 1 T. '' do. 0 T. 0 end.
+)
+
+getHtml =: 3 : 0
+NB. y Index of a url in UrlTitles
+(2!:1) 'curl -o "' , jpath '~temp/html/' , (": y) , '.html" ' , (> 0 { y { UrlTitles) , '&'
+)
+
+server =: 3 : 0
+n =. i. # UrlTitles
+window =. 10
+getHtml"0 window {. n
+n =. window }. n
+path =. jpath '~temp/html/'
+while. 1 do.
+	files =. , 0 {"1 (1!:0) < path , '*.html'
+	fullPaths =. path&, &. > files
+	indices =. > ".@-.&' '@": &. > a: -.~ <;._2 '0123456789' i. ; files
+	html =. <@(1!:1)"0 fullPaths
+	saveDocument"1 (indices { UrlTitles) ,. html
+	getHtml"0 (# indices) {. n
+	n =. (# indices) }. n 
+	(1!:55)"0 fullPaths
+	getHtml"0 (# indices) {. n
+	(6!:3) 1
+end.
+)
+
 buildDatabase =: 3 : 0
 createDatabase ''
 wikiDb =: sqlopen_psqlite_ '~temp/jwikiviz.db'
 NB. result2 =. > {: sqlreadm__wikiDb 'select title, link from wiki '
 NB. urls2 =. 'https://code.jsoftware.com/'&, &. > 1 {"1 result2
 NB. (0 {"1 result2) saveUrl &. > urls2
-result =. > {: sqlreadm__wikiDb 'select forumname, year, month, subject, author, link from forums'
-urls =. convertToForumUrl"1 result
-(3 {"1 result) saveUrl &. > urls
+result =: > {: sqlreadm__wikiDb 'select forumname, year, month, subject, author, link from forums'
+urls =: convertToForumUrl"1 result
+titles =: 3 {"1 result
+UrlTitles =: urls ,. titles
+server ''
 )
