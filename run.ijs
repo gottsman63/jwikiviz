@@ -1331,7 +1331,8 @@ ForumMonthStrings =: monthIndexes { ShortMonths
 if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {: ForumMonthStrings end.
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
 timeLineHeight =. 20
-yearOrigins =. (xx + margin + 24 * i. # years) ,. yy + margin
+yearWidth =. 30
+yearOrigins =. (xx + margin + yearWidth * i. # years) ,. yy + margin
 monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + 45 * i.12) ,. yy + margin + timeLineHeight
 yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
@@ -1339,10 +1340,10 @@ gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthOrigins drawStringAt &. > ForumMonthStrings
-rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) 24 , TocLineHeight - 4) 
+rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) yearWidth , TocLineHeight) 
 yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 1
-rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight - 4) 
+rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) 
 monthCommands =. '*setTocEntryForumMonth '''&, &. > ": &. > ,&'''' &. > ForumMonthStrings
 rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 1
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
@@ -1949,9 +1950,7 @@ end.
 
 getRemoteDatabaseHash =: 3 : 0
 if. IFWGET_wgethttp_ do.
- 	head =. '-S -q --save-headers -O -' gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-NB. Note that this gethttp invocation, despite the options, returns the body of the file as well as the header.
-NB. Fixing that would reduce the add-on's start-up time under Linux.
+	head =. (2!:0) s =. 'wget -o - -S --spider ' , ' https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 else.
 	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
 end.
