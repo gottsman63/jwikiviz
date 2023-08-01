@@ -1005,7 +1005,7 @@ NB. Note that since we're frame-based, we re-register rect/links on every frame.
 NB. just check immediately to see whether the mouse is inside the rect and activate accordingly.
 'urlCommand name loadMode' =. y
 NB. if. isFrozen '' do. 0 return. end.
-if. urlCommand -: LastUrlCommandSelected do. 
+if. ('*' ~: {. urlCommand) *. urlCommand -: LastUrlCommandSelected do. 
 	x drawReversibleSelection SelectionColor 
 end.
 if. -. VocMouseXY pointInRect x do. 0 return. end.
@@ -1203,7 +1203,12 @@ queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' ,
 NB. ---------------------- Live Search ---------------------------
 indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
-liveSearchYear =: 2000
+liveSearchPageIndex =: 0
+
+setLiveSearchPageIndex =: 3 : 0
+liveSearchPageIndex =: y
+invalidateDisplay ''
+)
 
 openLiveSearchDb =: 3 : 0
 if. liveSearchDb -: '' do. try. liveSearchDb =: sqlopen_psqlite_ indexDbFile catch. return. end. end.
@@ -1226,9 +1231,8 @@ hits =. jMnemonics i."1 0 rawTokens
 tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
 englishPortion =. tokens -. jEnglishWords
 jPortion =. tokens -. englishPortion
-NB. '"' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ')
-'''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
-NB. '''' , (; tokens ,. < ' ') , ''''
+NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
+'''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 20)'''
 )
 
 translateToJ =: 3 : 0
@@ -1254,6 +1258,7 @@ NB. Treat the J code as a quoted phrase for query purposes.
 NB. Treat the English (non-J) tokens separately in the query.
 NB. Return a table of title ; Snippet ; Url
 LastLiveSearchQuery =: searchBox
+setLiveSearchPageIndex 0
 try. openLiveSearchDb '' catch. return. end.
 forumFlag =. liveForum = '1'
 wikiFlag =. liveWiki = '1'
@@ -1263,25 +1268,23 @@ elseif. (-. wikiFlag) *. forumFlag do. whereClause =. ' (source = "F") '
 else. whereClause =. ' (source = "W" or source = "F") ' end.
 currentYear =. {. (6!:0) ''
 cutoffYear =. 1 + currentYear - ". liveAge
+smoutput 'cutoffYear' ; cutoffYear
 NB. whereClause =. whereClause , ' AND jindex.id = auxiliary.id AND year <= ' , ": cutoffYear
 NB. whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , ' '
 query =. createQuery searchBox
 NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
 NB. fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
-fullSearch =. 'select distinct title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 1000'
-smoutput fullSearch
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 2000'
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
 catch. catcht.
 smoutput 'Problem: ' , sqlerror__liveSearchDb ''
 return.
 end.
-smoutput '$ result' ; $ result
 snippets =. translateToJ &. > 4 {"1 result
 sources =. {. &. > 3 {"1 result
 results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
 results =. (~: titles) # results
-smoutput '$ results (in liveSearch)' ; $ results
 LiveSearchResults =: results
 )
 
@@ -1309,14 +1312,27 @@ glfont LiveSearchFont
 colSep =: 20
 if. -. searchBox -: LastLiveSearchQuery do. liveSearch '' end.
 if. 0 = # LiveSearchResults do. return. end.
-results =. ((# LiveSearchResults) <. <. height % TocLineHeight) {. LiveSearchResults
+pageLabelHeight =. 30
+pageLabelWidth =. 30
+contentHeight =. height - pageLabelHeight
+contentLineCount =. <. contentHeight % TocLineHeight
+pageLabelCount =. >. (# LiveSearchResults) % contentLineCount
+pageLabels =. <@":"0 >: i. pageLabelCount
+pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. pageLabelCount) ,. 5
+pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
+(pageLabelRects -"(1 1) 4 4 0 0) registerRectLink"1 1 ('*setLiveSearchPageIndex '&, &. > <@":"0 i. pageLabelCount) ,"0 1 (< ' ') , <1
+((liveSearchPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
+
+results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
+(<"1 pageLabelOrigins) drawStringAt &. > pageLabels
+((5 + xx) , 5) drawStringAt 'Page:'
 titles =. 0 {"1 results
 snippets =. 1 {"1 results
 links =. 2 {"1 results
 sources =. 4 {"1 results
 colWidth =. <. -: width - colSep
-snippetOrigins =. (xx + 5) ,. TocLineHeight * i. # results
-titleOrigins =. (xx + colSep + colWidth) ,. TocLineHeight * i. # results
+snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
+titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
 glrgb 0 127 0 NB. Wiki color
 gltextcolor ''
