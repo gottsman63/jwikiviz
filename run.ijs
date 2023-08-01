@@ -1333,7 +1333,7 @@ colWidth =. <. -: width - colSep
 snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
 titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
-glrgb 0 127 0 NB. Wiki color
+glrgb 0 127 127 NB. Wiki color
 gltextcolor ''
 sieve =. sources = <'W'
 glclip xx , yy , colWidth , height
@@ -1341,7 +1341,7 @@ glclip xx , yy , colWidth , height
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-glrgb 0 0 127 NB. Forum color
+glrgb 110 38 14 NB. Forum color
 gltextcolor ''
 sieve =. sources = <'F'
 glclip xx , yy , colWidth , height
@@ -2080,7 +2080,6 @@ if. fexist stageDbPath do.
 	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 end.
 hash =. getRemoteDatabaseHash ''
-smoutput 'downloadLatestStageDatabase: ' ; hash
 try. (1!:22) < targetDbPath catch. end.
 dbOpenDb ''
 sqlclose__db ''
