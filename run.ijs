@@ -253,7 +253,7 @@ wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 100 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (vocContextWidth - 230) , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (vocContextWidth - 330) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 wd 'set loadPost maxwh ' , (": (browserWidth * 0.18), controlHeight) , ';'
 wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
@@ -1237,7 +1237,15 @@ hits =. jEnglishWords i."1 0 tokens
 ; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
 )
 
-liveSearchQuery =: 3 : 0
+setLiveSearchControlsVisibility =: 3 : 0
+NB. y 0 or 1 for visible or invisible
+currentVisibility =. ". wd 'get liveAge visible '
+if. y = currentVisibility do. return. end.
+smoutput 'Changing live search controls'' visibility.'
+wd 'set liveAge visible ' , ": y
+wd 'set liveForum visible ' , ": y
+wd 'set liveWiki visible ' , ": y
+wd 'set liveAgeLabel visible ' , ": y
 )
 
 liveSearch =: 3 : 0
@@ -1256,11 +1264,11 @@ else. whereClause =. ' (source = "W" or source = "F") ' end.
 currentYear =. {. (6!:0) ''
 cutoffYear =. 1 + currentYear - ". liveAge
 NB. whereClause =. whereClause , ' AND jindex.id = auxiliary.id AND year <= ' , ": cutoffYear
-whereClause =. 'jindex.id = auxiliary.id' NB. ' jindex.id = auxiliary.id '
+whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , ' '
 query =. createQuery searchBox
 NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
-fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
-fullSearch =. 'select 1, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15), url from auxiliary, jindex where body MATCH ' , query , ' AND auxiliary.id = jindex.id limit 10'
+NB. fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
+fullSearch =. 'select 1, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15), url from auxiliary, jindex where body MATCH ' , query , ' AND (auxiliary.id = jindex.id) AND (year >= ' , (": cutoffYear) , ') limit 1000'
 smoutput fullSearch
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
@@ -1271,7 +1279,7 @@ smoutput '$ result' ; $ result
 snippets =. translateToJ &. > 5 {"1 result
 sources =. {. &. > 4 {"1 result
 results =. (titles =. 1 {"1 result) ,. snippets ,. (links =. 2 {"1 result) ,. (years =. 3 {"1 result) ,. sources
-NB. results =. (~: snippets) # results
+results =. (~: snippets) # results
 smoutput '$ results (in liveSearch)' ; $ results
 LiveSearchResults =: results
 )
@@ -1307,8 +1315,6 @@ sources =. 4 {"1 results
 colWidth =. <. -: width - colSep
 snippetOrigins =. (xx + 5) ,. TocLineHeight * i. # results
 titleOrigins =. (xx + colSep + colWidth) ,. TocLineHeight * i. # results
-
-smoutput (# results) ; (# titleOrigins) ; # LiveSearchResults
 
 glrgb 0 127 0 NB. Wiki color
 gltextcolor ''
@@ -1630,16 +1636,22 @@ NB. x Toc outline rail entry whose children need to be drawn.
 NB. y The rectangle in which to draw.
 entry =. x
 if.  +./ '*NuVoc' E. > 3 { entry do.
+	setLiveSearchControlsVisibility 0
 	drawVoc ''
 elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
+	setLiveSearchControlsVisibility 0
 	(> 3 { entry) drawTocEntryForum y
 elseif. TagCatString -: > 3 { entry do.
+	setLiveSearchControlsVisibility 0
 	drawTocEntryTags y
 elseif. LiveSearchCatString -: > 3 { entry do.
+	setLiveSearchControlsVisibility 1
 	drawTocEntryLiveSearch y
 elseif. (< SearchCatString) = 3 { entry do.
+	setLiveSearchControlsVisibility 0
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree y
 else.
+	setLiveSearchControlsVisibility 0
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren y
 end.
