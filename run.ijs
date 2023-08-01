@@ -1224,10 +1224,11 @@ raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
 tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
-NB. englishPortion =. tokens -. jEnglishWords
-NB. jPortion =. tokens -. englishPortion	
-NB. 'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 100)'
-'''' , (; tokens ,. < ' ') , ''''
+englishPortion =. tokens -. jEnglishWords
+jPortion =. tokens -. englishPortion
+NB. '"' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ')
+'''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
+NB. '''' , (; tokens ,. < ' ') , ''''
 )
 
 translateToJ =: 3 : 0
@@ -1241,7 +1242,6 @@ setLiveSearchControlsVisibility =: 3 : 0
 NB. y 0 or 1 for visible or invisible
 currentVisibility =. ". wd 'get liveAge visible '
 if. y = currentVisibility do. return. end.
-smoutput 'Changing live search controls'' visibility.'
 wd 'set liveAge visible ' , ": y
 wd 'set liveForum visible ' , ": y
 wd 'set liveWiki visible ' , ": y
@@ -1268,11 +1268,10 @@ NB. whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , '
 query =. createQuery searchBox
 NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
 NB. fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
-fullSearch =. 'select distinct title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') limit 1000'
+fullSearch =. 'select distinct title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 1000'
 smoutput fullSearch
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
-smoutput result
 catch. catcht.
 smoutput 'Problem: ' , sqlerror__liveSearchDb ''
 return.
