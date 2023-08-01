@@ -200,6 +200,12 @@ wd     'bin h;'
 wd       'cc dbUpdate button; cn Haha!;'
 wd       'cc appUpdate button; cn Wocka!;'
 wd     'bin z;'
+wd     'bin h;'
+wd       'cc liveForum checkbox; cn *Forum Posts'
+wd       'cc liveWiki checkbox; cn *Wiki Pages'
+wd       'cc liveAgeLabel editm readonly'
+wd       'cc liveAge slider 2 1 1 1 40 5'
+wd     'bin z;'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
@@ -244,8 +250,11 @@ wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';
 wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
 wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
+wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
+wd 'set liveWiki maxwh ' , (": 110 , controlHeight) , ';'
+wd 'set liveAgeLabel maxwh ' , (": 100 , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (vocContextWidth - 230) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
-NB. wd 'set vocContext minwh ' , (": 1 , 760) , ';'
 wd 'set loadPost maxwh ' , (": (browserWidth * 0.18), controlHeight) , ';'
 wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
@@ -306,6 +315,24 @@ vizform_close ''
 
 vizform_vocContext_escape =: 3 : 0
 vizform_close ''
+)
+
+vizform_liveForum_button =: 3 : 0
+liveSearchShowForumPosts =: ". liveForum
+liveSearch ''
+invalidateDisplay ''
+)
+
+vizform_liveWiki_button =: 3 : 0
+liveSearchShowWikiPages =: ". liveWiki
+liveSearch ''
+invalidateDisplay ''
+)
+
+vizform_liveAge_changed =: 3 : 0
+wd 'set liveAgeLabel text * <= ' , (": liveAge) , ' Years'
+liveSearch ''
+invalidateDisplay ''
 )
 
 vizform_expandBrowser_button =: 3 : 0
@@ -1176,9 +1203,10 @@ queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' ,
 NB. ---------------------- Live Search ---------------------------
 indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
+liveSearchYear =: 2000
 
 openLiveSearchDb =: 3 : 0
-if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ indexDbFile end.
+if. liveSearchDb -: '' do. try. liveSearchDb =: sqlopen_psqlite_ indexDbFile catch. return. end. end.
 )
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco'
@@ -1196,9 +1224,10 @@ raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
 tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
-englishPortion =. tokens -. jEnglishWords
-jPortion =. tokens -. englishPortion	
-'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 100)'
+NB. englishPortion =. tokens -. jEnglishWords
+NB. jPortion =. tokens -. englishPortion	
+NB. 'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 100)'
+'"' , (; tokens ,. < ' ') , '"'
 )
 
 translateToJ =: 3 : 0
@@ -1208,21 +1237,43 @@ hits =. jEnglishWords i."1 0 tokens
 ; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
 )
 
+liveSearchQuery =: 3 : 0
+)
+
 liveSearch =: 3 : 0
 NB. y Empty
 NB. Treat the J code as a quoted phrase for query purposes.
 NB. Treat the English (non-J) tokens separately in the query.
 NB. Return a table of title ; Snippet ; Url
-if. searchBox -: LastLiveSearchQuery do. return. end.
 LastLiveSearchQuery =: searchBox
 try. openLiveSearchDb '' catch. return. end.
+forumFlag =. liveForum = '1'
+wikiFlag =. liveWiki = '1'
+if. wikiFlag *. forumFlag do. whereClause =. ' (source = "W" or source = "F") '
+elseif. wikiFlag *. -. forumFlag do. whereClause =. ' (source = "W") '
+elseif. (-. wikiFlag) *. forumFlag do. whereClause =. ' (source = "F") '
+else. whereClause =. ' (source = "W" or source = "F") ' end.
+currentYear =. {. (6!:0) ''
+cutoffYear =. 1 + currentYear - ". liveAge
+NB. whereClause =. whereClause , ' AND jindex.id = auxiliary.id AND year <= ' , ": cutoffYear
+whereClause =. 'jindex.id = auxiliary.id' NB. ' jindex.id = auxiliary.id '
 query =. createQuery searchBox
-result =. > {: sqlreadm__liveSearchDb 'select title, snippet(jindex, 2, '''', '''', '''', 15), url from jindex where body MATCH ''' , query , ''' order by rank limit 1000'
-snippets =. translateToJ &. > 1 {"1 result
-results =. (0 {"1 result) ,. snippets ,. 2 {"1 result
-uniques =. (~: snippets) # results
-LiveSearchResults =: uniques
-NB. smoutput LiveSearchResults
+NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
+fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
+fullSearch =. 'select 1, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15), url from auxiliary, jindex where body MATCH ' , query , ' AND auxiliary.id = jindex.id limit 10'
+smoutput fullSearch
+try.
+result =. > {: sqlreadm__liveSearchDb fullSearch
+catch. catcht.
+smoutput 'Problem: ' , sqlerror__liveSearchDb ''
+end.
+smoutput '$ result' ; $ result
+snippets =. translateToJ &. > 5 {"1 result
+sources =. {. &. > 4 {"1 result
+results =. (titles =. 1 {"1 result) ,. snippets ,. (links =. 2 {"1 result) ,. (years =. 3 {"1 result) ,. sources
+NB. results =. (~: snippets) # results
+smoutput '$ results (in liveSearch)' ; $ results
+LiveSearchResults =: results
 )
 
 translateToJEnglish =: 3 : 0
@@ -1246,19 +1297,35 @@ glbrush ''
 glrect xx , yy , width , height
 glfont LiveSearchFont
 colSep =: 20
-liveSearch ''
+if. -. searchBox -: LastLiveSearchQuery do. liveSearch '' end.
 if. 0 = # LiveSearchResults do. return. end.
 results =. ((# LiveSearchResults) <. <. height % TocLineHeight) {. LiveSearchResults
 titles =. 0 {"1 results
 snippets =. 1 {"1 results
 links =. 2 {"1 results
+sources =. 4 {"1 results
 colWidth =. <. -: width - colSep
-glclip xx , yy , colWidth , height
 snippetOrigins =. (xx + 5) ,. TocLineHeight * i. # results
-(<"1 snippetOrigins) drawStringAt &. > snippets
 titleOrigins =. (xx + colSep + colWidth) ,. TocLineHeight * i. # results
+
+smoutput (# results) ; (# titleOrigins) ; # LiveSearchResults
+
+glrgb 0 127 0 NB. Wiki color
+gltextcolor ''
+sieve =. sources = <'W'
+glclip xx , yy , colWidth , height
+(<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
 glclip (xx + 5 + colWidth) , yy , colWidth , height
-(<"1 titleOrigins) drawStringAt &. > titles
+(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+
+glrgb 0 0 127 NB. Forum color
+gltextcolor ''
+sieve =. sources = <'F'
+glclip xx , yy , colWidth , height
+(<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+glclip (xx + 5 + colWidth) , yy , colWidth , height
+(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+
 glclip 0 0 10000 100000
 (snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
 (titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
