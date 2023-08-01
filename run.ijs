@@ -1227,7 +1227,7 @@ tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
 NB. englishPortion =. tokens -. jEnglishWords
 NB. jPortion =. tokens -. englishPortion	
 NB. 'NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 100)'
-'"' , (; tokens ,. < ' ') , '"'
+'''' , (; tokens ,. < ' ') , ''''
 )
 
 translateToJ =: 3 : 0
@@ -1264,28 +1264,31 @@ else. whereClause =. ' (source = "W" or source = "F") ' end.
 currentYear =. {. (6!:0) ''
 cutoffYear =. 1 + currentYear - ". liveAge
 NB. whereClause =. whereClause , ' AND jindex.id = auxiliary.id AND year <= ' , ": cutoffYear
-whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , ' '
+NB. whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , ' '
 query =. createQuery searchBox
 NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
 NB. fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
-fullSearch =. 'select 1, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15), url from auxiliary, jindex where body MATCH ' , query , ' AND (auxiliary.id = jindex.id) AND (year >= ' , (": cutoffYear) , ') limit 1000'
+fullSearch =. 'select distinct title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') limit 1000'
 smoutput fullSearch
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
+smoutput result
 catch. catcht.
 smoutput 'Problem: ' , sqlerror__liveSearchDb ''
+return.
 end.
 smoutput '$ result' ; $ result
-snippets =. translateToJ &. > 5 {"1 result
-sources =. {. &. > 4 {"1 result
-results =. (titles =. 1 {"1 result) ,. snippets ,. (links =. 2 {"1 result) ,. (years =. 3 {"1 result) ,. sources
-results =. (~: snippets) # results
+snippets =. translateToJ &. > 4 {"1 result
+sources =. {. &. > 3 {"1 result
+results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
+results =. (~: titles) # results
 smoutput '$ results (in liveSearch)' ; $ results
 LiveSearchResults =: results
 )
 
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
+NB. =========================================================
 NB. Convert the J mnemonics to JEnglish.
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw

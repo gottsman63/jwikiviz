@@ -15,8 +15,8 @@ createIndexDatabase =: 3 : 0
 try. (1!:55) < indexDbFile catch. end.
 try.
 	indexDb =: sqlcreate_psqlite_ indexDbFile
-	sqlcmd__indexDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (id, body)'
-	sqlcmd__indexDb 'CREATE TABLE auxiliary (id TEXT PRIMARY KEY, title TEXT, year INTEGER, source TEXT, url TEXT)'
+	sqlcmd__indexDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
+	sqlcmd__indexDb 'CREATE TABLE auxiliary (id INTEGER PRIMARY KEY, title TEXT, year INTEGER, source TEXT, url TEXT)'
 	sqlcmd__indexDb 'CREATE INDEX year_index ON auxiliary (year)'
 	sqlcmd__indexDb 'CREATE INDEX source_index ON auxiliary (source)'
 catcht.
@@ -239,10 +239,8 @@ bodies =. 2 {"1 result
 urls =. 3 {"1 result
 years =. > 4 {"1 result
 combinedBodies =. translateToJEnglish &. > extractTextFromForumPost &. > <@;"1 subjects ,. authors ,. bodies
-idStart =. {. {. > > {: sqlreadm__indexDb 'select count(*) from jindex'
-idStrings =. <@":"0 idStart + i. # combinedBodies
-sqlinsert__indexDb 'jindex' ; (;: 'id body') ; <idStrings ; < combinedBodies
-sqlinsert__indexDb 'auxiliary' ; (;: 'id title year source url') ; < idStrings ; subjects ; years ; ((# years) # <'F') ; < urls
+sqlinsert__indexDb 'jindex' ; (;: 'body') ; << combinedBodies
+sqlinsert__indexDb 'auxiliary' ; (;: 'title year source url') ; < subjects ; years ; ((# years) # <'F') ; < urls
 )
 
 buildWikiIndex =: 3 : 0
@@ -254,8 +252,9 @@ titles =. sieve # 0 {"1 result
 urls =. sieve # 1 {"1 result
 bodies =. sieve # 2 {"1 result
 combinedBodies =. translateToJEnglish &. > <@;"1 titles ,. bodies
-data =. titles ; urls ; ((# urls) # < '9999') ; combinedBodies ; < (# combinedBodies) # <'W'
-sqlinsert__indexDb 'jindex' ; (;: 'title url year body source') ; < data
+data =. combinedBodies
+sqlinsert__indexDb 'jindex' ; (;: ' body') ; << data
+sqlinsert__indexDb 'auxiliary' ; (;: 'title year source url') ; < titles ; ((# urls) # 9999) ; ((# urls) # <'W') ; < urls
 )
 
 buildDatabase =: 3 : 0
