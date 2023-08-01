@@ -1232,7 +1232,7 @@ tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
 englishPortion =. tokens -. jEnglishWords
 jPortion =. tokens -. englishPortion
 NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
-'''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 20)'''
+'''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 200)'''
 )
 
 translateToJ =: 3 : 0
@@ -1268,13 +1268,12 @@ elseif. (-. wikiFlag) *. forumFlag do. whereClause =. ' (source = "F") '
 else. whereClause =. ' (source = "W" or source = "F") ' end.
 currentYear =. {. (6!:0) ''
 cutoffYear =. 1 + currentYear - ". liveAge
-smoutput 'cutoffYear' ; cutoffYear
 NB. whereClause =. whereClause , ' AND jindex.id = auxiliary.id AND year <= ' , ": cutoffYear
 NB. whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , ' '
 query =. createQuery searchBox
 NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
 NB. fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 2000'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 2000'
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
 catch. catcht.

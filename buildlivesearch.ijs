@@ -247,10 +247,9 @@ buildWikiIndex =: 3 : 0
 openWikiDatabase ''
 openIndexDatabase ''
 result =. > {: sqlreadm__wikiDb 'select title, link, body from wiki'
-sieve =. ~: 2 {"1 result
-titles =. sieve # 0 {"1 result
-urls =. sieve # 1 {"1 result
-bodies =. sieve # 2 {"1 result
+titles =. 0 {"1 result
+urls =. 1 {"1 result
+bodies =. 2 {"1 result
 combinedBodies =. translateToJEnglish &. > <@;"1 titles ,. bodies
 data =. combinedBodies
 sqlinsert__indexDb 'jindex' ; (;: ' body') ; << data
