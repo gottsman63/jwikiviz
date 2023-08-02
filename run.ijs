@@ -330,8 +330,6 @@ invalidateDisplay ''
 )
 
 vizform_liveAge_changed =: 3 : 0
-yearString =. (1 = ". liveAge) {:: ;: 'Years Year'
-wd 'set liveAgeLabel text * <= ' , liveAge , ' ' , yearString
 liveSearch ''
 invalidateDisplay ''
 )
@@ -1221,6 +1219,11 @@ liveSearchHtml =: 0 : 0
 </html>
 )
 
+setLiveAgeLabel =: 3 : 0
+yearString =. (1 = ". liveAge) {:: ;: 'Years Year'
+wd 'set liveAgeLabel text * <= ' , liveAge , ' ' , yearString
+)
+
 setLiveSearchPageIndex =: 3 : 0
 liveSearchPageIndex =: y
 invalidateDisplay ''
@@ -1316,6 +1319,7 @@ drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
 NB. Display the results of the current search against the local database.
 'xx yy width height' =. y
+setLiveAgeLabel ''
 glclip 0 0 10000 100000
 glrgb 0 0 0
 glpen 1
