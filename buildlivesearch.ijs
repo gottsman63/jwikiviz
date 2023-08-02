@@ -15,6 +15,7 @@ createIndexDatabase =: 3 : 0
 try. (1!:55) < indexDbFile catch. end.
 try.
 	indexDb =: sqlcreate_psqlite_ indexDbFile
+NB.	sqlcmd__indexDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, content=''''	)'
 	sqlcmd__indexDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
 	sqlcmd__indexDb 'CREATE TABLE auxiliary (id INTEGER PRIMARY KEY, title TEXT, year INTEGER, source TEXT, url TEXT)'
 	sqlcmd__indexDb 'CREATE INDEX year_index ON auxiliary (year)'

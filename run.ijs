@@ -210,7 +210,7 @@ wd     'cc vocContext isigraph;'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
-wd       'cc loadPost button; cn *Show Post in Context'
+wd       'cc loadPost button; cn *Show Post in Thread'
 wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
@@ -330,7 +330,8 @@ invalidateDisplay ''
 )
 
 vizform_liveAge_changed =: 3 : 0
-wd 'set liveAgeLabel text * <= ' , (": liveAge) , ' Years'
+yearString =. (1 = ". liveAge) {:: ;: 'Years Year'
+wd 'set liveAgeLabel text * <= ' , liveAge , ' ' , yearString
 liveSearch ''
 invalidateDisplay ''
 )
@@ -1024,7 +1025,9 @@ elseif. VocMouseClickXY pointInRect x do.
 	if. '*' = {. urlCommand do.
 		". }. urlCommand
 		LastUrlCommandSelected =: urlCommand
-	else. 
+	elseif. '#' = {. urlCommand do.
+		wd 'set browser html *' , }. urlCommand
+	else.
 		loadPage urlCommand ; name
 		LastUrlCommandSelected =: urlCommand
 	end.
@@ -1204,6 +1207,19 @@ NB. ---------------------- Live Search ---------------------------
 indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
 liveSearchPageIndex =: 0
+
+liveSearchHtml =: 0 : 0
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>title</title>
+  </head>
+  <body>
+    Hello!
+  </body>
+</html>
+)
 
 setLiveSearchPageIndex =: 3 : 0
 liveSearchPageIndex =: y
