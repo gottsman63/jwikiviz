@@ -17,6 +17,7 @@ NB. Check the behavior of the cursor icon in the Forums section (especially).
 NB. Test initial installation.  
 NB. Look for more trace opportunities.  
 NB. Should we check for new versions at other times?
+NB. Age slider should go to "All" at ten years.
 NB. Fix "TocEntryForumYear  =: 2023"
 
 NB. *** B Items ***
@@ -204,7 +205,7 @@ wd     'bin h;'
 wd       'cc liveForum checkbox; cn *Forum Posts'
 wd       'cc liveWiki checkbox; cn *Wiki Pages'
 wd       'cc liveAgeLabel editm readonly'
-wd       'cc liveAge slider 2 1 1 1 40 5'
+wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
 wd     'cc vocContext isigraph;'
 wd   'bin z;'
@@ -1220,8 +1221,12 @@ liveSearchHtml =: 0 : 0
 )
 
 setLiveAgeLabel =: 3 : 0
-yearString =. (1 = ". liveAge) {:: ;: 'Years Year'
-wd 'set liveAgeLabel text * <= ' , liveAge , ' ' , yearString
+if. (". liveAge) = 10 do.
+	wd 'set liveAgeLabel text *' , 'All Docs'
+else.
+	cutoffYear =. 1 + ({. (6!:0) '') - ". liveAge
+	wd 'set liveAgeLabel text * >= ' , ": cutoffYear
+end.
 )
 
 setLiveSearchPageIndex =: 3 : 0
@@ -1285,13 +1290,13 @@ elseif. wikiFlag *. -. forumFlag do. whereClause =. ' (source = "W") '
 elseif. (-. wikiFlag) *. forumFlag do. whereClause =. ' (source = "F") '
 else. whereClause =. ' (source = "W" or source = "F") ' end.
 currentYear =. {. (6!:0) ''
-cutoffYear =. 1 + currentYear - ". liveAge
-NB. whereClause =. whereClause , ' AND jindex.id = auxiliary.id AND year <= ' , ": cutoffYear
-NB. whereClause =. 'jindex.id = auxiliary.id AND year >= ' , (": cutoffYear) , ' '
+if. 10 = ". liveAge do.
+	cutoffYear =. 0
+else.
+	cutoffYear =. 1 + currentYear - ". liveAge
+end.
 query =. createQuery searchBox
-NB. fullSearch =. 'select jindex.id, url, year, source, snippet(jindex, 2, '''', '''', '''', 15) from jindex, auxiliary where body MATCH ''' , query , ''' AND (' , whereClause , ') order by rank'
-NB. fullSearch =. 'select jindex.id, title, url, year, source, snippet(jindex, 1, '''', '''', '''', 15) from jindex, auxiliary where (body MATCH ' , query , ') AND (' , whereClause , ') order by rank limit 1000'
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 5) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 2000'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 1000'
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
 catch. catcht.
@@ -1301,13 +1306,12 @@ end.
 snippets =. translateToJ &. > 4 {"1 result
 sources =. {. &. > 3 {"1 result
 results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
-results =. (~: titles) # results
+NB. results =. (~: titles) # results
 LiveSearchResults =: results
 )
 
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
-NB. =========================================================
 NB. Convert the J mnemonics to JEnglish.
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
