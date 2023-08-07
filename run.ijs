@@ -1059,6 +1059,7 @@ log '...(drawScrollerField) ' , ": (# strings) , (# links) , (# levels) , select
 window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 30
+squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 if. VocMouseXY pointInRect xx , yy , (-: w) , h do. glcursor IDC_SIZEVER end.
 if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. glcursor IDC_POINTINGHAND end.
 if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
@@ -1069,9 +1070,16 @@ if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
 	else.
 		scrollIndex =. tentativeScrollIndex
 	end.
+elseif. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do.
+	if. ({: VocMouseXY) < squishedLineHeight * scrollIndex do. 
+		scrollIndex =. <: scrollIndex
+		animate 2
+	elseif. ({: VocMouseXY) > (squishedLineHeight * scrollIndex) + window * TocLineHeight do.
+		scrollIndex =. >: scrollIndex
+		animate 2
+	end.
 end.	
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
-squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
 ys =. <. }: +/\ 0 , heights
 heights =. <. heights
