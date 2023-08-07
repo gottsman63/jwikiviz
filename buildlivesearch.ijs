@@ -161,7 +161,7 @@ while. (10 <. <: {: 8 T. '') > 1 T. '' do. 0 T. 0 end.
 )
 
 getHtml =: 3 : 0
-NB. y urls
+NB. y Boxed urls
 NB. Return a list of boxed html, one for each url
 files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. # y
 urlSpec =. ; ('"'&, &. > ,&'"' &. > y) ,. <' '
@@ -367,6 +367,28 @@ try.
 catcht.
 smoutput sqlerror__forumDb ''
 end.
-NB. ====================== End Forum Database ==============================
-
 )
+
+convertPostToJson =: 3 : 0
+NB. y forumname ; year ; month ; subject ; author ; url ; body
+NB. Determine the day of the month for the post.
+NB. Return a JSON string.
+'forumName year month day subject author url body' =. y
+NB. coreBody =. extractTextFromForumPost body
+forumName ; year ; month ; day ; subject ; author ; url
+)
+
+extractDayOfMonth =: 3 : 0
+NB. y Body of raw post
+ol =. {: (rxcomp '<BR>[^<]*<I>\w\w\w\s\w\w\w\s+(\d+)\s') rxmatch y
+({: ol) {. ({. ol) }. y
+)
+
+populateAws =: 3 : 0
+openForumDatabase ''
+posts =. > {: sqlreadm__forumDb 'select forumname, year, month, subject, author, url, body from forums limit 5'
+bodies =. 6 {"1 posts
+days =. extractDayOfMonth &. > bodies
+convertPostToJson"1 (3 {."1 posts) ,. days ,. _4 {."1 posts
+)
+NB. ====================== End Forum Database ==============================
