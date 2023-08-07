@@ -1,6 +1,6 @@
 load 'data/sqlite'
 load 'web/gethttp'
-
+load 'convert/pjson'
 load 'regex'
 
 indexDbFile =: jpath '~temp/jsearch.db'
@@ -369,26 +369,44 @@ smoutput sqlerror__forumDb ''
 end.
 )
 
+jsearchUser =: 'jsearchuser'
+jsearchPassword =: 'Jsearch1!'
+
 convertPostToJson =: 3 : 0
 NB. y forumname ; year ; month ; subject ; author ; url ; body
 NB. Determine the day of the month for the post.
 NB. Return a JSON string.
-'forumName year month day subject author url body' =. y
-NB. coreBody =. extractTextFromForumPost body
-forumName ; year ; month ; day ; subject ; author ; url
+'forumName year month day subject author body' =. y
+coreBody =. translateToJEnglish 5 }. extractTextFromForumPost body
+json =. enc_pjson_ ('forum' ; forumName) , ('year' ; year) , ('month' ; month) , ('day' ; day) , ('subject' ; 5 {. subject) , ('author' ; author) ,: ('body' ; coreBody)
+(json -. LF) , LF
 )
 
 extractDayOfMonth =: 3 : 0
 NB. y Body of raw post
 ol =. {: (rxcomp '<BR>[^<]*<I>\w\w\w\s\w\w\w\s+(\d+)\s') rxmatch y
-({: ol) {. ({. ol) }. y
+". ({: ol) {. ({. ol) }. y
 )
 
 populateAws =: 3 : 0
 openForumDatabase ''
-posts =. > {: sqlreadm__forumDb 'select forumname, year, month, subject, author, url, body from forums limit 5'
+posts =. > {: sqlreadm__forumDb 'select forumname, year, month, subject, author, url, body from forums limit 100'
 bodies =. 6 {"1 posts
+urls =. 5 {"1 posts
 days =. extractDayOfMonth &. > bodies
-convertPostToJson"1 (3 {."1 posts) ,. days ,. _4 {."1 posts
+docJson =. convertPostToJson &. > <"1 (0 1 2 {"1 posts) ,. days ,. 3 4 6 {"1 posts
+commandJson =. '{"index":{"_index":"jsearch", "_id":"'&, &. > ,&('"}}' , LF) &. >  urls
+json =. ; , commandJson ,. docJson
+json (1!:2) < path =. jpath '~temp/index.json' 
+command =. 'curl -X POST -u "' , jsearchUser , ':' , jsearchPassword , '" https://search-jsearch-widrwfxb2alpzurmhbe2jyvcjm.eu-north-1.es.amazonaws.com/jsearch/_bulk --data-binary @' , path , ' -H "Content-Type: application/json"'
+smoutput _200 ]\ command
+(2!:0) command
+)
+
+queryAws =: 3 : 0
+query =. '{"query": {"match": {"body":"Jslashco"}}, "_source":["_id"]}' 
+smoutput query
+command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" https://search-jsearch-widrwfxb2alpzurmhbe2jyvcjm.eu-north-1.es.amazonaws.com/jsearch/_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+dec_pjson_ (2!:0) command
 )
 NB. ====================== End Forum Database ==============================
