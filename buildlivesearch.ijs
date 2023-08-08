@@ -371,15 +371,22 @@ end.
 
 jsearchUser =: 'jsearchuser'
 jsearchPassword =: 'Jsearch1!'
+jsearchUrl =: 'https://search-jsearch-widrwfxb2alpzurmhbe2jyvcjm.eu-north-1.es.amazonaws.com/jsearch/'
 
 convertPostToJson =: 3 : 0
 NB. y forumname ; year ; month ; subject ; author ; url ; body
 NB. Determine the day of the month for the post.
 NB. Return a JSON string.
 'forumName year month day subject author body' =. y
-coreBody =. translateToJEnglish 5 }. extractTextFromForumPost body
-json =. enc_pjson_ ('forum' ; forumName) , ('year' ; year) , ('month' ; month) , ('day' ; day) , ('subject' ; 5 {. subject) , ('author' ; author) ,: ('body' ; coreBody)
+coreBody =. translateToJEnglish suppressUnicode 5 }. extractTextFromForumPost body
+json =. enc_pjson_ ('forum' ; forumName) , ('year' ; year) , ('month' ; month) , ('day' ; day) , ('subject' ; subject) , ('author' ; author) ,: ('body' ; coreBody)
 (json -. LF) , LF
+)
+
+suppressUnicode =: 3 : 0
+NB. y A string that may contain characters above a.
+y
+NB.(a. i. y) { a. , '_'
 )
 
 extractDayOfMonth =: 3 : 0
@@ -388,9 +395,18 @@ ol =. {: (rxcomp '<BR>[^<]*<I>\w\w\w\s\w\w\w\s+(\d+)\s') rxmatch y
 ". ({: ol) {. ({. ol) }. y
 )
 
-populateAws =: 3 : 0
-openForumDatabase ''
-posts =. > {: sqlreadm__forumDb 'select forumname, year, month, subject, author, url, body from forums limit 100'
+getAwsUrls =: 3 : 0
+query =. '{"query": {"match_all": {}}, "_source":false}'
+smoutput query
+command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" ' , jsearchUrl , '_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+j =. dec_pjson_ (2!:0) command
+NB. 1{"(1) 1 {"2 > > {: 2 { > {: 3 { j
+)
+
+populateAwsPage =: 4 : 0
+NB. x Window
+NB. y Page index
+posts =. > {: sqlreadm__forumDb 'select forumname, year, month, subject, author, url, body from forums limit ' , (": x) , ' offset ' , ": y * x
 bodies =. 6 {"1 posts
 urls =. 5 {"1 posts
 days =. extractDayOfMonth &. > bodies
@@ -398,15 +414,61 @@ docJson =. convertPostToJson &. > <"1 (0 1 2 {"1 posts) ,. days ,. 3 4 6 {"1 pos
 commandJson =. '{"index":{"_index":"jsearch", "_id":"'&, &. > ,&('"}}' , LF) &. >  urls
 json =. ; , commandJson ,. docJson
 json (1!:2) < path =. jpath '~temp/index.json' 
-command =. 'curl -X POST -u "' , jsearchUser , ':' , jsearchPassword , '" https://search-jsearch-widrwfxb2alpzurmhbe2jyvcjm.eu-north-1.es.amazonaws.com/jsearch/_bulk --data-binary @' , path , ' -H "Content-Type: application/json"'
-smoutput _200 ]\ command
+command =. 'curl -X POST -u "' , jsearchUser , ':' , jsearchPassword , '" ' , jsearchUrl , '_bulk --data-binary @' , path , ' -H "Content-Type: application/json"' NB. ;charset=UTF-8"'
 (2!:0) command
+smoutput 'page index done' ; y
+wd 'msgs'
+NB. k =: ,. > {: 2 { dec_pjson_ (2!:0) command
 )
 
+populateAws =: 3 : 0
+openForumDatabase ''
+NB. rawPosts =. > {: sqlreadm__forumDb 'select forumname, year, month, subject, author, url, body from forums limit 100 offset 7000'
+NB. smoutput rawPosts
+NB. page =. 0
+NB. indexedUrls =. ''
+NB. while. 0 < # pageOfIndexedUrls =. getAwsUrls page do.	
+NB. 	indexedUrls =. indexedUrls , pageOfIndexedUrls
+NB. 	page =. >: page
+NB. end.
+NB. indexedUrls =: getAwsUrls ''
+NB. smoutput 'AWS has document count' ; # indexedUrls
+NB. postGroups =. _10 <\ (s =. -. rawUrls e. indexedUrls) # rawPosts
+NB. smoutput s
+NB. postGroups =. _10 <\ rawPosts
+NB. smoutput '$ &. > postGroups' ; $ &. > postGroups
+window =. 1000
+maxPageCount =. >. window %~ , > > {: sqlreadm__forumDb 'select count(*) from forums'
+smoutput 'maxPageCount' ; maxPageCount
+pages =. 104 }. i. maxPageCount
+smoutput 'pages' ; pages
+window&populateAwsPage"(0) pages
+)
+
+createQuery =: 3 : 0
+NB. y Text with J mnemonics and English words
+NB. Convert the J mnemonics to JEnglish.
+NB. Return a NEAR query of JEnglish tokens and English tokens
+NB. raw =. ('''' ; '''''') rxrplc y
+NB. rawTokens =. ;: raw
+rawTokens =. ;: y
+hits =. jMnemonics i."1 0 rawTokens
+tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
+englishPortion =. tokens -. jEnglishWords
+jPortion =. tokens -. englishPortion
+NB. '{"query": {"match_phrase": {"body":"' , (; ,&' ' &. > jPortion) , '"}, "match":"' , ( ; ,&' ' &. > englishPortion) , '"}, "_source":["_id"]}' 
+'{"query": {"query_string": {"query": "\" ' , (; ,&' ' &. > jPortion) , ' \" AND ' , (; ,&' ' &. > englishPortion) , '"}}}'
+NB. '{"query": {"query_string": {"query": "\" ' , (; ,&' ' &. > jPortion) , ' \" "}}}'
+)
+
+NB. https://opensearch.org/docs/latest/query-dsl/term/
 queryAws =: 3 : 0
-query =. '{"query": {"match": {"body":"Jslashco"}}, "_source":["_id"]}' 
+NB. y Query string
+NB. query =. '{"query": {"match_phrase": {"body":"' , (translateToJEnglish y) , '"}}, "_source":["_id"]}' 
+query =. createQuery y
 smoutput query
-command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" https://search-jsearch-widrwfxb2alpzurmhbe2jyvcjm.eu-north-1.es.amazonaws.com/jsearch/_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+smoutput dec_pjson_ query
+command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" ' , jsearchUrl , '_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
 dec_pjson_ (2!:0) command
 )
 NB. ====================== End Forum Database ==============================
