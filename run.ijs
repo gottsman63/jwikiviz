@@ -7,6 +7,14 @@ load 'web/gethttp'
 load 'regex'
 load 'gl2'
 coinsert 'jgl2'
+NB. Stephen's Notes
+NB. Align the numbers in the TOC with the entries.  Gray them—they shouldn’t jump out.
+NB. Fix the red hover rectangle—burnt umber or something.
+NB. Try 1280 for the minimum monitor width.
+NB. Color code (make a key) for Wiki vs. Forum in the search results display
+NB. Highlight the term that matches the search
+NB. Revisit the Tags question—flat list?  Address book ABC organization?
+NB. Tags as first-class/suggested search terms…?
 
 NB. *** Wiki Meeting Discussion Items ***
 NB. How should we handle bug reports?  General feedback? "Bugs/Feedback" button that would do what?

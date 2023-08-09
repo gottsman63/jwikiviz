@@ -85,7 +85,7 @@ jPortion =. tokens -. englishPortion
 
 translateToJ =: 3 : 0
 NB. y A string possibly containing JEnglish tokens
-tokens =. ;: y
+tokens =. ;: y -. ''''
 hits =. jEnglishWords i."1 0 tokens
 ; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
 )
@@ -448,27 +448,57 @@ window&populateAwsPage"(0) pages
 createQuery =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
-NB. Return a NEAR query of JEnglish tokens and English tokens
-NB. raw =. ('''' ; '''''') rxrplc y
-NB. rawTokens =. ;: raw
 rawTokens =. ;: y
 hits =. jMnemonics i."1 0 rawTokens
 tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
 englishPortion =. tokens -. jEnglishWords
 jPortion =. tokens -. englishPortion
-NB. '{"query": {"match_phrase": {"body":"' , (; ,&' ' &. > jPortion) , '"}, "match":"' , ( ; ,&' ' &. > englishPortion) , '"}, "_source":["_id"]}' 
-'{"query": {"query_string": {"query": "\" ' , (; ,&' ' &. > jPortion) , ' \" AND ' , (; ,&' ' &. > englishPortion) , '"}}}'
-NB. '{"query": {"query_string": {"query": "\" ' , (; ,&' ' &. > jPortion) , ' \" "}}}'
+if. 0 < # englishPortion do. englishText =. ; ,&' ' &. > englishPortion else. englishText =. '' end.
+if. 0 < # jPortion do. jText =. '\"' , (; ,&' ' &. > jPortion) , '\"' else. jText =. '' end.
+if. (0 = # englishPortion) +. 0 = # jPortion do. and =. '' else. and =. ' AND ' end.
+NB. '{"query": {"query_string": {"query": "\" ' , (; ,&' ' &. > jPortion) , ' \" AND ' , (; ,&' ' &. > englishPortion) , '"}}}'
+'{"_source":true, "query": {"query_string": {"query": "' , jText , and , englishText , '"}}, "highlight": {"fields": {"body": {}}}}'
+)
+
+drill =: 4 : 0
+NB. x A label
+NB. y A two-column boxed structure whose left column has labels.
+NB. Return the right box of the row whose left box contains the label x
+index =. ({."1 y) i. < x
+if. index = # y do. 
+	smoutput x , ' not found in box structure:'
+	smoutput y
+	return.
+end.
+> {: index { y
+)
+
+removeEmphasis =: 3 : 0
+NB. y A phrase that may contain <em> tags.
+('</em>';'') rxrplc ('<em>';'') rxrplc y
 )
 
 NB. https://opensearch.org/docs/latest/query-dsl/term/
+NB. https://www.elastic.co/guide/en/elasticsearch/reference/current/search-fields.html # Suppress _source.
 queryAws =: 3 : 0
 NB. y Query string
-NB. query =. '{"query": {"match_phrase": {"body":"' , (translateToJEnglish y) , '"}}, "_source":["_id"]}' 
 query =. createQuery y
 smoutput query
-smoutput dec_pjson_ query
 command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" ' , jsearchUrl , '_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
-dec_pjson_ (2!:0) command
+time =. (6!:2) 'result =. (2!:0) command'
+boxes =. dec_pjson_ result
+smoutput boxes
+if. 4 ~: # boxes do. 
+	boxes
+else.
+	hits =. 'hits' drill 'hits' drill boxes
+	hitCount =. ('value'&drill)@('total'&drill)@('hits'&drill) boxes
+	titles =. translateToJ &. > removeEmphasis &. > ('subject'&drill)@('_source'&drill) &. > hits
+	highlights =. ('body'&drill)@('highlight'&drill) &. > hits
+	firstHighlights =. translateToJ &. > removeEmphasis &. > > {. &. > highlights
+end.
+NB. smoutput boxes
+NB. smoutput 'time' ; time ; 'json size' ; (# result) ; 'hitCount' ; hitCount
+NB. titles ,. firstHighlights
 )
 NB. ====================== End Forum Database ==============================
