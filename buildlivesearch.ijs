@@ -10,6 +10,7 @@ wikiDbFile =: jpath '~temp/wiki.db'
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
+wordsToTranslate =: _2 ]\ 'gt' ; '>' ; 'lt' ; '<' ; 'quot' ; '"' ; 'amp' ; '&'
 
 createIndexDatabase =: 3 : 0
 try. (1!:55) < indexDbFile catch. end.
@@ -140,6 +141,14 @@ raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
 string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+)
+
+translateWords =: 3 : 0
+NB. y Text with words that should be punctuation
+NB. Convert the words to punctuationo
+rawTokens =. ;: y
+hits =. ({."1 wordsToTranslate) i."1 0 rawTokens
+; (hits {"0 1 ({:"1 wordsToTranslate) ,"1 0 rawTokens) ,. < ' '
 )
    
 convertToForumUrl =: 3 : 0
@@ -445,7 +454,8 @@ smoutput 'pages' ; pages
 window&populateAwsPage"(0) pages
 )
 
-createQuery =: 3 : 0
+createQuery =: 4 : 0
+NB. x Earliest year to return
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 rawTokens =. ;: y
@@ -457,20 +467,28 @@ if. 0 < # englishPortion do. englishText =. ; ,&' ' &. > englishPortion else. en
 if. 0 < # jPortion do. jText =. '\"' , (; ,&' ' &. > jPortion) , '\"' else. jText =. '' end.
 if. (0 = # englishPortion) +. 0 = # jPortion do. and =. '' else. and =. ' AND ' end.
 NB. '{"query": {"query_string": {"query": "\" ' , (; ,&' ' &. > jPortion) , ' \" AND ' , (; ,&' ' &. > englishPortion) , '"}}}'
-'{"_source":true, "query": {"query_string": {"query": "' , jText , and , englishText , '"}}, "highlight": {"fields": {"body": {}}}}'
+NB. '{"_source":true, "query": {"query_string": {"query": "' , jText , and , englishText , ' "}}, "highlight": {"fields": {"body": {}}}}'
+NB. '{"_source":true, "query": {"query_string": {"query": "' , jText , and , englishText , ' "}}, "range": {"_source.year": {"gte": 2005, "lte": 9999}},  "highlight": {"fields": {"body": {}}}}'
+'{"_source":true, "query": {"query_string": {"query": "year:>=' , (": x) , ' AND ' , jText , and , englishText , ' "}}, "highlight": {"fields": {"body": {}}}}'
 )
 
 drill =: 4 : 0
-NB. x A label
-NB. y A two-column boxed structure whose left column has labels.
-NB. Return the right box of the row whose left box contains the label x
-index =. ({."1 y) i. < x
+NB. x A dot-notation label such as hits.total.value
+NB. y A possibly-nested boxed structure whose left column has labels.
+NB. Return the right box of the row whose left box contains the label x, drilling down at dots as necessary
+labels =. < ;. _2 x , '.'
+index =. ({."1 y) i. {. labels
 if. index = # y do. 
 	smoutput x , ' not found in box structure:'
 	smoutput y
+	a:
 	return.
 end.
-> {: index { y
+if. 1 = # labels do.
+	> {:"1 index { y
+else.
+	(}: ; ,&'.' &. > }. labels) drill > {:"1 index { y
+end.
 )
 
 removeEmphasis =: 3 : 0
@@ -480,25 +498,31 @@ NB. y A phrase that may contain <em> tags.
 
 NB. https://opensearch.org/docs/latest/query-dsl/term/
 NB. https://www.elastic.co/guide/en/elasticsearch/reference/current/search-fields.html # Suppress _source.
-queryAws =: 3 : 0
+queryAws =: 4 : 0
+NB. x Earliest year to return
 NB. y Query string
-query =. createQuery y
+query =. x createQuery y
 smoutput query
-command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" ' , jsearchUrl , '_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+NB. command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" ' , jsearchUrl , '_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+NB. command =. 'curl -X GET -u "' , jsearchUser , ':' , jsearchPassword , '" ' , 'https://xtidys25oj7v2loguchudxg6by0qrgvq.lambda-url.eu-north-1.on.aws/' , '_search --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+command =. 'curl -X POST -u "' , jsearchUser , ':' , jsearchPassword , '" ' , 'https://uslvuzgai5.execute-api.eu-north-1.amazonaws.com/test --data-binary ''' , query , ''' -H "Content-Type: application/json"'
+NB. (2!:0) 'curl -X GET ' , 'https://xtidys25oj7v2loguchudxg6by0qrgvq.lambda-url.eu-north-1.on.aws?query=Hahahahaha'
+smoutput command
 time =. (6!:2) 'result =. (2!:0) command'
+smoutput _180 ]\ result
+return.
 boxes =. dec_pjson_ result
 smoutput boxes
 if. 4 ~: # boxes do. 
 	boxes
 else.
-	hits =. 'hits' drill 'hits' drill boxes
-	hitCount =. ('value'&drill)@('total'&drill)@('hits'&drill) boxes
-	titles =. translateToJ &. > removeEmphasis &. > ('subject'&drill)@('_source'&drill) &. > hits
-	highlights =. ('body'&drill)@('highlight'&drill) &. > hits
-	firstHighlights =. translateToJ &. > removeEmphasis &. > > {. &. > highlights
+	hits =. 'hits.hits' drill boxes
+	hitCount =. 'hits.total.value' drill boxes
+	titles =. translateWords &. > translateToJ &. > removeEmphasis &. > '_source.subject'&drill &. > hits
+	years =. '_source.year'&drill &. > hits
+	highlights =. translateWords &. > translateToJ &. > removeEmphasis &. > > {. &. > 'highlight.body'&drill &. > hits
 end.
-NB. smoutput boxes
-NB. smoutput 'time' ; time ; 'json size' ; (# result) ; 'hitCount' ; hitCount
-NB. titles ,. firstHighlights
+smoutput 'time' ; time ; 'json size' ; (# result) ; 'hitCount' ; hitCount
+titles ,. highlights ,. years
 )
 NB. ====================== End Forum Database ==============================
