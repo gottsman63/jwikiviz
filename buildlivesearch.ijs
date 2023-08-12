@@ -338,11 +338,16 @@ openForumDatabase =: 3 : 0
 forumDb =: sqlopen_psqlite_ forumDbFile
 )
 
+exportForums =: 3 : 0
+openAddOnDatabase ''
+rows =. > {: sqlreadm__addOnDb 'select forumname, year, month, subject, author, link from forums'
+)
+
 populateForumDatabase =: 3 : 0
 NB. Add any new forum posts to the forum cache database.
 openForumDatabase ''
 openAddOnDatabase ''
-try. addOnResult =. > {: sqlreadm__addOnDb 'select forumname, year, month, subject, author, link from forums' catcht. smoutput slqerror__wikiDb '' end.
+try. addOnResult =. > {: sqlreadm__addOnDb 'select forumname, year, month, subject, author, link from forums' catcht. smoutput slqerror__addonDb '' end.
 addOnUrls =. convertToForumUrl"1 addOnResult
 try. forumUrls =. , > {: sqlreadm__forumDb 'select url from forums' catch. catcht. smoutput sqlerror__forumDb end.
 postsToBeLoaded =. (sieve # addOnUrls) ,.~ ((sieve =. -. addOnUrls e. forumUrls) # addOnResult) 

@@ -13,7 +13,7 @@ NB. Fix the red hover rectangle—burnt umber or something.
 NB. Try 1280 for the minimum monitor width.
 NB. Color code (make a key) for Wiki vs. Forum in the search results display
 NB. Highlight the term that matches the search
-NB. Revisit the Tags question—flat list?  Address book ABC organization?
+NB. Revisit the Tags question—flat list?  Address book ABC organization?`
 NB. Tags as first-class/suggested search terms…?
 
 NB. *** Wiki Meeting Discussion Items ***
@@ -175,7 +175,7 @@ wd 'set appUpdate caption *' , appCap
 dbStatus =. checkForNewerDatabase ''
 select. dbStatus
 case. 0 do. dbCap =. 'Local database is up to date'
-case. 1 do. dbCap =. 'Click to load a new database'
+case. 1 do. dbCap =. 'Click to load the latest database'
 case. 2 do. dbCap =. 'Database download required'
 case. 3 do. dbCap =. 'Offline (apparently)'
 end.
@@ -200,6 +200,8 @@ wd 'pn *J Documentation Viewer Add-On'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
+wd       'cc fontStatic static; cn *Font'
+wd       'cc fontSlider slider 2 1 1 1 9 3'
 wd       'cc shortcut button;cn Shortcut...;'
 wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
@@ -256,8 +258,10 @@ end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
 wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.55) , controlHeight) , ';'
+wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.14) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
+wd 'set fontStatic maxwh ' , (": 25 , controlHeight) , ';'
+wd 'set fontSlider maxwh ' , (": 100 , controlHeight) , ';'
 wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 110 , controlHeight) , ';'
@@ -297,6 +301,16 @@ end.
 animate 2
 )
 
+setFontSize =: 3 : 0
+NB. use fontSlider's value to set various font-oriented metrics.
+FontAdjustment =: (". fontSlider) - 5
+TocFont =: 'arial ' , ": 13 + FontAdjustment
+TocLineHeight =: 2 * 13 + FontAdjustment
+VocCellFont =: 'consolas ' , (": 14 + FontAdjustment) , ' bold'
+VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
+CountFont =: 'arial ' , ": 15 + FontAdjustment
+invalidateDisplay ''
+)
 
 vizform_default =: 3 : 0
 eventType =. > {: 5 { wdq
@@ -324,6 +338,10 @@ vizform_close ''
 
 vizform_vocContext_escape =: 3 : 0
 vizform_close ''
+)
+
+vizform_fontSlider_changed =: 3 : 0
+setFontSize ''
 )
 
 vizform_liveForum_button =: 3 : 0
@@ -720,6 +738,7 @@ VocValenceFont =: 'arial 14'
 CategoryIndex =: 0
 CategoryTable =: ''
 HighlightUrls =: '' NB. Holds the labels ; URLs to be used for highlighting the map. 
+FontAdjustment =: 0
 TocFont =: 'arial 13'
 LiveSearchFont =: 'courier 16'
 TocLineHeight =: 25
@@ -750,8 +769,8 @@ XFileHashLabel =: > IFWGET_wgethttp_ { 'x-file-hash: ' ; 'X-File-Hash: '
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
 NB. Return the string specification of the font to use.
-if. y < 0 do. 'arial 16' return. end.
-fonts =. 'arial bold 17' ; 'arial bold 14' ; 'arial 14'
+if. y < 0 do. 'arial ' , ": FontAdjustment + 16 return. end.
+fonts =. ('arial bold ' , ": FontAdjustment + 17) ; ('arial bold ' , ": FontAdjustment + 14) ; ('arial ' , ": FontAdjustment + 14)
 > (y <. <: # fonts) { fonts
 )
 

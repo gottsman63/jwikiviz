@@ -14,6 +14,128 @@ codeSearchFile =: appDir , '/codesearch.html'
 forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
+masterDbFile =: jpath '~temp/master.db'
+
+jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jMnemonics =: , &. > 0 {"1 jEnglishDict
+jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
+NB. wordsToTranslate =: _2 ]\ 'gt' ; '>' ; 'lt' ; '<' ; 'quot' ; '"' ; 'amp' ; '&'
+
+translateToJEnglish =: 3 : 0
+NB. y Text with J mnemonics and English words
+NB. Convert the J mnemonics to JEnglish.
+raw =. ('''' ; '''''') rxrplc y
+rawTokens =. ;: raw
+hits =. jMnemonics i."1 0 rawTokens
+string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+)
+
+getHtml =: 3 : 0
+NB. y Boxed urls
+NB. Return a list of boxed html, one for each url
+files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. # y
+fileBlocks =. _100 <\ files
+urlBlocks =. _100 <\ y
+for_i. i. # fileBlocks do.
+	fileBatch =. > i { fileBlocks
+	smoutput fileBatch
+	urlBatch =. > i { urlBlocks
+	smoutput urlBatch
+	urlSpec =. ; ('"'&, &. > ,&'"' &. > urlBatch) ,. <' '
+	outputSpec =. ; (<' -o ') ,. fileBatch
+	command =. 'curl ' , outputSpec , ' ' , urlSpec
+	try.
+		(2!:0) command
+	catch.
+		smoutput (13!:12) ''
+		smoutput urlSpec
+	end.
+end.
+<@(1!:1)"0 files
+)
+
+NB. =================================== Master DB =============================================
+createOrOpenMasterDb =: 3 : 0
+if. fexist < masterDbFile do.
+	masterDb =: sqlopen_psqlite_ masterDbFile
+else.
+	masterDb =: sqlcreate_psqlite_ masterDbFile
+	NB. The id can be used with other columns to reconstruct the link, which may not be sent down to the client (since it's fairly long).
+	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, author TEXT, body TEXT)'
+end.
+)
+
+updateMasterDbWithPostsForDate =: 4 : 0
+NB. x Forum name (programming, chat, etc.)
+NB. y year, monthIndex
+NB. Get posts from forum x for the date y and upsert them.
+'year monthIndex' =. y
+smoutput 'Processing' ; x ; year ; > monthIndex { Months
+wd 'msgs'
+tocHtml =. gethttp 'https://www.jsoftware.com/pipermail/' , x , '/' , (": year) , '-' , (> monthIndex { Months) , '/subject.html'
+ol =. {:"2 (rxcomp '<LI><A HREF="([^"]+)">') rxmatches tocHtml
+offsets =. {."1 ol
+lengths =. {:"1 ol
+htmlIds =. lengths <@{."0 1 offsets }."0 1 tocHtml
+links =. ('https://www.jsoftware.com/pipermail/', x , '/' , (": year) , '-' , (> monthIndex { Months) , '/')&, &. > htmlIds
+postsHtml =. getHtml links
+dayPat =. rxcomp '<I>\w\w\w\s\w\w\w\s+(\d+)\s\d\d'
+titlePat =. rxcomp '<TITLE>([^<]+)</TITLE>'
+authorPat =. rxcomp '<B>([^<]+)</B>'
+cols =. ;: 'link id sourcename sourcetype year monthindex day subject author body'
+for_postHtml. postsHtml do.
+	html =. > postHtml
+	'dayOffset dayLength' =. {: dayPat rxmatch html
+	day =. ". dayLength {. dayOffset }. html
+	'titleOffset titleLength' =. {: titlePat rxmatch html
+	title =. translateToJEnglish }: }: }: }: titleLength {. titleOffset }. html
+	'authorOffset authorLength' =. {: authorPat rxmatch html
+	author =. authorLength {. authorOffset }. html
+	id =. 6 {. > postHtml_index { htmlIds
+	link =. postHtml_index { links
+	try.
+		body =. translateToJEnglish _11 }. 6 }. b {.~ I. '<!--endarticle-->' E. b =. ((# f) + I. (f =. '<!--beginarticle-->') E. html) }. html
+	catch.
+		body =. 'Failed to find article fenceposts.'
+	end.
+	if. 0 = # body do. body =. ' ' end.
+	data =. link ; id ; x ; 'F' ; year ; monthIndex ; day ; title ; author ; body
+	try.
+		sqlupsert__masterDb 'content' ; 'link' ; cols ; < data
+	catcht. catch.
+		smoutput 'Failed to insert:'
+		smoutput ,. data
+	end.
+end.
+# links
+)
+
+updateMasterDbWithPosts =: 3 : 0
+NB. Determine the most recent year-month for which we have posts.  
+NB. Grab all of those posts as well as all posts since.
+createOrOpenMasterDb ''
+'currentYear currentMonthIndex' =. 0 _1 + 2 {. (6!:0) ''
+if. 0 = , > > {: sqlreadm__masterDb 'select count(*) from content where sourcetype = "F"' do.
+	startYear =. 1998
+	startMonth =. 0
+else.
+	startYear =. {. , > > {: sqlreadm__masterDb 'select max(year) from content where sourcetype = "F"'
+	startMonth =. {. , > > {: sqlreadm__masterDb 'select max(monthIndex) from content where sourcetype = "F" and year = ' , ": startYear
+end.smoutput '$ startYear ' ; $ startYear
+years =.  startMonth }. 12 # startYear + i. 1 + currentYear - startYear
+months =. startMonth }. (12 * 1 + currentYear - startYear) $ i.12
+dates =. years ,. months
+forums =. ;: 'general chat programming database source beta'
+((6 * # dates) $ forums) updateMasterDbWithPostsForDate &. > <"(1) 6 # dates
+)
+
+updateMasterDbWithWikiPages =: 3 : 0
+)
+
+updateMasterDb =: 3 : 0
+
+)
+NB. ================================= End Master DB ===========================================
 
 generateDatabaseReport =: 3 : 0
 NB. Write a report on the newly-created database to the wiki.
