@@ -1810,6 +1810,7 @@ NB. 		result =. (> tagCatId&~: &. > 1 {"1 rawResult) # rawResult  NB. Drop the c
 		TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < result
 	end.
 end.
+log '...(getTocOutlineRailEntries) returning ' , (": # result) , ' results.'
 result
 )
 

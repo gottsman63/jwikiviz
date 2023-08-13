@@ -30,19 +30,23 @@ hits =. jMnemonics i."1 0 rawTokens
 string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 )
 
+convertToWikiUrl =: 3 : 0
+NB. Title of the form /wiki/...
+'https://code.jsoftware.com/mediawiki/index.php?title=' , (urlencode 6 }. y) , '&action=edit'
+)
+
 getHtml =: 3 : 0
 NB. y Boxed urls
 NB. Return a list of boxed html, one for each url
-files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. # y
-fileBlocks =. _100 <\ files
-urlBlocks =. _100 <\ y
+blockSize =. 100 <. # y
+files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. blockSize
+fileBlocks =. (- blockSize) <\ files
+urlBlocks =. (- blockSize) <\ y
 for_i. i. # fileBlocks do.
-	fileBatch =. > i { fileBlocks
-	smoutput fileBatch
 	urlBatch =. > i { urlBlocks
-	smoutput urlBatch
+	smoutput 'urlbatch' ; < urlBatch
 	urlSpec =. ; ('"'&, &. > ,&'"' &. > urlBatch) ,. <' '
-	outputSpec =. ; (<' -o ') ,. fileBatch
+	outputSpec =. ; (<' -o ') ,. files
 	command =. 'curl ' , outputSpec , ' ' , urlSpec
 	try.
 		(2!:0) command
@@ -54,7 +58,23 @@ end.
 <@(1!:1)"0 files
 )
 
+extractTextFromWikiArticle =: 3 : 0
+NB. y HTML
+start =. '<textarea'
+end =. '</textarea'
+try.
+result =. p {.~ I. end E. p =. ((# start) + I. start E. y) }. y
+catch.
+smoutput 'extractTextFromWikiArticle Failure! '
+''
+return.
+end.
+result
+)
+
 NB. =================================== Master DB =============================================
+masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body'
+
 createOrOpenMasterDb =: 3 : 0
 if. fexist < masterDbFile do.
 	masterDb =: sqlopen_psqlite_ masterDbFile
@@ -82,7 +102,6 @@ postsHtml =. getHtml links
 dayPat =. rxcomp '<I>\w\w\w\s\w\w\w\s+(\d+)\s\d\d'
 titlePat =. rxcomp '<TITLE>([^<]+)</TITLE>'
 authorPat =. rxcomp '<B>([^<]+)</B>'
-cols =. ;: 'link id sourcename sourcetype year monthindex day subject author body'
 for_postHtml. postsHtml do.
 	html =. > postHtml
 	'dayOffset dayLength' =. {: dayPat rxmatch html
@@ -101,7 +120,7 @@ for_postHtml. postsHtml do.
 	if. 0 = # body do. body =. ' ' end.
 	data =. link ; id ; x ; 'F' ; year ; monthIndex ; day ; title ; author ; body
 	try.
-		sqlupsert__masterDb 'content' ; 'link' ; cols ; < data
+		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
 	catcht. catch.
 		smoutput 'Failed to insert:'
 		smoutput ,. data
@@ -130,10 +149,27 @@ forums =. ;: 'general chat programming database source beta'
 )
 
 updateMasterDbWithWikiPages =: 3 : 0
+dbOpenDb ''
+createOrOpenMasterDb ''
+rows =. ~. > {: sqlreadm__db 'select title, link from wiki limit 10'
+smoutput rows
+links =. 1 {"1 rows
+titles =. {."1 rows
+htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml convertToWikiUrl &. > links
+urls =. 'https://code.jsoftware.com'&, &. > links
+data =. urls ; links ; ((<'wiki') #~ # links) ; ((<'W') #~ # links) ; (9999 #~ # links) ; (11 #~ # links) ; (0 #~ # links) ; titles ; ((<' ') #~ # links) ; < htmls
+NB. try.
+	smoutput ,. data
+	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
+NB. catch. catcht.
+NB.	smoutput (13!:12) ''
+NB.	smoutput sqlerror__masterDb ''
+NB. end.
 )
 
 updateMasterDb =: 3 : 0
-
+updateMasterDbWithPosts ''
+updateMasterDbWithWikiPages ''
 )
 NB. ================================= End Master DB ===========================================
 
