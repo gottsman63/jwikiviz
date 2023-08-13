@@ -39,13 +39,12 @@ getHtml =: 3 : 0
 NB. y Boxed urls
 NB. Return a list of boxed html, one for each url
 blockSize =. 100 <. # y
-files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. blockSize
-fileBlocks =. (- blockSize) <\ files
 urlBlocks =. (- blockSize) <\ y
-for_i. i. # fileBlocks do.
+result =. ''
+for_i. i. # urlBlocks do.
 	urlBatch =. > i { urlBlocks
-	smoutput 'urlbatch' ; < urlBatch
 	urlSpec =. ; ('"'&, &. > ,&'"' &. > urlBatch) ,. <' '
+	files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. blockSize <. # urlBatch
 	outputSpec =. ; (<' -o ') ,. files
 	command =. 'curl ' , outputSpec , ' ' , urlSpec
 	try.
@@ -54,8 +53,9 @@ for_i. i. # fileBlocks do.
 		smoutput (13!:12) ''
 		smoutput urlSpec
 	end.
+	result =. result , <@(1!:1)"0 files
 end.
-<@(1!:1)"0 files
+result
 )
 
 extractTextFromWikiArticle =: 3 : 0
@@ -66,8 +66,7 @@ try.
 result =. p {.~ I. end E. p =. ((# start) + I. start E. y) }. y
 catch.
 smoutput 'extractTextFromWikiArticle Failure! '
-''
-return.
+result =. 'extractTextFromWikiArticle Failure! '
 end.
 result
 )
@@ -151,20 +150,20 @@ forums =. ;: 'general chat programming database source beta'
 updateMasterDbWithWikiPages =: 3 : 0
 dbOpenDb ''
 createOrOpenMasterDb ''
-rows =. ~. > {: sqlreadm__db 'select title, link from wiki limit 10'
-smoutput rows
+rows =. ~. > {: sqlreadm__db 'select title, link from wiki'
+smoutput 'Processing row count' ; # rows
+wd 'msgs'
 links =. 1 {"1 rows
 titles =. {."1 rows
 htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml convertToWikiUrl &. > links
 urls =. 'https://code.jsoftware.com'&, &. > links
 data =. urls ; links ; ((<'wiki') #~ # links) ; ((<'W') #~ # links) ; (9999 #~ # links) ; (11 #~ # links) ; (0 #~ # links) ; titles ; ((<' ') #~ # links) ; < htmls
-NB. try.
-	smoutput ,. data
+try.
 	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
-NB. catch. catcht.
-NB.	smoutput (13!:12) ''
-NB.	smoutput sqlerror__masterDb ''
-NB. end.
+catch. catcht.
+	smoutput (13!:12) ''
+	smoutput sqlerror__masterDb ''
+end.
 )
 
 updateMasterDb =: 3 : 0
