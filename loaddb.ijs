@@ -3,6 +3,7 @@ clear ''
 load 'data/sqlite'
 load 'web/gethttp'
 load 'regex'
+load 'arc/lz4'
 
 db =: ''
 Months =: ;:'January February March April May June July August September October November December'
@@ -15,10 +16,12 @@ forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 masterDbFile =: jpath '~temp/master.db'
+indexFile =: jpath '~temp/jwikiviz.fulltext.txt.zip'
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
+jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
 NB. wordsToTranslate =: _2 ]\ 'gt' ; '>' ; 'lt' ; '<' ; 'quot' ; '"' ; 'amp' ; '&'
 
 translateToJEnglish =: 3 : 0
@@ -27,7 +30,7 @@ NB. Convert the J mnemonics to JEnglish.
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
-string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+string =. ; (hits {"0 1 jPrintedIndices ,"1 0 rawTokens) ,. < ' '
 )
 
 convertToWikiUrl =: 3 : 0
@@ -54,6 +57,9 @@ for_i. i. # urlBlocks do.
 		smoutput urlSpec
 	end.
 	result =. result , <@(1!:1)"0 files
+	smoutput (# y) ; 'gethtml retrieval count: ' ; # result
+	smoutput {. urlBatch
+	wd 'msgs'
 end.
 result
 )
@@ -62,11 +68,11 @@ extractTextFromWikiArticle =: 3 : 0
 NB. y HTML
 start =. '<textarea'
 end =. '</textarea'
+result =. 'extractTextFromWikiArticle Failure! '
 try.
 result =. p {.~ I. end E. p =. ((# start) + I. start E. y) }. y
-catch.
-smoutput 'extractTextFromWikiArticle Failure! '
-result =. 'extractTextFromWikiArticle Failure! '
+catch. catcht.
+smoutput 'extractTextFromWikiArticle Failure! ' , 200 {. result
 end.
 result
 )
@@ -130,7 +136,7 @@ end.
 
 updateMasterDbWithPosts =: 3 : 0
 NB. Determine the most recent year-month for which we have posts.  
-NB. Grab all of those posts as well as all posts since.
+NB. Grab all of those posts as well as all posts since and upsert them into masterDb.
 createOrOpenMasterDb ''
 'currentYear currentMonthIndex' =. 0 _1 + 2 {. (6!:0) ''
 if. 0 = , > > {: sqlreadm__masterDb 'select count(*) from content where sourcetype = "F"' do.
@@ -150,25 +156,42 @@ forums =. ;: 'general chat programming database source beta'
 updateMasterDbWithWikiPages =: 3 : 0
 dbOpenDb ''
 createOrOpenMasterDb ''
-rows =. ~. > {: sqlreadm__db 'select title, link from wiki'
-smoutput 'Processing row count' ; # rows
+rawRows =. > {: sqlreadm__db 'select title, link from wiki'
+uniqueRows =. (~: 1 {"1 rawRows) # rawRows
+smoutput 'Processing row count' ; # uniqueRows
 wd 'msgs'
-links =. 1 {"1 rows
-titles =. {."1 rows
-htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml convertToWikiUrl &. > links
-urls =. 'https://code.jsoftware.com'&, &. > links
-data =. urls ; links ; ((<'wiki') #~ # links) ; ((<'W') #~ # links) ; (9999 #~ # links) ; (11 #~ # links) ; (0 #~ # links) ; titles ; ((<' ') #~ # links) ; < htmls
-try.
-	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
-catch. catcht.
-	smoutput (13!:12) ''
-	smoutput sqlerror__masterDb ''
+for_rowBatch. _1000 < \ uniqueRows do.  NB. sqlite can't handle a bulk insert that includes all of the data, so we batch.
+	rows =. > rowBatch
+	links =. 1 {"1 rows
+	prefixes =. (k =: > 'https:'&-: &. > 6&{. &. > links) { h =. 'https://code.jsoftware.com' ; ''
+	rawUrls =. prefixes , &. > links
+	prefix =. 'https://code.jsoftware.com'
+	urls =. convertToWikiUrl &. > (# prefix)&}. &. > rawUrls
+	titles =. {."1 rows
+	htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
+	data =. rawUrls ; links ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
+	smoutput ,. _5 {. data
+	try.
+		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
+	catch. catcht.
+		smoutput (13!:12) ''
+		smoutput sqlerror__masterDb '' 
+	end.
 end.
 )
 
 updateMasterDb =: 3 : 0
-updateMasterDbWithPosts ''
 updateMasterDbWithWikiPages ''
+updateMasterDbWithPosts ''
+)
+
+generateFullTextContentFile =: 3 : 0
+NB. Create a string of )id sourceType year subject author body) separated by 1 { a.
+createOrOpenMasterDb ''
+table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
+formattedTable =. (0 1 {"1 table) ,. (": &. > 2 {"1 table) ,. 3 4 5 {"1 table
+s =. lz4_compressframe ; ,&(2 3 4 { a.) &. > , formattedTable 
+s (1!:2) < indexFile
 )
 NB. ================================= End Master DB ===========================================
 

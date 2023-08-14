@@ -89,6 +89,7 @@ stageDbFile =: 'jwikiviz.stage.db'
 stageDbPath =: jpath '~temp/' , stageDbFile
 targetDbPath =: jpath '~temp/jwikiviz.db'
 curlTracePath =: jpath '~temp/jwikiviz.trace'
+liveSearchDbPath =: jpath '~temp/jwikiviz.fulltext.db'
 
 clearTrace =: 3 : 0
 '' (1!:2) < tracePath
@@ -1238,7 +1239,7 @@ queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' ,
 )
 
 NB. ---------------------- Live Search ---------------------------
-indexDbFile =: '~temp/jsearch.db'
+NB. indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
 liveSearchPageIndex =: 0
 
@@ -1270,12 +1271,14 @@ invalidateDisplay ''
 )
 
 openLiveSearchDb =: 3 : 0
-if. liveSearchDb -: '' do. try. liveSearchDb =: sqlopen_psqlite_ indexDbFile catch. return. end. end.
+if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end.
 )
+
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
-  
+jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
+
 LiveSearchResults =: '' NB. Title ; Snippet ; URL
 LastLiveSearchQuery =: ''
 
@@ -1286,8 +1289,8 @@ NB. Return a NEAR query of JEnglish tokens and English tokens
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
-tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
-englishPortion =. tokens -. jEnglishWords
+tokens =. hits {"0 1 jPrintedIndices ,"1 0 rawTokens
+englishPortion =. tokens -. jPrintedIndices
 jPortion =. tokens -. englishPortion
 NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
 '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 200)'''
@@ -1295,8 +1298,8 @@ NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 
 
 translateToJ =: 3 : 0
 NB. y A string possibly containing JEnglish tokens
-tokens =. ;: y
-hits =. jEnglishWords i."1 0 tokens
+tokens =. ;: y -. ''''
+hits =. jPrintedIndices i."1 0 tokens
 ; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
 )
 
@@ -1331,7 +1334,8 @@ else.
 	cutoffYear =. 1 + currentYear - ". liveAge
 end.
 query =. createQuery searchBox
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 1000'
+NB. fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 1000'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 300'
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
 catch. catcht.
@@ -1351,7 +1355,7 @@ NB. Convert the J mnemonics to JEnglish.
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
-string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+string =. ; (hits {"0 1 jPrintedIndices ,"1 0 rawTokens) ,. < ' '
 )
 
 drawTocEntryLiveSearch =: 3 : 0
@@ -2171,7 +2175,38 @@ case. 3 do.
 	1
 end.
 )
-NB. ====================================================================
+
+downloadAndBuildFullTextIndexDb =: 3 : 0
+try. (1!:55) < liveSearchDbPath catch. end.
+liveSearchDb =: sqlcreate_psqlite_ liveSearchDbPath
+sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
+sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
+sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
+sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'
+sep =. 2 3 4 { a.
+table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. lz4_uncompressframe (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.zip' NB. We should pull this from AWS S3
+smoutput '$ table' ; $ table
+smoutput _4 {. table
+bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
+titles =. 3 {"1 table
+smoutput 'years' ; _20 {. 2 {"1 table
+years =. > ". &. > 2 {"1 table
+sources =. 1 {"1 table
+urls =. 0 {"1 table
+smoutput '$ bodies' ; $ bodies
+smoutput ,. 5 {. bodies
+smoutput '$ years' ; $ years
+smoutput 10 {. years
+try.
+	sqlinsert__liveSearchDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
+	sqlinsert__liveSearchDb 'jindex' ; (;: 'body') ;  << bodies
+catch. catcht.
+	smoutput (13!:12) ''
+	smoutput sqlerror__liveSearchDb ''
+end.
+''
+)
+NB. ==================== End Database Management ======================
 
 FrameTimeStamps =: ''
 
