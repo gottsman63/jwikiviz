@@ -1757,7 +1757,6 @@ NB. The string name of a top-level category
 NB. Select the current top-level category by string (entry)
 NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
 index =. (3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth) i. < y
-smoutput index
 setTocOutlineRailSelectedIndex index
 )
 
