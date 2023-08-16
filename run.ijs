@@ -116,10 +116,6 @@ log =: 3 : 0
 if. -. LogFlag do. return. end.
 NB. smoutput y
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
-NB. if. 0 = ? 200 do.
-NB.	max =. , > > {: sqlreadm__db 'select max(rowid) from log'
-NB.	sqlcmd__db 'delete from log where rowid < ' , ": 0 >. max - 10000
-NB. end.
 )
 
 clearLog =: 3 : 0
@@ -191,6 +187,7 @@ updateAppVersion ''
 vizform_dbUpdate_button =: 3 : 0
 log 'vizform_dbUpdate_Button'
 downloadAndTransferDatabase ''
+downloadAndBuildFullTextIndexDb ''
 setUpdateButtons ''
 )
 
@@ -204,7 +201,7 @@ wd     'bin h;'
 wd       'cc fontStatic static; cn *Font'
 wd       'cc fontSlider slider 2 1 1 1 9 3'
 wd       'cc shortcut button;cn Shortcut...;'
-wd       'cc clearSearches button;cn Clear *Searches;'
+NB. wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
 wd       'cc logcheck checkbox;cn Debug (Log);'
 wd     'bin z;'
@@ -259,7 +256,7 @@ end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
 wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.14) , controlHeight) , ';'
+NB. wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.14) , controlHeight) , ';'
 wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 wd 'set fontStatic maxwh ' , (": 25 , controlHeight) , ';'
 wd 'set fontSlider maxwh ' , (": 100 , controlHeight) , ';'
@@ -430,6 +427,7 @@ resetForumPostLoadButton ''
 )
 
 vizform_searchBox_button =: 3 : 0
+return.
 log 'vizform_searchBox_button'
 try.
 	search searchBox
@@ -1318,6 +1316,7 @@ NB. y Empty
 NB. Treat the J code as a quoted phrase for query purposes.
 NB. Treat the English (non-J) tokens separately in the query.
 NB. Return a table of title ; Snippet ; Url
+log 'liveSearch: ' , searchBox
 LastLiveSearchQuery =: searchBox
 setLiveSearchPageIndex 0
 try. openLiveSearchDb '' catch. return. end.
@@ -1334,18 +1333,18 @@ else.
 	cutoffYear =. 1 + currentYear - ". liveAge
 end.
 query =. createQuery searchBox
-NB. fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 1000'
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 300'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 1000'
+NB. fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 300'
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
 catch. catcht.
-smoutput 'Problem: ' , sqlerror__liveSearchDb ''
+log 'Problem in liveSearch: ' , sqlerror__liveSearchDb ''
 return.
 end.
 snippets =. translateToJ &. > 4 {"1 result
 sources =. {. &. > 3 {"1 result
 results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
-NB. results =. (~: titles) # results
+log '...(liveSearch) found ' , (": # results) , ' results.'
 LiveSearchResults =: results
 )
 
@@ -2064,6 +2063,7 @@ NB. ============================= End Voc ===============================
 
 NB. ============================ Database Management ====================
 uploadAcct =: '12a1yBS'
+indexUrl =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com/jwikiviz.fulltext.txt.lz4'
 
 dbExists =: 3 : 0
 NB. Return 1 if the target db exists.
@@ -2162,6 +2162,7 @@ case. 2 do.
 		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download (to ~temp); No to quit."'
 		if. result -: 'yes' do. 
 			downloadAndTransferDatabase ''
+			downloadAndBuildFullTextIndexDb ''
 			1
 		else.
 			0
@@ -2183,20 +2184,14 @@ sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
 sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
 sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'
+lz4String =. gethttp indexUrl
 sep =. 2 3 4 { a.
-table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. lz4_uncompressframe (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.zip' NB. We should pull this from AWS S3
-smoutput '$ table' ; $ table
-smoutput _4 {. table
+table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. lz4_uncompressframe lz4String
 bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
 titles =. 3 {"1 table
-smoutput 'years' ; _20 {. 2 {"1 table
 years =. > ". &. > 2 {"1 table
 sources =. 1 {"1 table
 urls =. 0 {"1 table
-smoutput '$ bodies' ; $ bodies
-smoutput ,. 5 {. bodies
-smoutput '$ years' ; $ years
-smoutput 10 {. years
 try.
 	sqlinsert__liveSearchDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
 	sqlinsert__liveSearchDb 'jindex' ; (;: 'body') ;  << bodies

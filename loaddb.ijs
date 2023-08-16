@@ -16,7 +16,7 @@ forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 masterDbFile =: jpath '~temp/master.db'
-indexFile =: jpath '~temp/jwikiviz.fulltext.txt.zip'
+indexFile =: jpath '~temp/jwikiviz.fulltext.txt.lz4'
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
@@ -27,7 +27,7 @@ NB. wordsToTranslate =: _2 ]\ 'gt' ; '>' ; 'lt' ; '<' ; 'quot' ; '"' ; 'amp' ; '
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
-raw =. ('''' ; '''''') rxrplc y
+try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
 string =. ; (hits {"0 1 jPrintedIndices ,"1 0 rawTokens) ,. < ' '
@@ -57,9 +57,6 @@ for_i. i. # urlBlocks do.
 		smoutput urlSpec
 	end.
 	result =. result , <@(1!:1)"0 files
-	smoutput (# y) ; 'gethtml retrieval count: ' ; # result
-	smoutput {. urlBatch
-	wd 'msgs'
 end.
 result
 )
@@ -86,7 +83,7 @@ if. fexist < masterDbFile do.
 else.
 	masterDb =: sqlcreate_psqlite_ masterDbFile
 	NB. The id can be used with other columns to reconstruct the link, which may not be sent down to the client (since it's fairly long).
-	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, author TEXT, body TEXT)'
+	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, jsubject TEXT, author TEXT, body TEXT)'
 end.
 )
 
@@ -103,6 +100,7 @@ offsets =. {."1 ol
 lengths =. {:"1 ol
 htmlIds =. lengths <@{."0 1 offsets }."0 1 tocHtml
 links =. ('https://www.jsoftware.com/pipermail/', x , '/' , (": year) , '-' , (> monthIndex { Months) , '/')&, &. > htmlIds
+if. 0 = # links do. 0 return. end.
 postsHtml =. getHtml links
 dayPat =. rxcomp '<I>\w\w\w\s\w\w\w\s+(\d+)\s\d\d'
 titlePat =. rxcomp '<TITLE>([^<]+)</TITLE>'
@@ -112,17 +110,19 @@ for_postHtml. postsHtml do.
 	'dayOffset dayLength' =. {: dayPat rxmatch html
 	day =. ". dayLength {. dayOffset }. html
 	'titleOffset titleLength' =. {: titlePat rxmatch html
-	title =. translateToJEnglish }: }: }: }: titleLength {. titleOffset }. html
+	title =. }: }: }: }: titleLength {. titleOffset }. html
+	jtitle =. translateToJEnglish title
 	'authorOffset authorLength' =. {: authorPat rxmatch html
 	author =. authorLength {. authorOffset }. html
 	id =. 6 {. > postHtml_index { htmlIds
 	link =. postHtml_index { links
 	try.
-		body =. translateToJEnglish _11 }. 6 }. b {.~ I. '<!--endarticle-->' E. b =. ((# f) + I. (f =. '<!--beginarticle-->') E. html) }. html
+		body =. _11 }. 6 }. b {.~ I. '<!--endarticle-->' E. b =. ((# f) + I. (f =. '<!--beginarticle-->') E. html) }. html
 	catch.
 		body =. 'Failed to find article fenceposts.'
 	end.
 	if. 0 = # body do. body =. ' ' end.
+	body =. translateToJEnglish title , ' ' , author , ' ' , body
 	data =. link ; id ; x ; 'F' ; year ; monthIndex ; day ; title ; author ; body
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
@@ -157,20 +157,23 @@ updateMasterDbWithWikiPages =: 3 : 0
 dbOpenDb ''
 createOrOpenMasterDb ''
 rawRows =. > {: sqlreadm__db 'select title, link from wiki'
-uniqueRows =. (~: 1 {"1 rawRows) # rawRows
+rawTitles =. 0 {"1 rawRows
+rawLinks =. 1 {"1 rawRows
+prefixes =. (k =: > 'https:'&-: &. > 6&{. &. > rawLinks) { h =. 'https://code.jsoftware.com' ; ''
+rawUrls =. prefixes , &. > rawLinks
+uniqueRows =. (~: rawUrls) # rawTitles ,. rawUrls
 smoutput 'Processing row count' ; # uniqueRows
 wd 'msgs'
-for_rowBatch. _1000 < \ uniqueRows do.  NB. sqlite can't handle a bulk insert that includes all of the data, so we batch.
+for_rowBatch. _100 < \ uniqueRows do.  NB. sqlite can't handle a bulk insert that includes all of the data, so we batch.
 	rows =. > rowBatch
+	smoutput 'processing row count' ; # rows
+	wd 'msgs'
 	links =. 1 {"1 rows
-	prefixes =. (k =: > 'https:'&-: &. > 6&{. &. > links) { h =. 'https://code.jsoftware.com' ; ''
-	rawUrls =. prefixes , &. > links
 	prefix =. 'https://code.jsoftware.com'
-	urls =. convertToWikiUrl &. > (# prefix)&}. &. > rawUrls
+	urls =. convertToWikiUrl &. > ids =. (# prefix)&}. &. > links
 	titles =. {."1 rows
 	htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
-	data =. rawUrls ; links ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
-	smoutput ,. _5 {. data
+	data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
 	catch. catcht.
@@ -181,8 +184,8 @@ end.
 )
 
 updateMasterDb =: 3 : 0
-updateMasterDbWithWikiPages ''
 updateMasterDbWithPosts ''
+updateMasterDbWithWikiPages ''
 )
 
 generateFullTextContentFile =: 3 : 0
@@ -679,13 +682,13 @@ end.
 setupTables =: 3 : 0
 NB. Note that these should be the first rows inserted into the categories table.
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category parentseq count') ;      < 0 ; _1 ; 1 ; '' ; 0 ; _1
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 5 ; '*Live Search' ; _1 ; 7 ; ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 10 ; '*NuVoc' ; _1 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Search' ; _1 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Search' ; _1 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 30 ; '*Forums' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 40 ; '*Search' ; _1 ; 4 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 50 ; '*JSaurus' ; _1 ; 5 ; 'https://jsaurus.info/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 60 ; '*JPlayground' ; _1 ; 6 ; 'https://jsoftware.github.io/j-playground/bin/html2/'
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 70 ; '*Live Search' ; _1 ; 7 ; ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1e6 ; '*Bookmarks' ; _1 ; 8 ; 'https://www.jsoftware.com/'
 )
 
