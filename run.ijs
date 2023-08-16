@@ -27,6 +27,7 @@ NB. Look for more trace opportunities.
 NB. Should we check for new versions at other times?
 NB. Age slider should go to "All" at ten years.
 NB. Fix "TocEntryForumYear  =: 2023"
+NB. Add colon to the J tokens
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -69,7 +70,7 @@ NB.	smoutput 'JWikiViz Versions' ; v1 ; v2
 	if. v1 -: v2 do. 1 return. end.
 catch.
 	smoutput 'Problem: ' , (13!:12) ''
-	log 'Problem: ' , (13!:12) ''
+	1 log 'Problem: ' , (13!:12) ''
 	0 return.
 end.
 0
@@ -111,16 +112,60 @@ catcht.
 	smoutput 'Error opening database'
 end.
 )
+NB. ================== Logging ===================
+logHtmlPrefix =: 0 : 0
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Log</title>
+  </head>
+  <body>
+  <pre>
+)
 
-log =: 3 : 0
-if. -. LogFlag do. return. end.
+logHtmlSuffix =: 0 : 0
+  </pre>
+  </body>
+</html>
+)
+
+setSnapshotLogButtonState =: 3 : 0
+count =. > > {: sqlreadm__db 'select count(*) from log'
+if. count = 0 do.
+	wd 'set snapshotLog visible 0'
+else.
+	wd 'set snapshotLog visible 1'	
+	wd 'set snapshotLog caption Show: ' , , ": count
+end.
+)
+
+snapshotLogToBrowser =: 3 : 0
+entries =. |. > {: sqlreadm__db 'select datetime, msg from log'
+datetimes =. ,&'    ' &. > 0 {"1 entries
+msgs =. 1 {"1 entries
+html =. logHtmlPrefix , (; datetimes ,. ,&'<br>' &. > msgs) , logHtmlSuffix
+wd 'set browser html *' , html
+)
+
+isLogEmpty =: 3 : 0
+NB. Return 1 if the log is empty
+0 = > > {: sqlreadm__db 'select count(*) from log'
+)
+
+log =: 0&baseLog : baseLog
+
+baseLog =: 4 : 0
+if. (x = 0) *. -. LogFlag do. return. end.
 NB. smoutput y
 sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
+setSnapshotLogButtonState ''
 )
 
 clearLog =: 3 : 0
 sqlcmd__db 'delete from log'
 )
+NB. =============== End Logging ===================
 
 initAdmin =: 3 : 0
 log 'initAdmin'
@@ -203,7 +248,8 @@ wd       'cc fontSlider slider 2 1 1 1 9 3'
 wd       'cc shortcut button;cn Shortcut...;'
 NB. wd       'cc clearSearches button;cn Clear *Searches;'
 wd       'cc searchBox edit;'
-wd       'cc logcheck checkbox;cn Debug (Log);'
+wd       'cc logcheck checkbox; cn Debug (Log);'
+wd       'cc snapshotLog button; cn 0;'
 wd     'bin z;'
 wd     'bin h;'
 wd       'cc dbUpdate button; cn Haha!;'
@@ -231,6 +277,7 @@ wd     'bin z;'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
+wd 'set snapshotLog visible 0'
 )
 
 LayoutForumPostLoadButtonEnable =: 0
@@ -257,6 +304,7 @@ vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
 wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
 NB. wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.14) , controlHeight) , ';'
+wd 'set snapshotLog maxwh ' ,  (": (vocContextWidth * 0.14) , controlHeight) , ';'
 wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 wd 'set fontStatic maxwh ' , (": 25 , controlHeight) , ';'
 wd 'set fontSlider maxwh ' , (": 100 , controlHeight) , ';'
@@ -301,7 +349,9 @@ animate 2
 
 setFontSize =: 3 : 0
 NB. use fontSlider's value to set various font-oriented metrics.
+log 'setFontSize'
 FontAdjustment =: (". fontSlider) - 5
+log '...' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
 TocLineHeight =: 2 * 13 + FontAdjustment
 VocCellFont =: 'consolas ' , (": 14 + FontAdjustment) , ' bold'
@@ -340,6 +390,10 @@ vizform_close ''
 
 vizform_fontSlider_changed =: 3 : 0
 setFontSize ''
+)
+
+vizform_snapshotLog_button =: 3 : 0
+snapshotLogToBrowser ''
 )
 
 vizform_liveForum_button =: 3 : 0
@@ -434,13 +488,14 @@ try.
 	wd 'set searchBox text ""'
 	invalidateDisplay ''
 catch. catcht.
-	log (13!:12) ''
-	log dbError ''
+	1 log (13!:12) ''
+	1 log dbError ''
 end.
 )
 
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox
+setTocOutlineRailTopLevelEntry LiveSearchCatString
 animate 3
 )
 
@@ -482,8 +537,8 @@ end.
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError_jwikiviz_ ''
-	log (13!:12) ''
-	log dbError_jwikiviz_ ''
+	1 log (13!:12) ''
+	1 log dbError_jwikiviz_ ''
 end.
 )
 
@@ -505,7 +560,7 @@ try.
 glfill BackgroundColor , 255
 'w h' =. ". wd 'getp wh'
 if. (w < 200) +. h < 200 do.
-	log 'trigger_paint--dimensions too small.  Aborting.'
+	1 log 'trigger_paint--dimensions too small.  Aborting.'
 	return.
 end.
 setDisplayRects ''
@@ -515,8 +570,8 @@ drawFloatingString vocW , vocH
 VocMouseClickXY =: 0 0
 glclip 0 0 10000 10000
 catcht. catch. 
-log (13!:12) ''
-log dbError ''
+1 log (13!:12) ''
+1 log dbError ''
 smoutput (13!:12) ''
 smoutput dbError ''
 end.
@@ -667,8 +722,8 @@ otherTermId =. (getTopCategoryId SearchCatString) getCategoryId y
 parms =. 'categories' ; ('categoryid = ' , ": otherTermId) ; (;: 'count level') ; < count ; 2
 sqlupdate__db parms
 catcht.
-	log (13!:12) ''
-	log 'searchForums Db Error (if any): ' , dbError ''
+	1 log (13!:12) ''
+	1 log 'searchForums Db Error (if any): ' , dbError ''
 end.
 count
 )
@@ -692,8 +747,8 @@ NB.	wikiResults =. searchWiki y
 	selectFirstSearchResult ''
 	invalidateDisplay ''
 catcht.
-	log (13!:12) ''
-	log 'search Db Error (if any): ' , dbError ''
+	1 log (13!:12) ''
+	1 log 'search Db Error (if any): ' , dbError ''
 end.
 )
 
@@ -793,8 +848,8 @@ NB.	log 'drawStringAt ' , (": x) , ' ' , y
 	gltextxy x
 	gltext y
 catch.
-	log 'drawStringAt ' , (": x) , ' ' , y
-	log 'Error in drawStringAt: ' , (13!:12) ''
+	1 log 'drawStringAt ' , (": x) , ' ' , y
+	1 log 'Error in drawStringAt: ' , (13!:12) ''
 NB.	smoutput 'Could not drawStringAt' ; x ; y
 NB.	log 'Could not drawStringAt' ; x ; y 
 end.
@@ -975,7 +1030,7 @@ wd 'set browser url *' , url
 addToHistoryMenu (< url) , < title
 catch.
 	smoutput (13!:12) ''
-	log (13!:12) ''
+	1 log (13!:12) ''
 end.
 )
 
@@ -1338,7 +1393,7 @@ NB. fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''
 try.
 result =. > {: sqlreadm__liveSearchDb fullSearch
 catch. catcht.
-log 'Problem in liveSearch: ' , sqlerror__liveSearchDb ''
+1 log 'Problem in liveSearch: ' , sqlerror__liveSearchDb ''
 return.
 end.
 snippets =. translateToJ &. > 4 {"1 result
@@ -1696,6 +1751,15 @@ end.
 TocOutlineRailSelectedIndex =: 0
 TocOutlineRailScrollIndex =: 0
 TocOutlineRailHoverIndex =: 0
+
+setTocOutlineRailTopLevelEntry =: 3 : 0
+NB. The string name of a top-level category
+NB. Select the current top-level category by string (entry)
+NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
+index =. (3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth) i. < y
+smoutput index
+setTocOutlineRailSelectedIndex index
+)
 
 setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
