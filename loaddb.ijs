@@ -24,15 +24,25 @@ jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ;
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
 jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
-NB. wordsToTranslate =: _2 ]\ 'gt' ; '>' ; 'lt' ; '<' ; 'quot' ; '"' ; 'amp' ; '&'
+htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&'
 
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
-try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
-rawTokens =. ;: raw
+NB. try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
+try. raw =. ('''' ; ' ') rxrplc y catch. smoutput 'Problem!' return. end.
+translatedHtml =. htmlEncodings translateHtmlEncodings raw
+rawTokens =. ;: translatedHtml
 hits =. jMnemonics i."1 0 rawTokens
-string =. ; (hits {"0 1 jPrintedIndices ,"1 0 rawTokens) ,. < ' '
+; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+)
+
+translateHtmlEncodings =: 4 : 0
+NB. x An array of HTML decodes
+NB. y HTML string
+NB. Convert HTML encodings such as &amp; to their ascii characters, recursing until all conversions have been made.
+if. 0 = # x do. y return. end.
+(}. x) translateHtmlEncodings ({. x) rxrplc y
 )
 
 convertToWikiUrl =: 3 : 0
@@ -185,9 +195,14 @@ end.
 )
 
 updateMasterDbWithChangedWikiPages =: 3 : 0
-NB. Use the Mediawiki "changed" page to grab the last three days' changes.
+NB. Use the Mediawiki "changed" page to grab the last three days' changes...
+NB. ...unless there are no wiki pages, in which case load the whole wiki.
 dbOpenDb ''
 createOrOpenMasterDb ''
+if. 0 = # > > {: sqlreadm__masterDb 'select count(*) from content where sourcetype = "W"' do.
+	updateMasterDbWithAllWikiPages ''
+	return.
+end.
 changedLinkHtml =. gethttp 'https://code.jsoftware.com/wiki/Special:RecentChanges?hidebots=1&limit=50&days=3&enhanced=1&urlversion=2'
 ol =. {:"2 (rxcomp '<a href="([^"]+)" class="mw-changeslist-title"') rxmatches changedLinkHtml
 wikiLinks =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
@@ -210,12 +225,13 @@ end.
 updateMasterDb =: 3 : 0
 updateMasterDbWithPosts ''
 updateMasterDbWithChangedWikiPages ''
+NB. updateMasterDbWithAllWikiPages ''
 )
 NB. ================================= End Master DB ===========================================
 
 NB. ===================== Full-Text Search ================================
 generateFullTextContentFile =: 3 : 0
-NB. Create a string of )id sourceType year subject author body) separated by 1 { a.
+NB. Create a string of (id sourceType year subject author body) separated by 1 { a.
 createOrOpenMasterDb ''
 table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
 formattedTable =. (0 1 {"1 table) ,. (": &. > 2 {"1 table) ,. 3 4 5 {"1 table
@@ -677,7 +693,7 @@ while. 0 < # pairsToVisit do.
 	categoryId =. parentId getCategoryId childCategory
 	smoutput categoryId ; $ categoryId
 	if. ((# visitedChildren) = visitedChildren i. < childCategory) *. 0 < # offsetLengths do.
-		sqlcmd__db 'begin transaction'
+NB.		sqlcmd__db 'begin transaction'
 		linkOffsetLengths =. 0 {"2 offsetLengths
 		links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 shortenedHtml
 		titleOffsetLengths =. 1 {"2 offsetLengths
@@ -690,7 +706,7 @@ while. 0 < # pairsToVisit do.
 		cols =. ;: 'categoryid title link'
 		data =. ((# titles) # categoryId) ; titles ; < links
 		sqlinsert__db 'wiki' ; cols ; <data
-		sqlcmd__db 'commit transaction'
+NB.		sqlcmd__db 'commit transaction'
 	end.
 	smoutput 'parentId childCategory' ; parentId ; childCategory
 	parms =.'categories' ; ('categoryid = ' , ": categoryId) ; (;: 'count') ; < count

@@ -8,6 +8,7 @@ load 'regex'
 load 'gl2'
 load 'arc/lz4'
 coinsert 'jgl2'
+
 NB. Stephen's Notes
 NB. Align the numbers in the TOC with the entries.  Gray them—they shouldn’t jump out.
 NB. Fix the red hover rectangle—burnt umber or something.
@@ -24,10 +25,8 @@ NB. *** A Items ***
 NB. Check the behavior of the cursor icon in the Forums section (especially).  
 NB. Test initial installation.  
 NB. Look for more trace opportunities.  
-NB. Should we check for new versions at other times?
-NB. Fix "TocEntryForumYear  =: 2023"
 NB. Add colon to the J tokens
-NB. NuVoc R1 under Reference: blue 200 is wrong.
+NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are a PITA.)
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -775,7 +774,7 @@ LabelColor =: 0 102 204
 ColumnGuideColor =: 220 220 220
 ColumnBorderColor =: 220 220 220
 SelectionColor =: 0 0 0
-HoverColor =: 255 0 0 
+HoverColor =: 138 51 36 
 BarColor =: 245 195 150
 CountColor =: 0 0 255
 CountFont =: 'arial 15'
@@ -1263,7 +1262,7 @@ setTocEntryForumSubjectIndex 0
 ForumSubjectScrollIndex =: 0
 )
 
-TocEntryForumYear =: 2023
+TocEntryForumYear =: {. (6!:0) ''
 
 setTocEntryForumYear =: 3 : 0
 NB. y The year whose posts we'll display
@@ -1342,8 +1341,8 @@ NB. Return a NEAR query of JEnglish tokens and English tokens
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
-tokens =. hits {"0 1 jPrintedIndices ,"1 0 rawTokens
-englishPortion =. tokens -. jPrintedIndices
+tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
+englishPortion =. tokens -. jEnglishWords
 jPortion =. tokens -. englishPortion
 NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
 '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 200)'''
@@ -1352,7 +1351,7 @@ NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 
 translateToJ =: 3 : 0
 NB. y A string possibly containing JEnglish tokens
 tokens =. ;: y -. ''''
-hits =. jPrintedIndices i."1 0 tokens
+hits =. jEnglishWords i."1 0 tokens
 ; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
 )
 
@@ -1388,10 +1387,10 @@ else.
 	cutoffYear =. 1 + currentYear - ". liveAge
 end.
 query =. createQuery searchBox
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 1000'
-NB. fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 300'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
 try.
-result =. > {: sqlreadm__liveSearchDb fullSearch
+time =. (6!:2) 'result =. > {: sqlreadm__liveSearchDb fullSearch'
+NB. smoutput 'Search Time' ; time ; searchBox
 catch. catcht.
 1 log 'Problem in liveSearch: ' , sqlerror__liveSearchDb ''
 return.
@@ -1409,7 +1408,9 @@ NB. Convert the J mnemonics to JEnglish.
 raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
-string =. ; (hits {"0 1 jPrintedIndices ,"1 0 rawTokens) ,. < ' '
+string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+smoutput string
+string
 )
 
 drawTocEntryLiveSearch =: 3 : 0
@@ -2247,7 +2248,8 @@ sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
 sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
 sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'
-lz4String =. gethttp indexUrl
+NB. lz4String =. gethttp indexUrl
+lz4String =. (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.lz4'
 sep =. 2 3 4 { a.
 table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. lz4_uncompressframe lz4String
 bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
