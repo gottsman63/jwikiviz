@@ -396,18 +396,18 @@ snapshotLogToBrowser ''
 
 vizform_liveForum_button =: 3 : 0
 liveSearchShowForumPosts =: ". liveForum
-liveSearch ''
+markLiveSearchDirty ''
 invalidateDisplay ''
 )
 
 vizform_liveWiki_button =: 3 : 0
 liveSearchShowWikiPages =: ". liveWiki
-liveSearch ''
+markLiveSearchDirty ''
 invalidateDisplay ''
 )
 
 vizform_liveAge_changed =: 3 : 0
-liveSearch ''
+markLiveSearchDirty ''
 invalidateDisplay ''
 )
 
@@ -493,6 +493,7 @@ end.
 
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox
+markLiveSearchDirty ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 animate 3
 )
@@ -1364,12 +1365,20 @@ wd 'set liveWiki visible ' , ": y
 wd 'set liveAgeLabel visible ' , ": y
 )
 
-liveSearch =: 3 : 0
+performLiveSearch =: 3 : 0
+NB. y A SQL statement
+> {: sqlreadm__liveSearchDb y
+)
+
+LiveSearchPyx =: a:
+
+submitLiveSearch =: 3 : 0
 NB. y Empty
 NB. Treat the J code as a quoted phrase for query purposes.
 NB. Treat the English (non-J) tokens separately in the query.
-NB. Return a table of title ; Snippet ; Url
-log 'liveSearch: ' , searchBox
+NB. Set and return a table of title ; Snippet ; Url
+log 'submitLiveSearch: ' , searchBox
+LiveSearchResults =: ''
 LastLiveSearchQuery =: searchBox
 setLiveSearchPageIndex 0
 try. openLiveSearchDb '' catch. return. end.
@@ -1387,18 +1396,62 @@ else.
 end.
 query =. createQuery searchBox
 fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
-try.
-time =. (6!:2) 'result =. > {: sqlreadm__liveSearchDb fullSearch'
-NB. smoutput 'Search Time' ; time ; searchBox
-catch. catcht.
-1 log 'Problem in liveSearch: ' , sqlerror__liveSearchDb ''
-return.
+NB. try.
+log 'About to make a pyx.'
+LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
+LiveSearchIsDirty =: 0
+NB. log ": > LiveSearchPyx
+NB. catch. catcht.
+NB. 1 log 'Problem in submitLiveSearch: ' , sqlerror__liveSearchDb ''
+NB. return.
+NB. end.
+)
+
+LiveSearchIsDirty =: 0
+
+markLiveSearchDirty =: 3 : 0
+LiveSearchIsDirty =: 1
+)
+
+processLiveSearchResults =: 3 : 0
+log 'processLiveSearchResults ' , ": rattleResult =. 4 T. LiveSearchPyx
+if. rattleResult = _1001 do.
+	if. LiveSearchIsDirty do. 
+		submitLiveSearch ''
+		animate 1
+	end.
+	rattleResult
+	return.
 end.
-snippets =. translateToJ &. > 4 {"1 result
-sources =. {. &. > 3 {"1 result
-results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
-log '...(liveSearch) found ' , (": # results) , ' results.'
-LiveSearchResults =: results
+if. 0 <: rattleResult do. 
+	log '...(processLiveSearchResults) no results yet.' 
+	animate 1
+	rattleResult
+	return. 
+end.
+try.
+	result =. > LiveSearchPyx
+catch. catcht. 
+	1 log (13!:12) ''
+	rattleResult
+	return.
+end.
+if. 0 = # result do. 
+	LiveSearchResults =: ''
+	log '...(processLiveSearchResults) zero results'
+else.
+	snippets =. translateToJ &. > 4 {"1 result
+	sources =. {. &. > 3 {"1 result
+	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
+	log '...(processLiveSearch) found ' , (": # results) , ' results.'
+	LiveSearchResults =: results
+end.
+LiveSearchPyx =: a:
+if. LiveSearchIsDirty do. 
+	submitLiveSearch '' 
+	animate 1
+end.
+rattleResult
 )
 
 translateToJEnglish =: 3 : 0
@@ -1416,17 +1469,35 @@ drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
 NB. Display the results of the current search against the local database.
 'xx yy width height' =. y
+NB. processLiveSearchResults ''
 setLiveAgeLabel ''
 glclip 0 0 10000 100000
 glrgb 0 0 0
+gltextcolor ''
 glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 glfont LiveSearchFont
 colSep =: 20
-if. -. searchBox -: LastLiveSearchQuery do. liveSearch '' end.
-if. 0 = # LiveSearchResults do. return. end.
+NB. if. -. searchBox -: LastLiveSearchQuery do. submitLiveSearch '' end.
+rattleResult =. processLiveSearchResults ''
+if. (0 = # LiveSearchResults) do.
+	glfont 'arial 30'
+	startY =. <. yy + -: height
+	if. (rattleResult > 0) *. 0 < # searchBox do.
+		n =.  192 * | 1 o. 2 * (6!:1) ''
+		glrgb n , n , n
+		gltextcolor ''
+		startX =. <. (xx + -: width) - -: {. glqextent searchBox
+		(startX , startY) drawStringAt searchBox
+	elseif. rattleResult < 0 do.
+		noResults =. 'No Results'
+		startX =. <. (xx + -: width) - -: {. glqextent noResults
+		(startX , startY) drawStringAt noResults
+	end.
+	return. 
+end.
 pageLabelHeight =. 30
 pageLabelWidth =. 30
 contentHeight =. height - pageLabelHeight
@@ -2295,6 +2366,8 @@ buildForm ''
 layoutForm ''
 setUpdateButtons ''
 loadHistoryMenu ''
+
+0&T."(0) (0 >. 5 - 1 T. '') # 0
 wd 'pshow maximized'
 )
 
