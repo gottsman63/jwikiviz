@@ -11,12 +11,9 @@ coinsert 'jgl2'
 
 NB. Stephen's Notes
 NB. Align the numbers in the TOC with the entries.  Gray them—they shouldn’t jump out.
-NB. Fix the red hover rectangle—burnt umber or something.
 NB. Try 1280 for the minimum monitor width.
 NB. Color code (make a key) for Wiki vs. Forum in the search results display
 NB. Highlight the term that matches the search
-NB. Revisit the Tags question—flat list?  Address book ABC organization?`
-NB. Tags as first-class/suggested search terms…?
 
 NB. *** Wiki Meeting Discussion Items ***
 NB. Expanded test user base (send them the draft announcement email)
@@ -36,6 +33,8 @@ NB. Support parallel download of forum and wiki documents.
 NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
+NB. Revisit the Tags question—flat list?  Address book ABC organization?`
+NB. Tags as first-class/suggested search terms…?
 
 NB. ===================== Version Updates =====================
 addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
@@ -1450,7 +1449,8 @@ colWidth =. <. -: width - colSep
 snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
 titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
-glrgb 0 127 127 NB. Wiki color
+wikiColor =. 0 127 127
+glrgb wikiColor
 gltextcolor ''
 sieve =. sources = <'W'
 glclip xx , yy , colWidth , height
@@ -1458,7 +1458,8 @@ glclip xx , yy , colWidth , height
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-glrgb 110 38 14 NB. Forum color
+forumColor =. 110 38 14
+glrgb forumColor
 gltextcolor ''
 sieve =. sources = <'F'
 glclip xx , yy , colWidth , height
@@ -1471,13 +1472,15 @@ glclip 0 0 10000 100000
 (titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
 if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
 	title =. > titleIndex { titles
+	textColor =. ((titleIndex { sources) = < 'F') { wikiColor ,: forumColor 
 	floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
-	floatRect registerFloatingString title ; LiveSearchFont ; 0 0 0
+	floatRect registerFloatingString title ; LiveSearchFont ; textColor
 end.
 if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
 	snippet =. > snippetIndex { snippets
+	textColor =. ((snippetIndex { sources) = < 'F') { wikiColor ,: forumColor
 	floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
-	floatRect registerFloatingString snippet ; LiveSearchFont ; 0 0 0
+	floatRect registerFloatingString snippet ; LiveSearchFont ; textColor
 end.
 )
 NB. ---------------------- End Live Search ------------------------
