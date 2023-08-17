@@ -6,6 +6,7 @@ load 'data/sqlite'
 load 'web/gethttp'
 load 'regex'
 load 'gl2'
+load 'arc/lz4'
 coinsert 'jgl2'
 NB. Stephen's Notes
 NB. Align the numbers in the TOC with the entries.  Gray them—they shouldn’t jump out.
