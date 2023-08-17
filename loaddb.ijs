@@ -8,6 +8,8 @@ load 'arc/lz4'
 db =: ''
 Months =: ;:'January February March April May June July August September October November December'
 
+wikiUrlPrefix =: 'https://code.jsoftware.com'
+
 appDir =: jpath '~temp/loaddb'
 stageDbFile =: jpath '~temp/stage.db'
 wikiDir =: appDir , '/code.jsoftware.com/wiki'
@@ -150,27 +152,26 @@ years =.  startMonth }. 12 # startYear + i. 1 + currentYear - startYear
 months =. startMonth }. (12 * 1 + currentYear - startYear) $ i.12
 dates =. years ,. months
 forums =. ;: 'general chat programming database source beta'
-((6 * # dates) $ forums) updateMasterDbWithPostsForDate &. > <"(1) 6 # dates
+(((# forums) * # dates) $ forums) updateMasterDbWithPostsForDate &. > <"(1) (# forums) # dates
 )
 
-updateMasterDbWithWikiPages =: 3 : 0
+updateMasterDbWithAllWikiPages =: 3 : 0
 dbOpenDb ''
 createOrOpenMasterDb ''
 rawRows =. > {: sqlreadm__db 'select title, link from wiki'
 rawTitles =. 0 {"1 rawRows
 rawLinks =. 1 {"1 rawRows
-prefixes =. (k =: > 'https:'&-: &. > 6&{. &. > rawLinks) { h =. 'https://code.jsoftware.com' ; ''
+prefixes =. (k =: > 'https:'&-: &. > 6&{. &. > rawLinks) { h =. wikiUrlPrefix ; ''
 rawUrls =. prefixes , &. > rawLinks
 uniqueRows =. (~: rawUrls) # rawTitles ,. rawUrls
 smoutput 'Processing row count' ; # uniqueRows
 wd 'msgs'
-for_rowBatch. _100 < \ uniqueRows do.  NB. sqlite can't handle a bulk insert that includes all of the data, so we batch.
+for_rowBatch. _100 < \ uniqueRows do.
 	rows =. > rowBatch
 	smoutput 'processing row count' ; # rows
 	wd 'msgs'
 	links =. 1 {"1 rows
-	prefix =. 'https://code.jsoftware.com'
-	urls =. convertToWikiUrl &. > ids =. (# prefix)&}. &. > links
+	urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
 	titles =. {."1 rows
 	htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
 	data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
@@ -183,11 +184,36 @@ for_rowBatch. _100 < \ uniqueRows do.  NB. sqlite can't handle a bulk insert tha
 end.
 )
 
-updateMasterDb =: 3 : 0
-updateMasterDbWithPosts ''
-updateMasterDbWithWikiPages ''
+updateMasterDbWithChangedWikiPages =: 3 : 0
+NB. Use the Mediawiki "changed" page to grab the last three days' changes.
+dbOpenDb ''
+createOrOpenMasterDb ''
+changedLinkHtml =. gethttp 'https://code.jsoftware.com/wiki/Special:RecentChanges?hidebots=1&limit=50&days=3&enhanced=1&urlversion=2'
+ol =. {:"2 (rxcomp '<a href="([^"]+)" class="mw-changeslist-title"') rxmatches changedLinkHtml
+wikiLinks =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
+ol =. {:"2 (rxcomp 'class="mw-changeslist-title" title="([^"]+)">') rxmatches changedLinkHtml
+titles =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
+smoutput 'Found ', (": # titles) , ' changed wiki pages.'
+if. 0 = # titles do. return. end.
+links =. (wikiUrlPrefix , '/')&, &. > wikiLinks
+urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
+htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
+data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
+try.
+	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
+catch. catcht.
+	smoutput (13!:12) ''
+	smoutput sqlerror__masterDb '' 
+end.
 )
 
+updateMasterDb =: 3 : 0
+updateMasterDbWithPosts ''
+updateMasterDbWithChangedWikiPages ''
+)
+NB. ================================= End Master DB ===========================================
+
+NB. ===================== Full-Text Search ================================
 generateFullTextContentFile =: 3 : 0
 NB. Create a string of )id sourceType year subject author body) separated by 1 { a.
 createOrOpenMasterDb ''
@@ -196,7 +222,7 @@ formattedTable =. (0 1 {"1 table) ,. (": &. > 2 {"1 table) ,. 3 4 5 {"1 table
 s =. lz4_compressframe ; ,&(2 3 4 { a.) &. > , formattedTable 
 s (1!:2) < indexFile
 )
-NB. ================================= End Master DB ===========================================
+NB. ================== End Full-Text Search ================================
 
 generateDatabaseReport =: 3 : 0
 NB. Write a report on the newly-created database to the wiki.
@@ -808,5 +834,7 @@ loadTagCategories ''
 loadForum &. > ;: 'programming general beta chat source database '
 finishLoadingForums ''
 writeEndTime ''
+updateMasterDb ''
+generateFullTextContentFile ''
 uploadDb ''
 )

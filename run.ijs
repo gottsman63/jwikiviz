@@ -18,7 +18,6 @@ NB. Revisit the Tags question—flat list?  Address book ABC organization?`
 NB. Tags as first-class/suggested search terms…?
 
 NB. *** Wiki Meeting Discussion Items ***
-NB. How should we handle bug reports?  General feedback? "Bugs/Feedback" button that would do what?
 NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
@@ -26,9 +25,9 @@ NB. Check the behavior of the cursor icon in the Forums section (especially).
 NB. Test initial installation.  
 NB. Look for more trace opportunities.  
 NB. Should we check for new versions at other times?
-NB. Age slider should go to "All" at ten years.
 NB. Fix "TocEntryForumYear  =: 2023"
 NB. Add colon to the J tokens
+NB. NuVoc R1 under Reference: blue 200 is wrong.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
