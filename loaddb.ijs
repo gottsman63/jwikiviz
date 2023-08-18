@@ -11,38 +11,44 @@ Months =: ;:'January February March April May June July August September October
 wikiUrlPrefix =: 'https://code.jsoftware.com'
 
 appDir =: jpath '~temp/loaddb'
-stageDbFile =: jpath '~temp/stage.db'
+stageDbFile =: appDir , '/jwikiviz.stage.db'
 wikiDir =: appDir , '/code.jsoftware.com/wiki'
 codeSearchFile =: appDir , '/codesearch.html'
 forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
-masterDbFile =: jpath '~temp/master.db'
-indexFile =: jpath '~temp/jwikiviz.fulltext.txt.lz4'
+masterDbFile =: appDir , '/master.db'
+indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
+dateFile =: appDir , '/jwikiviz.dat'
 
-jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
 jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
-htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&'
+htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' '
 
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
 try. raw =. ('''' ; ' ') rxrplc y catch. smoutput 'Problem!' return. end.
-translatedHtml =. htmlEncodings translateHtmlEncodings raw
+translatedHtml =. translateHtmlEncodings raw
 rawTokens =. ;: translatedHtml
 hits =. jMnemonics i."1 0 rawTokens
 ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 )
 
-translateHtmlEncodings =: 4 : 0
-NB. x An array of HTML decodes
+translateHtmlEncodings =: 3 : 0
 NB. y HTML string
-NB. Convert HTML encodings such as &amp; to their ascii characters, recursing until all conversions have been made.
-if. 0 = # x do. y return. end.
-(}. x) translateHtmlEncodings ({. x) rxrplc y
+NB. Convert HTML encodings such as &amp; to their ascii characters.
+r =. y
+try.
+	for_enc. htmlEncodings do.
+		r =. enc rxrplc r
+	end.
+catch.
+	'rx error!'
+end.
 )
 
 convertToWikiUrl =: 3 : 0
@@ -79,10 +85,11 @@ start =. '<textarea'
 end =. '</textarea'
 result =. 'extractTextFromWikiArticle Failure! '
 try.
-result =. p {.~ I. end E. p =. ((# start) + I. start E. y) }. y
-catch. catcht.
-smoutput 'extractTextFromWikiArticle Failure! ' , 200 {. result
+ 	result =. translateHtmlEncodings p {.~ I. end E. p =. ((# start) + I. start E. y) }. y
+catch.
+result =. 'extractTextFromWikiArticle failure!'
 end.
+NB. smoutput 'extractTextFromWikiArticle Failure! ' , 200 {. result
 result
 )
 
@@ -134,8 +141,8 @@ for_postHtml. postsHtml do.
 		body =. 'Failed to find article fenceposts.'
 	end.
 	if. 0 = # body do. body =. ' ' end.
-	body =. translateToJEnglish title , ' ' , author , ' ' , body
-	data =. link ; id ; x ; 'F' ; year ; monthIndex ; day ; title ; author ; body
+	body =. translateToJEnglish translateHtmlEncodings title , ' ' , author , ' ' , body
+	data =. link ; id ; x ; 'F' ; year ; monthIndex ; day ; (translateHtmlEncodings title) ; author ; body
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
 	catcht. catch.
@@ -183,7 +190,9 @@ for_rowBatch. _100 < \ uniqueRows do.
 	links =. 1 {"1 rows
 	urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
 	titles =. {."1 rows
-	htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
+	rawHtmls =. getHtml urls
+	extractedHtmls =. extractTextFromWikiArticle &. > rawHtmls
+	htmls =. translateToJEnglish &. > extractedHtmls
 	data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
@@ -224,8 +233,8 @@ end.
 
 updateMasterDb =: 3 : 0
 updateMasterDbWithPosts ''
-updateMasterDbWithChangedWikiPages ''
-NB. updateMasterDbWithAllWikiPages ''
+NB. updateMasterDbWithChangedWikiPages ''
+updateMasterDbWithAllWikiPages ''
 )
 NB. ================================= End Master DB ===========================================
 
@@ -591,7 +600,7 @@ for_boxedHtml. yearMonthHtml do.
 	subjects =. 1 {"1 matches
 	authors =. 2 {"1 matches
 	c =. # links
-  	data =: (c # < 'J' , y) ; (c # year) ; (c # month) ; subjects ; authors ; < links
+  	data =: (c # < 'J' , y) ; (c # year) ; (c # month) ; (htmlEncodings tranlsateHtmlEncodings subjects) ; authors ; < links
 NB.	data =: (c # < {. y) ; (c # year) ; (c # month) ; subjects ; authors ; < links
 	sqlinsert__db 'forums' ; cols ; <data
 end.
@@ -833,10 +842,14 @@ writeEndTime =: 3 : 0
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'CrawlEnd' ; getCurlDate ''
 )
 
-uploadDb =: 3 : 0
-auth =. (1!:1) < jpath '~temp/upload.auth'
-(' -H "Authorization: Bearer ' , auth , '" -H "Content-Type: application/octet-stream" --data-binary @' , stageDbFile) gethttp 'https://api.upload.io/v2/accounts/12a1yBS/uploads/binary?filePath=/uploads/jwikiviz.stage.db'
+writeDateFile =: 3 : 0
+(": (6!:0) '') (1!:2) < dateFile
 )
+
+NB. uploadDb =: 3 : 0
+NB. auth =. (1!:1) < jpath '~temp/upload.auth'
+NB. (' -H "Authorization: Bearer ' , auth , '" -H "Content-Type: application/octet-stream" --data-binary @' , stageDbFile) gethttp 'https://api.upload.io/v2/accounts/12a1yBS/uploads/binary?filePath=/uploads/jwikiviz.stage.db'
+NB. )
 
 setup =: 3 : 0
 setupTempDirectory ''
@@ -852,5 +865,5 @@ finishLoadingForums ''
 writeEndTime ''
 updateMasterDb ''
 generateFullTextContentFile ''
-uploadDb ''
+writeDateFile ''
 )

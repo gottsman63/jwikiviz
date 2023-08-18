@@ -19,11 +19,19 @@ NB. *** Wiki Meeting Discussion Items ***
 NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
+NB. Better database notification + This may take a minute.
+NB. Still having problems with HTML entities...in the wiki markup.
+NB. 9 u: for an intermediate form you can tokenize.
+NB. Move off upload.io.
 NB. Check the behavior of the cursor icon in the Forums section (especially).  
 NB. Test initial installation.  
-NB. Look for more trace opportunities.  
+NB. Add parentheses to the J tokens.
+NB. Delete the old search code.
+
+NB. Ready for review
+NB. Drop spurious spaces (quick and dirty implementation)
 NB. Add colon to the J tokens
-NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are a PITA.)
+NB. Even in the wiki <textarea> html, there are arbitrary tags.  I'm not going to be able to clean it up.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -35,10 +43,21 @@ NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
 NB. Revisit the Tags question—flat list?  Address book ABC organization?`
 NB. Tags as first-class/suggested search terms…?
+NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are a PITA.)
 
 NB. ===================== Version Updates =====================
 addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
 githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
+awsPrefix =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com'
+indexUrl =: awsPrefix , '/jwikiviz.fulltext.txt.lz4'
+dateUrl =: awsPrefix , '/jwikiviz.dat'
+stageDbUrl =: awsPrefix , '/jwikiviz.stage.db'
+
+stageDbFile =: 'jwikiviz.stage.db'
+stageDbPath =: jpath '~temp/' , stageDbFile
+targetDbPath =: jpath '~temp/jwikiviz.db'
+curlTracePath =: jpath '~temp/jwikiviz.trace'
+liveSearchDbPath =: jpath '~temp/jwikiviz.fulltext.db'
 
 manifest_version=: {{
   cocurrent temp=. cocreate''
@@ -84,11 +103,6 @@ NB. ===========================================================
 
 NB. ============= Database ===============
 db =: ''
-stageDbFile =: 'jwikiviz.stage.db'
-stageDbPath =: jpath '~temp/' , stageDbFile
-targetDbPath =: jpath '~temp/jwikiviz.db'
-curlTracePath =: jpath '~temp/jwikiviz.trace'
-liveSearchDbPath =: jpath '~temp/jwikiviz.fulltext.db'
 
 clearTrace =: 3 : 0
 '' (1!:2) < tracePath
@@ -817,7 +831,7 @@ PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 LogFlag =: 0
-XFileHashLabel =: > IFWGET_wgethttp_ { 'x-file-hash: ' ; 'X-File-Hash: '
+NB. XFileHashLabel =: > IFWGET_wgethttp_ { 'x-file-hash: ' ; 'X-File-Hash: '
 
 getTocFontForLevel =: 3 : 0
 NB. y An integer level in an outline hierarchy.  _1 indicates a page; 0..n indicates a level.
@@ -847,10 +861,8 @@ NB.	log 'drawStringAt ' , (": x) , ' ' , y
 	gltextxy x
 	gltext y
 catch.
-	1 log 'drawStringAt ' , (": x) , ' ' , y
 	1 log 'Error in drawStringAt: ' , (13!:12) ''
-NB.	smoutput 'Could not drawStringAt' ; x ; y
-NB.	log 'Could not drawStringAt' ; x ; y 
+	1 log 'Error drawing: ' , (": x) , ' ' , 'drawStringAt ' , ' ' , ": y
 end.
 )
 
@@ -1048,26 +1060,30 @@ FloatingString =: y
 drawFloatingString =: 3 : 0
 NB. y windowWidth windowHeight
 log 'drawFloatingString ' , ": y
-'windowWidth windowHeight' =. y
-if. 0 = # FloatingString do. return. end.
-'string font textColor' =. FloatingString
-glfont font
-glrgb BackgroundColor
-glbrush ''
-glpen 0
-'xx yy width height' =. FloatingStringRect
-width =. width + 5
-newX =. width -~ (xx + width) <. windowWidth
-rect =. newX , yy , width , height 
-glrect rect
-glrgb textColor
-gltextcolor ''
-(2 {. rect) drawStringAt string
+try.
+	'windowWidth windowHeight' =. y
+	if. 0 = # FloatingString do. return. end.
+	'string font textColor' =. FloatingString
+	glfont font
+	glrgb BackgroundColor
+	glbrush ''
+	glpen 0
+	'xx yy width height' =. FloatingStringRect
+	width =. width + 5
+	newX =. width -~ (xx + width) <. windowWidth
+	rect =. newX , yy , width , height 
+	glrect rect
+	glrgb textColor
+	gltextcolor ''
+	(2 {. rect) drawStringAt string
 NB. if. (2 { FloatingStringRect) < width do.
 	rect drawHighlight HoverColor
 NB. end.
-FloatingStringRect =: ''
-FloatingString =: ''
+	FloatingStringRect =: ''
+	FloatingString =: ''
+catch. catcht.
+	1 log 'Problem in drawFloatingString: ' , (13!:12) ''
+end.
 )
 
 NB. ======================== Mouse-Sensitive Areas ===========================
@@ -1326,7 +1342,7 @@ openLiveSearchDb =: 3 : 0
 if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end.
 )
 
-jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
 jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
@@ -1348,11 +1364,22 @@ NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 
 '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 200)'''
 )
 
+dropSpacesSnippetTokens =: (jMnemonics -. , &. > ':' ; '.') , , &. > '(' ; ')'
+
 translateToJ =: 3 : 0
 NB. y A string possibly containing JEnglish tokens
-tokens =. ;: y -. ''''
-hits =. jEnglishWords i."1 0 tokens
-; (hits {"0 1 jMnemonics ,"1 0 tokens) ,. <' '
+NB. Drop most of the spaces between the J tokens.
+try.
+	tokens =. ;: y -. ''''
+	hits =. jEnglishWords i."1 0 tokens
+	jTokens =. (hits {"0 1 jMnemonics ,"1 0 tokens)
+	spaces =. (-. jTokens e. dropSpacesSnippetTokens) { '' ; ' '
+	squished =. ('   ' ; ' ') rxrplc ; spaces ,. jTokens ,. spaces
+	('  ' ; ' ') rxrplc squished
+catch. catcht. 
+1 log 'translateToJ problem: ' , y
+1 log (13!:12) '' 
+end.
 )
 
 setLiveSearchControlsVisibility =: 3 : 0
@@ -1367,7 +1394,11 @@ wd 'set liveAgeLabel visible ' , ": y
 
 performLiveSearch =: 3 : 0
 NB. y A SQL statement
-> {: sqlreadm__liveSearchDb y
+try.
+	> {: sqlreadm__liveSearchDb y
+catch.
+throw. (13!:12) ''
+end.
 )
 
 LiveSearchPyx =: a:
@@ -1397,7 +1428,7 @@ end.
 query =. createQuery searchBox
 fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
 NB. try.
-log 'About to make a pyx.'
+log 'About to make a pyx for search: ' , fullSearch
 LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 LiveSearchIsDirty =: 0
 NB. log ": > LiveSearchPyx
@@ -1415,7 +1446,7 @@ LiveSearchIsDirty =: 1
 
 processLiveSearchResults =: 3 : 0
 log 'processLiveSearchResults ' , ": rattleResult =. 4 T. LiveSearchPyx
-if. rattleResult = _1001 do.
+if. rattleResult = _1001 do. NB. Not a pyx.
 	if. LiveSearchIsDirty do. 
 		submitLiveSearch ''
 		animate 1
@@ -1429,10 +1460,11 @@ if. 0 <: rattleResult do.
 	rattleResult
 	return. 
 end.
+result =. ''
 try.
 	result =. > LiveSearchPyx
-catch. catcht. 
-	1 log (13!:12) ''
+catch. catcht. catchd.
+	1 log 'Error opening pyx: ' , (13!:12) ''
 	rattleResult
 	return.
 end.
@@ -1443,7 +1475,7 @@ else.
 	snippets =. translateToJ &. > 4 {"1 result
 	sources =. {. &. > 3 {"1 result
 	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
-	log '...(processLiveSearch) found ' , (": # results) , ' results.'
+	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
 	LiveSearchResults =: results
 end.
 LiveSearchPyx =: a:
@@ -1461,7 +1493,6 @@ raw =. ('''' ; '''''') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
 string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
-smoutput string
 string
 )
 
@@ -1942,7 +1973,7 @@ if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache)
 	result =. > index { 1 {"1 TocOutlineRailEntriesCache
 else.
 	visitedRailEntries =: ''
-	result =: > x recurseGetTocOutlineRailEntries y
+	result =. > x recurseGetTocOutlineRailEntries y
 NB. 	if. x = 0 do. result =. }. result end.
 	if. 0 = # result do.
 		result =. ''
@@ -2201,7 +2232,6 @@ NB. ============================= End Voc ===============================
 
 NB. ============================ Database Management ====================
 uploadAcct =: '12a1yBS'
-indexUrl =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com/jwikiviz.fulltext.txt.lz4'
 
 dbExists =: 3 : 0
 NB. Return 1 if the target db exists.
@@ -2210,7 +2240,8 @@ fexist targetDbPath
 
 isOnTheNetwork =: 3 : 0
 NB. Return 1 if we can connect to the CDN.
-0 < # gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/upload.test?cache=false'
+0 < # gethttp dateUrl
+NB. 0 < # gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/upload.test?cache=false'
 )
 
 checkForNewerDatabase =: 3 : 0
@@ -2236,24 +2267,27 @@ remoteHash =. getRemoteDatabaseHash ''
 )
 
 downloadLatestStageDatabase =: 3 : 0
-if. IFWGET_wgethttp_ do.
-	('-O "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-else.
-	('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-end.
+dbData =. gethttp stageDbUrl
+dbData (1!:2) < stageDbPath
+NB. if. IFWGET_wgethttp_ do.
+NB. 	('-O "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+NB. else.
+NB. 	('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+NB. end.
 )
 
 getRemoteDatabaseHash =: 3 : 0
-if. IFWGET_wgethttp_ do.
-	head =. (2!:0) s =. 'wget -o - -S --spider ' , ' https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-else.
-	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-end.
-if. 0 = # head do.
-	3 
-	return. 
-end.
-n {.~ LF i.~ n =. (13 + I. XFileHashLabel E. head) }. head
+NB. if. IFWGET_wgethttp_ do.
+NB. 	head =. (2!:0) s =. 'wget -o - -S --spider ' , ' https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+NB. else.
+NB. 	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
+NB. end.
+NB. if. 0 = # head do.
+NB. 	3 
+NB. 	return. 
+NB. end.
+NB. n {.~ LF i.~ n =. (13 + I. XFileHashLabel E. head) }. head
+gethttp dateUrl
 )
 
 downloadAndTransferDatabase =: 3 : 0
@@ -2322,8 +2356,8 @@ sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
 sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
 sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'
-NB. lz4String =. gethttp indexUrl
-lz4String =. (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.lz4'
+lz4String =. gethttp indexUrl
+NB. lz4String =. (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.lz4'
 sep =. 2 3 4 { a.
 table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. lz4_uncompressframe lz4String
 bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
