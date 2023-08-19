@@ -19,18 +19,13 @@ NB. *** Wiki Meeting Discussion Items ***
 NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
-NB. Better database notification + This may take a minute.
 NB. Check the behavior of the cursor icon in the Forums section (especially).  
 NB. Test initial installation.  
 NB. Add parentheses to the J tokens.
 NB. Delete the old search code.
-
-NB. Ready for review
-NB. Drop spurious spaces (quick and dirty implementation)
-NB. Added colon to the J tokens.
-NB. Many HTML tags have been suppressed.
-NB. A tiny number of documents had invalid UTF-8, which caused the rx module to barf.  I dropped them.
-NB. All data is now served from AWS.
+NB. Suppress <pre>
+NB. Put dates on the forum posts.
+NB. Preserve the font offset setting across sessions.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -1481,6 +1476,7 @@ else.
 	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
 	LiveSearchResults =: results
+	setLiveSearchPageIndex 0
 end.
 LiveSearchPyx =: a:
 if. LiveSearchIsDirty do. 
