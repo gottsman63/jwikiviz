@@ -230,12 +230,6 @@ catch. catcht.
 	smoutput sqlerror__masterDb '' 
 end.
 )
-
-updateMasterDb =: 3 : 0
-updateMasterDbWithPosts ''
-NB. updateMasterDbWithChangedWikiPages ''
-updateMasterDbWithAllWikiPages ''
-)
 NB. ================================= End Master DB ===========================================
 
 NB. ===================== Full-Text Search ================================
@@ -283,7 +277,7 @@ table =: }: col0 ,. (}:"1 }."1 table) ,. -.&CR &. > {:"1 table  NB. Stray CRs in
 glyphColumn =. 3 {"1 table
 VocTable =: (0 1 2 {"1 table) ,. glyphColumn ,. 4 5 6 7 {"1 table
 cols =. ;: 'groupnum pos row glyph monadicrank label dyadicrank link'
-data =: (< > 0 {"1 table) , (< 1 {"1 table) , (< > ". &. > 2 {"1 table) , (< 3 {"1 table) , (< 4 {"1 table) , (< 5 {"1 table) , (< 6 {"1 table) , (< 7 {"1 table)
+data =. (< > 0 {"1 table) , (< 1 {"1 table) , (< > ". &. > 2 {"1 table) , (< 3 {"1 table) , (< 4 {"1 table) , (< 5 {"1 table) , (< 6 {"1 table) , (< 7 {"1 table)
 sqlinsert__db 'vocabulary';cols;<data
 )
 
@@ -600,8 +594,7 @@ for_boxedHtml. yearMonthHtml do.
 	subjects =. 1 {"1 matches
 	authors =. 2 {"1 matches
 	c =. # links
-  	data =: (c # < 'J' , y) ; (c # year) ; (c # month) ; (htmlEncodings tranlsateHtmlEncodings subjects) ; authors ; < links
-NB.	data =: (c # < {. y) ; (c # year) ; (c # month) ; subjects ; authors ; < links
+  	data =: (c # < 'J' , y) ; (c # year) ; (c # month) ; (translateHtmlEncodings &. > subjects) ; authors ; < links
 	sqlinsert__db 'forums' ; cols ; <data
 end.
 sqlcmd__db 'commit transaction'
@@ -863,7 +856,8 @@ loadTagCategories ''
 loadForum &. > ;: 'programming general beta chat source database '
 finishLoadingForums ''
 writeEndTime ''
-updateMasterDb ''
+if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMasterDbWithAllWikiPages '' end.
+updateMasterDbWithPosts ''
 generateFullTextContentFile ''
 writeDateFile ''
 )

@@ -20,9 +20,6 @@ NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
 NB. Better database notification + This may take a minute.
-NB. Still having problems with HTML entities...in the wiki markup.
-NB. 9 u: for an intermediate form you can tokenize.
-NB. Move off upload.io.
 NB. Check the behavior of the cursor icon in the Forums section (especially).  
 NB. Test initial installation.  
 NB. Add parentheses to the J tokens.
@@ -30,8 +27,10 @@ NB. Delete the old search code.
 
 NB. Ready for review
 NB. Drop spurious spaces (quick and dirty implementation)
-NB. Add colon to the J tokens
-NB. Even in the wiki <textarea> html, there are arbitrary tags.  I'm not going to be able to clean it up.
+NB. Added colon to the J tokens.
+NB. Many HTML tags have been suppressed.
+NB. A tiny number of documents had invalid UTF-8, which caused the rx module to barf.  I dropped them.
+NB. All data is now served from AWS.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -229,8 +228,8 @@ wd 'set appUpdate caption *' , appCap
 dbStatus =. checkForNewerDatabase ''
 select. dbStatus
 case. 0 do. dbCap =. 'Local database is up to date'
-case. 1 do. dbCap =. 'Click to load the latest database'
-case. 2 do. dbCap =. 'Database download required'
+case. 1 do. dbCap =. 'Click to load the latest database...'
+case. 2 do. dbCap =. 'Database download required...'
 case. 3 do. dbCap =. 'Offline (apparently)'
 end.
 wd 'set dbUpdate caption *' , dbCap
@@ -243,9 +242,12 @@ updateAppVersion ''
 
 vizform_dbUpdate_button =: 3 : 0
 log 'vizform_dbUpdate_Button'
-downloadAndTransferDatabase ''
-downloadAndBuildFullTextIndexDb ''
-setUpdateButtons ''
+result =. wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
+if. result -: 'yes' do. 
+	downloadAndBuildFullTextIndexDb ''
+	downloadAndTransferDatabase ''
+	setUpdateButtons ''
+end.
 )
 
 buildForm =: 3 : 0
@@ -1368,14 +1370,16 @@ dropSpacesSnippetTokens =: (jMnemonics -. , &. > ':' ; '.') , , &. > '(' ; ')'
 
 translateToJ =: 3 : 0
 NB. y A string possibly containing JEnglish tokens
+NB. Convert the JEnglish to J tokens.
 NB. Drop most of the spaces between the J tokens.
+log 'translateToJ ' , y
 try.
 	tokens =. ;: y -. ''''
 	hits =. jEnglishWords i."1 0 tokens
 	jTokens =. (hits {"0 1 jMnemonics ,"1 0 tokens)
 	spaces =. (-. jTokens e. dropSpacesSnippetTokens) { '' ; ' '
-	squished =. ('   ' ; ' ') rxrplc ; spaces ,. jTokens ,. spaces
-	('  ' ; ' ') rxrplc squished
+	squished =. ('  ' ; ' ') rxrplc ('   ' ; ' ') rxrplc ; spaces ,. jTokens ,. spaces
+	(' \)' ; '\)') rxrplc ('\( ' ; '\(') rxrplc squished
 catch. catcht. 
 1 log 'translateToJ problem: ' , y
 1 log (13!:12) '' 
@@ -2331,7 +2335,7 @@ case. 0 do. 1
 case. 1 do. 1
 case. 2 do.
 	if. isOnTheNetwork'' do.
-		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download (to ~temp); No to quit."'
+		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download ~100 MB (which will decompress and index to ~1 GB in ~temp); No to quit."'
 		if. result -: 'yes' do. 
 			downloadAndTransferDatabase ''
 			downloadAndBuildFullTextIndexDb ''
