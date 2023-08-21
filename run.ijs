@@ -23,7 +23,6 @@ NB. Test initial installation.
 NB. Add parentheses to the J tokens.
 NB. Suppress <pre>
 NB. Preserve the font offset setting across sessions.
-NB. Fix load 'regex'
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -96,6 +95,24 @@ wd 'msgs'
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
 )
 NB. ===========================================================
+
+NB. ======================== Key/Value Store ===========================
+setKeyValue =: 4 : 0
+NB. x A string key
+NB. y A string value
+NB. Write the key/value pair to the database.
+try. sqlupsert__db 'keyvalue' ; 'key' ; (;: 'key value') ; < x ; y catch. catcht. end.
+)
+
+getKeyValue =: 4 : 0
+NB. x A default value
+NB. y A string key
+NB. Return either the string value of the key from the database or the default value (x).
+result =. x
+try. result =. , > > {: sqlreadm__db 'select value from keyvalue where key = "' , y , '"' catch. catcht. end.
+result
+)
+NB. ====================== End Key/Value Store =========================
 
 NB. ============= Database ===============
 db =: ''
@@ -361,15 +378,18 @@ animate 2
 )
 
 setFontSize =: 3 : 0
+NB. y A font slider value (1..9)
 NB. use fontSlider's value to set various font-oriented metrics.
-log 'setFontSize'
-FontAdjustment =: (". fontSlider) - 5
-log '...' , ": FontAdjustment
+1 log 'setFontSize'
+smoutput 'y' ; y
+FontAdjustment =: y - 5
+1 log '...' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
 TocLineHeight =: 2 * 13 + FontAdjustment
 VocCellFont =: 'consolas ' , (": 14 + FontAdjustment) , ' bold'
 VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
+'FontSlider' setKeyValue ": y
 invalidateDisplay ''
 )
 
@@ -402,7 +422,7 @@ vizform_close ''
 )
 
 vizform_fontSlider_changed =: 3 : 0
-setFontSize ''
+setFontSize ". fontSlider
 )
 
 vizform_snapshotLog_button =: 3 : 0
@@ -2096,11 +2116,14 @@ if. fexist stageDbPath do.
 		cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
 		historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
 		wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
+		keyValues =. > {: sqlread__tdb 'select key, value from keyvalue'
 		catCols =. ;: 'level parentid categoryid category parentseq count link'
 		wikiCols =. ;: 'title categoryid link'
+		keyValueCols =. ;: 'key value'
 		sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
 		sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
 		sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
+		sqlinsert__sdb 'keyvalue' ; keyValueCols ; < (0 {"1 keyValues) ; (1 {"1 keyValues)
 		sqlclose__sdb ''
 		sqlclose__tdb ''
  		(1!:55) < targetDbPath
@@ -2194,9 +2217,13 @@ buildForm ''
 layoutForm ''
 setUpdateButtons ''
 loadHistoryMenu ''
-
 0&T."(0) (0 >. 5 - 1 T. '') # 0
 wd 'pshow maximized'
+wd 'msgs'
+fs =. '5' getKeyValue 'FontSlider'
+smoutput 'fs' ; fs
+wd 'set fontSlider ' , fs
+setFontSize ". fs
 )
 
 go_z_ =: 3 : 0
