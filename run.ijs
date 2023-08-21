@@ -10,7 +10,6 @@ load 'arc/lz4'
 coinsert 'jgl2'
 
 NB. Stephen's Notes
-NB. Align the numbers in the TOC with the entries.  Gray them—they shouldn’t jump out.
 NB. Try 1280 for the minimum monitor width.
 NB. Color code (make a key) for Wiki vs. Forum in the search results display
 NB. Highlight the term that matches the search
@@ -22,17 +21,12 @@ NB. *** A Items ***
 NB. Test initial installation.  
 NB. Add parentheses to the J tokens.
 NB. Suppress <pre>
-NB. Preserve the font offset setting across sessions.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
-NB. Compress the file?  It would save CDN bandwidth...goes from 8.2 to 1.7.  Or compress semantically (0 - Jsoftware, 1 - Jchat, ...)
-NB. Fix use of sqlreadm__db
 NB. Support parallel download of forum and wiki documents.
-NB. Add a "Search" label.
 NB. Fix the extra "quotes in NuVoc
 NB. Spider the Vocabulary--don't use the spreadsheet.
-NB. Revisit the Tags question—flat list?  Address book ABC organization?`
 NB. Tags as first-class/suggested search terms…?
 NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are a PITA.)
 
