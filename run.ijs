@@ -1213,6 +1213,7 @@ end.
 for_i. i. # strings do.
 	lineHeight =. i { heights
 	origin =. > i { origins
+	level =. i { levels
 	glrgb BarColor
 	glbrush ''
 	glpen 0
@@ -1221,7 +1222,7 @@ for_i. i. # strings do.
 		glrgb CountColor
 		gltextcolor ''
 		countWidth =. {. glqextent c =. ": i { counts
-		(origin - (countWidth + 2) , 0) drawStringAt c
+		(origin - (countWidth + 2 - level * 6) , 0) drawStringAt c
 	end.
 	glfont getTocFontForLevel i { levels
 	glrgb getTocColorForLevel i { levels
