@@ -1155,23 +1155,35 @@ margin =. 30
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
 if. VocMouseXY pointInRect xx , yy , (-: w) , h do. glcursor IDC_SIZEVER end.
 if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. glcursor IDC_POINTINGHAND end.
-if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-	tentativeScrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
-	if. scrollIndex ~: tentativeScrollIndex do.
-		if. scrollIndex > tentativeScrollIndex do. scrollIndex =. <: scrollIndex else. scrollIndex =. >: scrollIndex end.
-		animate 2
-	else.
-		scrollIndex =. tentativeScrollIndex
-	end.
-elseif. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do.
-	if. ({: VocMouseXY) < squishedLineHeight * scrollIndex do. 
-		scrollIndex =. <: scrollIndex
-		animate 2
-	elseif. ({: VocMouseXY) > (squishedLineHeight * scrollIndex) + window * TocLineHeight do.
-		scrollIndex =. >: scrollIndex
-		animate 2
-	end.
-end.	
+
+if. VocMouseXY pointInRect xx , yy , w , h do.
+         'scrollX scrollY'=. (VocMouseXY - xx,yy) % w,h
+         targetIndex=. scrollY * window + # strings  NB. retain fractional part, for now
+         limit=. (#strings) - window
+         'lo hi'=. <.0.5+ 0 >. (+<./@,&0) limit <. window -~ targetIndex (-,+) scrollX * window%2
+         bump=. (scrollIndex < lo) - scrollIndex > hi
+         scrollIndex=. 0 >. scrollIndex + bump
+         if. bump do. animate 2 end.
+end.
+
+NB. if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
+NB. 	tentativeScrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
+NB. 	if. scrollIndex ~: tentativeScrollIndex do.
+NB. 		if. scrollIndex > tentativeScrollIndex do. scrollIndex =. <: scrollIndex else. scrollIndex =. >: scrollIndex end.
+NB. 		animate 2
+NB. 	else.
+NB. 		scrollIndex =. tentativeScrollIndex
+NB. 	end.
+NB. elseif. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do.
+NB. 	if. ({: VocMouseXY) < squishedLineHeight * scrollIndex do. 
+NB. 		scrollIndex =. <: scrollIndex
+NB. 		animate 2
+NB. 	elseif. ({: VocMouseXY) > (squishedLineHeight * scrollIndex) + window * TocLineHeight do.
+NB. 		scrollIndex =. >: scrollIndex
+NB. 		animate 2
+NB. 	end.
+NB. end.	
+
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
 ys =. <. }: +/\ 0 , heights
@@ -1186,7 +1198,7 @@ glrect rect
 glrgb ColumnGuideColor
 glbrush ''
 glpen 0
-glrect xx , yy , (<. -: w) , h
+NB. glrect xx , yy , (<. -: w) , h
 scrollBarHeight =. <. h * window % # strings
 scrollBarOffset =. <. h * scrollIndex % # strings
 if. maxLineCount < # strings do.
