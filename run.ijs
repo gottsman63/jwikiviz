@@ -19,8 +19,8 @@ NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
 NB. Test initial installation.  
-NB. Add parentheses to the J tokens.
 NB. Suppress <pre>
+NB. Highlight the "Show Post in Thread" button...somehow.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -374,15 +374,15 @@ animate 2
 setFontSize =: 3 : 0
 NB. y A font slider value (1..9)
 NB. use fontSlider's value to set various font-oriented metrics.
-1 log 'setFontSize'
-smoutput 'y' ; y
+log 'setFontSize'
 FontAdjustment =: y - 5
-1 log '...' , ": FontAdjustment
+log '...FontAdjustment: ' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
 TocLineHeight =: 2 * 13 + FontAdjustment
 VocCellFont =: 'consolas ' , (": 14 + FontAdjustment) , ' bold'
 VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
+LiveSearchFont =: 'courier ' , ": 16 + FontAdjustment
 'FontSlider' setKeyValue ": y
 invalidateDisplay ''
 )
@@ -476,7 +476,7 @@ vizform_vocContext_mmove =: 3 : 0
 NB. Give the user the chance to get the mouse over to the webview without activating another link.
 NB. if. 1 > ((6!:1) '') - SuppressMouseHandlingStart do. return. end.
 log 'vizform_vocContext_mmove'
-if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
+NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 setLayoutRatioToc ''
 invalidateDisplay ''
@@ -496,6 +496,7 @@ trigger_paint ''
 vizform_browser_mmove =: 3 : 0
 clearQueuedUrl ''
 setLayoutRatioBrowser ''
+VocMouseXY =: _1 _1
 )
 
 vizform_browser_curl =: 3 : 0
@@ -1192,7 +1193,7 @@ try.
 	jTokens =. (hits {"0 1 jMnemonics ,"1 0 tokens)
 	spaces =. (-. jTokens e. dropSpacesSnippetTokens) { '' ; ' '
 	squished =. ('  ' ; ' ') rxrplc ('   ' ; ' ') rxrplc ; spaces ,. jTokens ,. spaces
-	(' \)' ; '\)') rxrplc ('\( ' ; '\(') rxrplc squished
+	(' \)' ; ')') rxrplc ('\( ' ; '(') rxrplc squished
 catch. catcht. 
 1 log 'translateToJ problem: ' , y
 1 log (13!:12) '' 
@@ -2215,7 +2216,6 @@ loadHistoryMenu ''
 wd 'pshow maximized'
 wd 'msgs'
 fs =. '5' getKeyValue 'FontSlider'
-smoutput 'fs' ; fs
 wd 'set fontSlider ' , fs
 setFontSize ". fs
 )

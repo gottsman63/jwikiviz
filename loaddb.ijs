@@ -54,7 +54,7 @@ try.
 		r =. enc rxrplc r
 	end.
 catch.
-	'rx error!'
+	'rx error for ' , r
 end.
 )
 
