@@ -847,6 +847,7 @@ sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, gl
 sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
+sqlcmd__db 'CREATE TABLE keyvalue (key TEXT primary key, value TEXT)'
 )
 
 writeStartTime =: 3 : 0
