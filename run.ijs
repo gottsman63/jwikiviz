@@ -1156,8 +1156,8 @@ window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 30
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
-if. VocMouseXY pointInRect xx , yy , (-: w) , h do. glcursor IDC_SIZEVER end.
-if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. glcursor IDC_POINTINGHAND end.
+NB. if. VocMouseXY pointInRect xx , yy , (-: w) , h do. glcursor IDC_SIZEVER end.
+NB. if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. glcursor IDC_POINTINGHAND end.
 
 if. VocMouseXY pointInRect xx , yy , w , h do.
          'scrollX scrollY'=. (VocMouseXY - xx,yy) % w,h
@@ -1243,9 +1243,10 @@ for_i. i. # strings do.
 		glpen 0
 		glrect (> i { origins) , stringWidth , 1
 	end.
-	if. i = selectedIndex do. (origin , (w - margin) , lineHeight) drawHighlight SelectionColor end.
-	if. VocMouseXY pointInRect xx , yy , w , h do. (origin, (w - margin) , lineHeight) registerRectLink (> i { links) ; (> i { strings) ; loadMode end.
-	if. VocMouseXY pointInRect (origin , w , lineHeight) do. ". hoverCallback , ' ' , ": i end.		
+	hoverRect =. (origin - margin , 0) , w , lineHeight
+	if. i = selectedIndex do. hoverRect drawHighlight SelectionColor end.
+	if. VocMouseXY pointInRect xx , yy , w , h do. hoverRect registerRectLink (> i { links) ; (> i { strings) ; loadMode end.
+	if. VocMouseXY pointInRect hoverRect do. ". hoverCallback , ' ' , ": i end.		
 end.
 glclip 0 0 100000 100000
 scrollIndex
