@@ -19,13 +19,16 @@ NB. *** Wiki Meeting Discussion Items ***
 NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
-NB. Check the behavior of the cursor icon in the Forums section (especially).  
+NB. Check the behavior of the cursor icon in the Forums section (especially).
+NB. Move document count numbers to the right so they indent properly.  
 NB. Test initial installation.  
 NB. Add parentheses to the J tokens.
 NB. Delete the old search code.
 NB. Suppress <pre>
 NB. Put dates on the forum posts.
 NB. Preserve the font offset setting across sessions.
+NB. "Downloading add-on..."
+NB. "Downloading data..."
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -1311,7 +1314,7 @@ TocEntryForumAuthorIndex =: 0
 setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
-'year month subject author link' =. TocEntryForumAuthorIndex { ForumAuthorEntries
+'year month subject author link day' =. TocEntryForumAuthorIndex { ForumAuthorEntries
 queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
 )
 
@@ -1612,8 +1615,8 @@ resetForumCache =: 3 : 0
 NB. y Forum name
 NB. Fill the forum cache with y's posts.
 NB. ForumCacheTable year ; month ; subject ; author ; link
-result =. > {: sqlreadm__db 'select year, month, subject, author, link from forums where forumname = "' , y , '" order by year desc, month asc'
-ForumCacheTable =: 0 1 2 3 4 {"1 result
+result =. > {: sqlreadm__db 'select year, month, subject, author, link, day from forums where forumname = "' , y , '" order by year desc, month asc, day asc'
+ForumCacheTable =: 0 1 2 3 4 5 {"1 result
 ForumCurrentName =: y
 TocEntryForumSubjectIndex =: 0
 ForumAuthorEntries =: ''
@@ -1671,7 +1674,7 @@ rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 1
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
 (monthIndex { monthRects) drawHighlight SelectionColor
 calendarMonthIndex =. ShortMonths i. < TocEntryForumMonth
-entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. calendarMonthIndex = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link
+entries =. ForumCacheTable #~ (TocEntryForumYear = > {."1 ForumCacheTable) *. calendarMonthIndex = > 1 {"1 ForumCacheTable NB. entries: year ; month ; subject ; author ; link ; day
 if. 0 = # entries do. return. end.
 subjects =. ~. 2 {"1 entries
 ratios =. authorCounts % >./ authorCounts =. allSubjects #/. allSubjects =. 2 {"1 ForumCacheTable #~ (2 {"1 ForumCacheTable) e. subjects
@@ -1679,10 +1682,15 @@ subjects =. ~. allSubjects
 subject =. TocEntryForumSubjectIndex { subjects 
 resetForumAuthorEntries subject
 authors =. 3 {"1 ForumAuthorEntries
+authorYears =. 2&}. &. > ": &. > 0 {"1 ForumAuthorEntries
+authorMonths =. ": &. > >: &. > 1 {"1 ForumAuthorEntries
+authorDays =. ": &. > 5 {"1 ForumAuthorEntries
+authorDates =. ; &. > <"1 authorMonths ,. (<'/') ,. authorDays
+authorsWithDates =. ; &. > <"1 authors ,. (<'  ') ,. authorDates
 subjectCommands =. '*setTocEntryForumSubjectIndex '&, &. > ": &. > <"0 i. # subjects
 authorCommands =. '*setTocEntryForumAuthorIndex '&, &. > ": &. > <"0 i. # authors
 ForumSubjectScrollIndex =: subjRect drawScrollerField subjects ; subjectCommands ; authorCounts ; (2 #~ # subjects) ; TocEntryForumSubjectIndex ; ForumSubjectScrollIndex ; 1 ; '<'
-ForumAuthorScrollIndex =: authRect drawScrollerField  authors ; authorCommands ; (_1 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1 ; '<'
+ForumAuthorScrollIndex =: authRect drawScrollerField  authorsWithDates ; authorCommands ; (_1 #~ # authors) ; (_1 #~ # authors) ; TocEntryForumAuthorIndex ; ForumAuthorScrollIndex ; 1 ; '<'
 if. TocEntryForumAuthorIndex = 0 do. setTocEntryForumAuthorIndex 0 end.
 glclip 0 0 10000 100000
 )
