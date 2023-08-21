@@ -21,9 +21,9 @@ NB. Expanded test user base (send them the draft announcement email)
 NB. *** A Items ***
 NB. Test initial installation.  
 NB. Add parentheses to the J tokens.
-NB. Delete the old search code.
 NB. Suppress <pre>
 NB. Preserve the font offset setting across sessions.
+NB. Fix load 'regex'
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -1125,19 +1125,6 @@ NB. indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
 liveSearchPageIndex =: 0
 
-liveSearchHtml =: 0 : 0
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>title</title>
-  </head>
-  <body>
-    Hello!
-  </body>
-</html>
-)
-
 setLiveAgeLabel =: 3 : 0
 if. (". liveAge) = 10 do.
 	wd 'set liveAgeLabel text *' , 'All Docs'
@@ -1168,7 +1155,7 @@ createQuery =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. Return a NEAR query of JEnglish tokens and English tokens
-raw =. ('''' ; '''''') rxrplc y
+raw =. ('''' ; ' ') rxrplc y
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
 tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
