@@ -1,3 +1,10 @@
+NB. The wiki pages for jwikiviz.db have to be crawled so we can get the topic structure.
+NB. The posts for jwikiviz.db need not be crawled.
+NB. The posts for master.db need to be crawled, and may be crawled incrementally.
+NB. The posts for jwikiviz.db could be taken from the post rows in master.db.
+
+
+
 clear ''
 
 load 'data/sqlite'
@@ -106,6 +113,17 @@ else.
 end.
 )
 
+moveForumRecordsFromMasterToStage =: 3 : 0
+createOrOpenMasterDb ''
+dbOpenDb ''
+sqlcmd__db 'delete from forums'
+f =. > {: sqlreadm__masterDb 'select id, sourcename, year, monthIndex, day, subject, author from content where sourcetype = "F"'
+cols =. ;: 'forumname year month day subject author link'
+data =. ('J'&, &. > 1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
+sqlinsert__db 'forums' ; cols ; <data
+smoutput 'moveForumRecordsFromMasterToStage: ' , ": # f
+)
+
 updateMasterDbWithPostsForDate =: 4 : 0
 NB. x Forum name (programming, chat, etc.)
 NB. y year, monthIndex
@@ -157,6 +175,7 @@ updateMasterDbWithPosts =: 3 : 0
 NB. Determine the most recent year-month for which we have posts.  
 NB. Grab all of those posts as well as all posts since and upsert them into masterDb.
 createOrOpenMasterDb ''
+dbOpenDb ''
 'currentYear currentMonthIndex' =. 0 _1 + 2 {. (6!:0) ''
 if. 0 = , > > {: sqlreadm__masterDb 'select count(*) from content where sourcetype = "F"' do.
 	startYear =. 1998
@@ -164,7 +183,8 @@ if. 0 = , > > {: sqlreadm__masterDb 'select count(*) from content where sourcety
 else.
 	startYear =. {. , > > {: sqlreadm__masterDb 'select max(year) from content where sourcetype = "F"'
 	startMonth =. {. , > > {: sqlreadm__masterDb 'select max(monthIndex) from content where sourcetype = "F" and year = ' , ": startYear
-end.smoutput '$ startYear ' ; $ startYear
+end.
+smoutput '$ startYear ' ; $ startYear
 years =.  startMonth }. 12 # startYear + i. 1 + currentYear - startYear
 months =. startMonth }. (12 * 1 + currentYear - startYear) $ i.12
 dates =. years ,. months
@@ -173,6 +193,7 @@ forums =. ;: 'general chat programming database source beta'
 )
 
 updateMasterDbWithAllWikiPages =: 3 : 0
+smoutput 'updateMasterDbWithAllWikiPages'
 dbOpenDb ''
 createOrOpenMasterDb ''
 rawRows =. > {: sqlreadm__db 'select title, link from wiki'
@@ -206,6 +227,7 @@ end.
 updateMasterDbWithChangedWikiPages =: 3 : 0
 NB. Use the Mediawiki "changed" page to grab the last three days' changes...
 NB. ...unless there are no wiki pages, in which case load the whole wiki.
+smoutput 'updateMasterDbWithChangedWikiPages...'
 dbOpenDb ''
 createOrOpenMasterDb ''
 if. 0 = # > > {: sqlreadm__masterDb 'select count(*) from content where sourcetype = "W"' do.
@@ -726,11 +748,11 @@ end.
 setupTables =: 3 : 0
 NB. Note that these should be the first rows inserted into the categories table.
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category parentseq count') ;      < 0 ; _1 ; 1 ; '' ; 0 ; _1
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 5 ; '*Live Search' ; _1 ; 7 ; ''
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Live Search' ; _1 ; 7 ; ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 10 ; '*NuVoc' ; _1 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
 NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Search' ; _1 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 30 ; '*Forums' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 40 ; '*Search' ; _1 ; 4 ; 'https://www.jsoftware.com/mailman/listinfo/'
+NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 40 ; '*Search' ; _1 ; 4 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 50 ; '*JSaurus' ; _1 ; 5 ; 'https://jsaurus.info/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 60 ; '*JPlayground' ; _1 ; 6 ; 'https://jsoftware.github.io/j-playground/bin/html2/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1e6 ; '*Bookmarks' ; _1 ; 8 ; 'https://www.jsoftware.com/'
@@ -774,7 +796,7 @@ NB. Return the rowid of the category's parent.
 , > , > {: sqlreadm__db 'select parentid from categories where caategoryid = ' , ": y
 )
 
-NextCatId =: 0
+NextCatId =: 1000
 
 nextCatId =: 3 : 0
 NB. y Number of ids needed
@@ -818,7 +840,7 @@ length {. offset }. json
 setupDb =: 3 : 0
 try. (1!:55) < stageDbFile catch. end.
 db =: sqlcreate_psqlite_ stageDbFile
-sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, subject TEXT, author TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, day INTEGER, subject TEXT, author TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid INTEGER, category TEXT, parentseq INTEGER, count INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
@@ -853,11 +875,12 @@ processCategory ''
 loadVoc ''
 loadAncillaryPages ''
 loadTagCategories ''
-loadForum &. > ;: 'programming general beta chat source database '
-finishLoadingForums ''
+NB. loadForum &. > ;: 'programming general beta chat source database '
 writeEndTime ''
 if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMasterDbWithAllWikiPages '' end.
 updateMasterDbWithPosts ''
+moveForumRecordsFromMasterToStage ''
+finishLoadingForums ''
 generateFullTextContentFile ''
 writeDateFile ''
 )
