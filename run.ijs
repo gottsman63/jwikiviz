@@ -66,6 +66,8 @@ manifest_version=: {{
   VERSION
 }}
 
+
+
 checkAppUpToDate =: 3 : 0
 NB. Return 0 if the app is out of date.
 NB. Return 1 if the app is up to date.
@@ -93,6 +95,8 @@ end.
 updateAppVersion =: 3 : 0
 log 'updateAppVersion'
 sqlclose__db  ''
+wd 'set appUpdate caption *Updating the add-on...'
+wd 'msgs'
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
 )
@@ -242,6 +246,8 @@ vizform_dbUpdate_button =: 3 : 0
 log 'vizform_dbUpdate_Button'
 result =. wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
 if. result -: 'yes' do. 
+	wd 'set dbUpdate caption *Downloading database (this may take a minute)...'
+	wd 'msgs'
 	downloadAndBuildFullTextIndexDb ''
 	downloadAndTransferDatabase ''
 	setUpdateButtons ''
@@ -790,7 +796,7 @@ ColumnBorderColor =: 220 220 220
 SelectionColor =: 0 0 0
 HoverColor =: 138 51 36 
 BarColor =: 245 195 150
-CountColor =: 0 0 255
+CountColor =: 127 127 127
 CountFont =: 'arial 15'
 
 VocSelectedGlyph =: ''
@@ -1156,9 +1162,6 @@ window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 30
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
-NB. if. VocMouseXY pointInRect xx , yy , (-: w) , h do. glcursor IDC_SIZEVER end.
-NB. if. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do. glcursor IDC_POINTINGHAND end.
-
 if. VocMouseXY pointInRect xx , yy , w , h do.
          'scrollX scrollY'=. (VocMouseXY - xx,yy) % w,h
          targetIndex=. scrollY * window + # strings  NB. retain fractional part, for now
@@ -1168,25 +1171,6 @@ if. VocMouseXY pointInRect xx , yy , w , h do.
          scrollIndex=. 0 >. scrollIndex + bump
          if. bump do. animate 2 end.
 end.
-
-NB. if. VocMouseXY pointInRect xx , yy , (-: w) , h do.
-NB. 	tentativeScrollIndex =. 0 >. (window -~ # strings) <. <. (-: window) -~ (# strings) * (yy -~ {: VocMouseXY) % h
-NB. 	if. scrollIndex ~: tentativeScrollIndex do.
-NB. 		if. scrollIndex > tentativeScrollIndex do. scrollIndex =. <: scrollIndex else. scrollIndex =. >: scrollIndex end.
-NB. 		animate 2
-NB. 	else.
-NB. 		scrollIndex =. tentativeScrollIndex
-NB. 	end.
-NB. elseif. VocMouseXY pointInRect (xx + -: w) , yy , (-: w) , h do.
-NB. 	if. ({: VocMouseXY) < squishedLineHeight * scrollIndex do. 
-NB. 		scrollIndex =. <: scrollIndex
-NB. 		animate 2
-NB. 	elseif. ({: VocMouseXY) > (squishedLineHeight * scrollIndex) + window * TocLineHeight do.
-NB. 		scrollIndex =. >: scrollIndex
-NB. 		animate 2
-NB. 	end.
-NB. end.	
-
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
 ys =. <. }: +/\ 0 , heights
@@ -1201,7 +1185,6 @@ glrect rect
 glrgb ColumnGuideColor
 glbrush ''
 glpen 0
-NB. glrect xx , yy , (<. -: w) , h
 scrollBarHeight =. <. h * window % # strings
 scrollBarOffset =. <. h * scrollIndex % # strings
 if. maxLineCount < # strings do.
@@ -1222,7 +1205,8 @@ for_i. i. # strings do.
 		glrgb CountColor
 		gltextcolor ''
 		countWidth =. {. glqextent c =. ": i { counts
-		(origin - (countWidth + 2 - level * 6) , 0) drawStringAt c
+		indentLevel =. 6 * level - (<. / levels)
+		(origin - (countWidth + 2 - indentLevel) , 0) drawStringAt c
 	end.
 	glfont getTocFontForLevel i { levels
 	glrgb getTocColorForLevel i { levels
@@ -2291,24 +2275,9 @@ remoteHash =. getRemoteDatabaseHash ''
 downloadLatestStageDatabase =: 3 : 0
 dbData =. gethttp stageDbUrl
 dbData (1!:2) < stageDbPath
-NB. if. IFWGET_wgethttp_ do.
-NB. 	('-O "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-NB. else.
-NB. 	('-s -o "' , stageDbPath , '"') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-NB. end.
 )
 
 getRemoteDatabaseHash =: 3 : 0
-NB. if. IFWGET_wgethttp_ do.
-NB. 	head =. (2!:0) s =. 'wget -o - -S --spider ' , ' https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-NB. else.
-NB. 	head =. ('--head -s') gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-NB. end.
-NB. if. 0 = # head do.
-NB. 	3 
-NB. 	return. 
-NB. end.
-NB. n {.~ LF i.~ n =. (13 + I. XFileHashLabel E. head) }. head
 gethttp dateUrl
 )
 
