@@ -225,8 +225,6 @@ VocMouseClickXY =: 0 0
 lastUpdateButtonCheckTime =: _10000000
 
 setUpdateButtons =: 3 : 0
-NB. if. (((6!:1) '') - lastUpdateButtonCheckTime) < 60 * 60 do. return. end.
-NB. lastUpdateButtonCheckTime =: (6!:1) ''
 select. checkAppUpToDate ''
 case. 0 do. appCap =. 'New add-on version available'
 case. 1 do. appCap =. 'Add-on is up to date' 
@@ -2102,35 +2100,43 @@ NB. Open the target db (tdb) and read all of the user records.
 NB. Write them to the staging db (db).
 NB. Delete the target db, then rename the staging db
 downloadLatestStageDatabase ''
-if. fexist stageDbPath do.
-	if. fexist targetDbPath do.
-		sdb =. sqlopen_psqlite_ stageDbPath
-		tdb =. sqlopen_psqlite_ targetDbPath
-		cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
-		historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
-		wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
-		keyValues =. > {: sqlread__tdb 'select key, value from keyvalue'
-		catCols =. ;: 'level parentid categoryid category parentseq count link'
-		wikiCols =. ;: 'title categoryid link'
-		keyValueCols =. ;: 'key value'
-		sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
-		sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
-		sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
-		sqlinsert__sdb 'keyvalue' ; keyValueCols ; < (0 {"1 keyValues) ; (1 {"1 keyValues)
-		sqlclose__sdb ''
-		sqlclose__tdb ''
- 		(1!:55) < targetDbPath
+try.
+	if. fexist stageDbPath do.
+		if. fexist targetDbPath do.
+			sdb =. sqlopen_psqlite_ stageDbPath
+			tdb =. sqlopen_psqlite_ targetDbPath
+			cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
+			historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
+			wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
+			keyValues =. > {: sqlread__tdb 'select key, value from keyvalue'
+			catCols =. ;: 'level parentid categoryid category parentseq count link'
+			wikiCols =. ;: 'title categoryid link'
+			keyValueCols =. ;: 'key value'
+			sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
+			sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
+			sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
+			sdb_parms =. 'keyvalue' ; keyValueCols ; < (> 0 {"1 keyValues) ; (1 {"1 keyValues)
+			sqlinsert__sdb sdb_parms
+			sqlclose__sdb ''
+			sqlclose__tdb ''
+ 			(1!:55) < targetDbPath
+		end.
+		targetDbPath frename stageDbPath
+		try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 	end.
-	targetDbPath frename stageDbPath
-	try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
+	hash =. getRemoteDatabaseHash ''
+	try. (1!:22) < targetDbPath catch. end.
+	dbOpenDb ''
+	sqlclose__db ''
+	dbOpenDb ''
+	sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
+	clearCache ''
+catch. catcht.
+	smoutput 'db error (if any): ' , sqlerror__db ''
+	smoutput 'Problem: ' , (13!:12) ''
+	smoutput 'sdb error (if any): ' , sqlerror__sdb ''
+	smoutput 'tdb error (if any): ' , sqlerror__tdb ''
 end.
-hash =. getRemoteDatabaseHash ''
-try. (1!:22) < targetDbPath catch. end.
-dbOpenDb ''
-sqlclose__db ''
-dbOpenDb ''
-sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
-clearCache ''
 )
 
 
