@@ -327,7 +327,6 @@ end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
 wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-NB. wd 'set clearSearches maxwh ' , (": (vocContextWidth * 0.14) , controlHeight) , ';'
 wd 'set snapshotLog maxwh ' ,  (": (vocContextWidth * 0.14) , controlHeight) , ';'
 wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
 wd 'set fontStatic maxwh ' , (": 25 , controlHeight) , ';'
@@ -338,7 +337,6 @@ wd 'set liveWiki maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 100 , controlHeight) , ';'
 wd 'set liveAge maxwh ' , (": (vocContextWidth - 330) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
-NB. wd 'set loadPost maxwh ' , (": (browserWidth * 0.18), controlHeight) , ';'
 wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
@@ -2202,22 +2200,27 @@ try. wd 'pclose' catch. end.
 manageLoad ''
 
 go =: 3 : 0
-if. -. checkGethttpVersion '' do. return. end.
-if. -. initialDbDownloadDialog '' do. return. end.
-dbOpenDb ''
-initAdmin ''
-loadVoc ''
-clearLog ''
-buildForm ''
-layoutForm ''
-setUpdateButtons ''
-loadHistoryMenu ''
-0&T."(0) (0 >. 5 - 1 T. '') # 0
-wd 'pshow maximized'
-wd 'msgs'
-fs =. '5' getKeyValue 'FontSlider'
-wd 'set fontSlider ' , fs
-setFontSize ". fs
+try.
+	if. -. checkGethttpVersion '' do. return. end.
+	if. -. initialDbDownloadDialog '' do. return. end.
+	dbOpenDb ''
+	initAdmin ''
+	loadVoc ''
+	clearLog ''
+	buildForm ''
+	layoutForm ''
+	setUpdateButtons ''
+	loadHistoryMenu ''
+	0&T."(0) (0 >. 5 - 1 T. '') # 0
+	wd 'pshow maximized'
+	wd 'msgs'
+	fs =. '5' getKeyValue 'FontSlider'
+	wd 'set fontSlider ' , fs
+	setFontSize ". fs
+catch. catcht.
+	smoutput 'Problem: ' , (13!:12) ''
+	smoutput 'Database error (if any): ' , sqlerror__db ''
+end.
 )
 
 go_z_ =: 3 : 0
