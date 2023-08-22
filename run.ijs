@@ -20,7 +20,7 @@ NB. Expanded test user base (send them the draft announcement email)
 NB. *** A Items ***
 NB. Test initial installation.  
 NB. Suppress <pre>
-NB. Highlight the "Show Post in Thread" button...somehow.
+NB. Wiki documentation page.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -1211,7 +1211,7 @@ NB. y A SQL statement
 try.
 	> {: sqlreadm__liveSearchDb y
 catch.
-throw. (13!:12) ''
+1 log 'Live Search problem: ' , (13!:12) ''
 end.
 )
 
