@@ -54,8 +54,6 @@ manifest_version=: {{
   VERSION
 }}
 
-
-
 checkAppUpToDate =: 3 : 0
 NB. Return 0 if the app is out of date.
 NB. Return 1 if the app is up to date.
@@ -99,12 +97,12 @@ try. sqlupsert__db 'keyvalue' ; 'key' ; (;: 'key value') ; < x ; y catch. catcht
 )
 
 getKeyValue =: 4 : 0
-NB. x A default value
+NB. x A default string value
 NB. y A string key
 NB. Return either the string value of the key from the database or the default value (x).
-result =. x
+result =. ''
 try. result =. , > > {: sqlreadm__db 'select value from keyvalue where key = "' , y , '"' catch. catcht. end.
-result
+if. 0 = # result do. x else. result end.
 )
 NB. ====================== End Key/Value Store =========================
 
@@ -2108,15 +2106,17 @@ try.
 			cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
 			historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
 			wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
-			keyValues =. > {: sqlread__tdb 'select key, value from keyvalue'
+			try. keyValues =. > {: sqlread__tdb 'select key, value from keyvalue' catch. catcht. keyValues =. '' end.
 			catCols =. ;: 'level parentid categoryid category parentseq count link'
 			wikiCols =. ;: 'title categoryid link'
 			keyValueCols =. ;: 'key value'
 			sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
 			sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
 			sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
-			sdb_parms =. 'keyvalue' ; keyValueCols ; < (> 0 {"1 keyValues) ; (1 {"1 keyValues)
-			sqlinsert__sdb sdb_parms
+			if. 0 < # keyValues do.
+				sdb_parms =. 'keyvalue' ; keyValueCols ; < (> 0 {"1 keyValues) ; (1 {"1 keyValues)
+				sqlinsert__sdb sdb_parms
+			end.
 			sqlclose__sdb ''
 			sqlclose__tdb ''
  			(1!:55) < targetDbPath
