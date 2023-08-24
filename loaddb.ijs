@@ -27,6 +27,7 @@ forumHtmlDir =: forumDir , '/html'
 masterDbFile =: appDir , '/master.db'
 indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
 dateFile =: appDir , '/jwikiviz.dat'
+tokenFile =: appDir , '/token.txt'
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
@@ -99,6 +100,40 @@ end.
 NB. smoutput 'extractTextFromWikiArticle Failure! ' , 200 {. result
 result
 )
+
+NB. ============================ Crawling GitHiub ======================================
+indexSuffixes =: '.txt' ; '.ijs'
+
+updateMasterDbWithGitHubDocs =: 3 : 0
+NB. y Project name from the jsoftware section of GitHub
+NB. Get the project, get contents of the relevant files, insert into master.db.
+project =. y
+token =. LF -.~ (1!:1) < tokenFile
+cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/gottsman63/' , project , '/zipball/master/'
+zip =. (2!:0) cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/jsoftware/' , project , '/zipball/master/'
+zipFilename =. appDir , '/github/' , project , '.zip'
+exdir =. appDir , '/github/' , project
+zip (1!:2) < zipFilename
+(2!:0) 'rm -r ' , exdir
+(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
+commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
+filenames =. ; < ;. _2 @(2!:0) &. > commands
+contents =. <@(1!:1)"0 filenames
+urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
+data =. urls ; filenames ; ((<project) #~ # urls) ; ((< 'G') #~ # urls) ; (9999 #~ # urls) ; (0 #~ # urls) ; (0 #~ # urls) ; filenames ; filenames ; < contents
+smoutput '$' ; $ &. > data
+smoutput masterCols
+sqlinsert__masterDb 'content' ; masterCols ; < data
+smoutput sqlerror__masterDb ''
+)
+
+updateMasterDbWithGitHubProjects =: 3 : 0
+NB. Update master.db with the jsoftware projects from GitHub.
+createOrOpenMasterDb ''
+sqlcmd__masterDb 'delete from content where sourcetype = "G"'
+updateMasterDbWithGitHubDocs 'arc_zip'
+)
+NB. ========================== End Crawling GitHiub ====================================
 
 NB. =================================== Master DB =============================================
 masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body'
