@@ -277,6 +277,7 @@ wd     'bin z;'
 wd     'bin h;'
 wd       'cc liveForum checkbox; cn *Forum Posts'
 wd       'cc liveWiki checkbox; cn *Wiki Pages'
+wd       'cc liveGitHub checkbox; cn *GitHub'
 wd       'cc liveAgeLabel editm readonly'
 wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
@@ -330,8 +331,9 @@ wd 'set fontSlider maxwh ' , (": 100 , controlHeight) , ';'
 wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 110 , controlHeight) , ';'
+wd 'set liveGitHub maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 100 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (vocContextWidth - 330) , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (vocContextWidth - 440) , controlHeight) , ';'
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
@@ -418,13 +420,18 @@ snapshotLogToBrowser ''
 )
 
 vizform_liveForum_button =: 3 : 0
-liveSearchShowForumPosts =: ". liveForum
+NB. liveSearchShowForumPosts =: ". liveForum
 markLiveSearchDirty ''
 invalidateDisplay ''
 )
 
 vizform_liveWiki_button =: 3 : 0
-liveSearchShowWikiPages =: ". liveWiki
+NB. liveSearchShowWikiPages =: ". liveWiki
+markLiveSearchDirty ''
+invalidateDisplay ''
+)
+
+vizform_liveGitHub_button =: 3 : 0
 markLiveSearchDirty ''
 invalidateDisplay ''
 )
@@ -623,6 +630,10 @@ HoverColor =: 138 51 36
 BarColor =: 245 195 150
 CountColor =: 127 127 127
 CountFont =: 'arial 15'
+
+WikiColor =: 0 127 127
+ForumColor =: 110 38 14
+GitHubColor =: 136 6 206
 
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
@@ -1201,6 +1212,7 @@ if. y = currentVisibility do. return. end.
 wd 'set liveAge visible ' , ": y
 wd 'set liveForum visible ' , ": y
 wd 'set liveWiki visible ' , ": y
+wd 'set liveGitHub visible ' , ": y
 wd 'set liveAgeLabel visible ' , ": y
 )
 
@@ -1210,6 +1222,7 @@ try.
 	> {: sqlreadm__liveSearchDb y
 catch.
 1 log 'Live Search problem: ' , (13!:12) ''
+1 log 'DB Error (if any): ' , sqlerror__liveSearchDb ''
 end.
 )
 
@@ -1227,10 +1240,9 @@ setLiveSearchPageIndex 0
 try. openLiveSearchDb '' catch. return. end.
 forumFlag =. liveForum = '1'
 wikiFlag =. liveWiki = '1'
-if. wikiFlag *. forumFlag do. whereClause =. ' (source = "W" or source = "F") '
-elseif. wikiFlag *. -. forumFlag do. whereClause =. ' (source = "W") '
-elseif. (-. wikiFlag) *. forumFlag do. whereClause =. ' (source = "F") '
-else. whereClause =. ' (source = "W" or source = "F") ' end.
+gitHubFlag =. liveGitHub = '1'
+if. 0 = +./ forumFlag , wikiFlag , gitHubFlag do. forumFlag =. wikiFlag =. gitHubFlag =. 1 end.
+whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag) # '"F"' ; '"W"' ; '"G"')) , ') '
 currentYear =. {. (6!:0) ''
 if. 10 = ". liveAge do.
 	cutoffYear =. 0
@@ -1277,6 +1289,7 @@ try.
 	result =. > LiveSearchPyx
 catch. catcht. catchd.
 	1 log 'Error opening pyx: ' , (13!:12) ''
+	1 log 'DB error (if any): ' , sqlerror__liveSearchDb ''
 	rattleResult
 	return.
 end.
@@ -1364,8 +1377,7 @@ colWidth =. <. -: width - colSep
 snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
 titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
-wikiColor =. 0 127 127
-glrgb wikiColor
+glrgb WikiColor
 gltextcolor ''
 sieve =. sources = <'W'
 glclip xx , yy , colWidth , height
@@ -1373,10 +1385,17 @@ glclip xx , yy , colWidth , height
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-forumColor =. 110 38 14
-glrgb forumColor
+glrgb ForumColor
 gltextcolor ''
 sieve =. sources = <'F'
+glclip xx , yy , colWidth , height
+(<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+glclip (xx + 5 + colWidth) , yy , colWidth , height
+(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+
+glrgb GitHubColor
+gltextcolor ''
+sieve =. sources = <'G'
 glclip xx , yy , colWidth , height
 (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
 glclip (xx + 5 + colWidth) , yy , colWidth , height
@@ -1385,15 +1404,19 @@ glclip (xx + 5 + colWidth) , yy , colWidth , height
 glclip 0 0 10000 100000
 (snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
 (titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
+
+textColors =. WikiColor , ForumColor ,: GitHubColor
 if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
 	title =. > titleIndex { titles
-	textColor =. ((titleIndex { sources) = < 'F') { wikiColor ,: forumColor 
+	colorIndex =. ('W' ; 'F' ; 'G') i. titleIndex { sources
+	textColor =. colorIndex { textColors
 	floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
 	floatRect registerFloatingString title ; LiveSearchFont ; textColor
 end.
 if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
 	snippet =. > snippetIndex { snippets
-	textColor =. ((snippetIndex { sources) = < 'F') { wikiColor ,: forumColor
+	colorIndex =. ('W' ; 'F' ; 'G') i. snippetIndex { sources
+	textColor =. colorIndex { textColors
 	floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
 	floatRect registerFloatingString snippet ; LiveSearchFont ; textColor
 end.
@@ -2223,6 +2246,8 @@ try.
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
 	setFontSize ". fs
+	wd 'set liveForum value 1'
+	wd 'set liveWiki value 1'
 catch. catcht.
 	smoutput 'Problem: ' , (13!:12) ''
 	smoutput 'Database error (if any): ' , sqlerror__db ''

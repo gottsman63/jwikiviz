@@ -43,7 +43,8 @@ try. raw =. ('''' ; ' ') rxrplc y catch. smoutput 'Problem!' return. end.
 translatedHtml =. translateHtmlEncodings raw
 rawTokens =. ;: translatedHtml
 hits =. jMnemonics i."1 0 rawTokens
-; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+result =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+if. 0 = # result do. ' ' else. result end.
 )
 
 translateHtmlEncodings =: 3 : 0
@@ -106,32 +107,57 @@ indexSuffixes =: '.txt' ; '.ijs'
 
 updateMasterDbWithGitHubDocs =: 3 : 0
 NB. y Project name from the jsoftware section of GitHub
-NB. Get the project, get contents of the relevant files, insert into master.db.
+NB. Get the project, get contents of the relevant files, translate, insert into master.db.
 project =. y
+smoutput project
+wd 'msgs'
 token =. LF -.~ (1!:1) < tokenFile
-cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/gottsman63/' , project , '/zipball/master/'
-zip =. (2!:0) cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/jsoftware/' , project , '/zipball/master/'
+NB. cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/gottsman63/' , project , '/zipball/master/'
+cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/jsoftware/' , project , '/zipball/master/'
+zip =. (2!:0) cmd
 zipFilename =. appDir , '/github/' , project , '.zip'
 exdir =. appDir , '/github/' , project
 zip (1!:2) < zipFilename
-(2!:0) 'rm -r ' , exdir
-(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
-commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
-filenames =. ; < ;. _2 @(2!:0) &. > commands
-contents =. <@(1!:1)"0 filenames
-urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
-data =. urls ; filenames ; ((<project) #~ # urls) ; ((< 'G') #~ # urls) ; (9999 #~ # urls) ; (0 #~ # urls) ; (0 #~ # urls) ; filenames ; filenames ; < contents
-smoutput '$' ; $ &. > data
-smoutput masterCols
-sqlinsert__masterDb 'content' ; masterCols ; < data
-smoutput sqlerror__masterDb ''
+try. (2!:0) 'rm -r ' , exdir catch. end.
+try.
+	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
+	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
+	filenames =. ; < ;. _2 @(2!:0) &. > commands
+	contents =. translateToJEnglish &. > <@(1!:1)"0 filenames
+	urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
+	for_i. i. # urls do.
+		content =: i { contents
+		url =. i { urls
+		filename =. i { filenames
+		subject =. project , ': ' , (('^.*/' , project, '/[^/]+/') ; '') rxrplc > filename
+		data =. url ; filename ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
+		sqlinsert__masterDb 'content' ; masterCols ; < data
+	end.
+NB.	data =. urls ; filenames ; ((<project) #~ # urls) ; ((< 'G') #~ # urls) ; (9999 #~ # urls) ; (0 #~ # urls) ; (0 #~ # urls) ; filenames ; filenames ; < contents
+NB.	sqlinsert__masterDb 'content' ; masterCols ; < data
+catch.
+	smoutput (13!:12) ''
+	smoutput sqlerror__masterDb ''
+end.
+try. (2!:0) 'rm -r ' , exdir catch. end.
+try. (2!:0) 'rm ' , zipFilename catch. end.
 )
 
 updateMasterDbWithGitHubProjects =: 3 : 0
 NB. Update master.db with the jsoftware projects from GitHub.
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "G"'
-updateMasterDbWithGitHubDocs 'arc_zip'
+page =. 1
+whilst. 0 < # ol do.
+	url =. 'https://github.com/orgs/jsoftware/repositories?page=' , (": page) , '&type=all'
+	html =. gethttp url
+	ol =. }. {:"2 (rxcomp 'd-inline-block">\s+([^<]+)<') rxmatches html
+	projects =. -.&LF &. > (<"0 {:"1 ol) {. &. > ({."1 ol) <@}."0 1 html
+	updateMasterDbWithGitHubDocs &. > projects -. 'jsource' ; 'winget-pkgs'
+	page =. >: page
+	smoutput 'page' ; page
+end.
+NB. updateMasterDbWithGitHubDocs 'arc_zip'
 )
 NB. ========================== End Crawling GitHiub ====================================
 
@@ -291,7 +317,7 @@ NB. ================================= End Master DB ============================
 
 NB. ===================== Full-Text Search ================================
 generateFullTextContentFile =: 3 : 0
-NB. Create a string of (id sourceType year subject author body) separated by 1 { a.
+NB. Create a string of (id sourceType year subject author body) separated by 2 3 4 { a.
 createOrOpenMasterDb ''
 table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
 formattedTable =. (0 1 {"1 table) ,. (": &. > 2 {"1 table) ,. 3 4 5 {"1 table
@@ -916,6 +942,7 @@ writeEndTime ''
 if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMasterDbWithAllWikiPages '' end.
 updateMasterDbWithPosts ''
 moveForumRecordsFromMasterToStage ''
+updateMasterDbWithGitHubProjects ''
 finishLoadingForums ''
 generateFullTextContentFile ''
 writeDateFile ''
