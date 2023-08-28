@@ -263,14 +263,16 @@ wd 'pn *J Documentation Viewer Add-On'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
-wd       'cc fontStatic static; cn *Font'
 wd       'cc fontSlider slider 2 1 1 1 9 3'
-wd       'cc shortcut button;cn Shortcut...;'
+wd       'cc searchStatic static; cn *Phrase:'
 wd       'cc searchBox edit;'
-wd       'cc logcheck checkbox; cn Debug (Log);'
-wd       'cc snapshotLog button; cn 0;'
+wd       'cc searchWordsStatic static; cn *Words:'
+wd       'cc searchBoxWords edit;'
 wd     'bin z;'
 wd     'bin h;'
+wd       'cc logcheck checkbox; cn Debug (Log);'
+wd       'cc snapshotLog button; cn 0;'
+wd       'cc shortcut button;cn Shortcut...;'
 wd       'cc dbUpdate button; cn Haha!;'
 wd       'cc appUpdate button; cn Wocka!;'
 wd     'bin z;'
@@ -323,19 +325,27 @@ else.
 end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
-wd 'set shortcut maxwh ' ,  , (": (vocContextWidth * 0.10) , controlHeight) , ';'
-wd 'set snapshotLog maxwh ' ,  (": (vocContextWidth * 0.14) , controlHeight) , ';'
-wd 'set searchBox maxwh ' , (": (vocContextWidth * 0.35) , controlHeight) , ';'
-wd 'set fontStatic maxwh ' , (": 25 , controlHeight) , ';'
-wd 'set fontSlider maxwh ' , (": 100 , controlHeight) , ';'
-wd 'set logcheck maxwh ' , (": (vocContextWidth * 0.15) , controlHeight) , ';'
-wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
-wd 'set liveWiki maxwh ' , (": 110 , controlHeight) , ';'
-wd 'set liveGitHub maxwh ' , (": 110 , controlHeight) , ';'
-wd 'set liveAgeLabel maxwh ' , (": 100 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (vocContextWidth - 440) , controlHeight) , ';'
+wd 'set fontSlider maxwh ' , (": (<. vocContextWidth * 0.15) , controlHeight) , ';'
+wd 'set searchStatic maxwh ' , (": (<. vocContextWidth * 0.06) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (<. vocContextWidth * 0.35) , controlHeight) , ';'
+wd 'set searchWordsStatic maxwh ' , (": (<. vocContextWidth * 0.05) , controlHeight) , ';'
+wd 'set searchBoxWords maxwh ' , (": (<. vocContextWidth * 0.35) , controlHeight) , ';'
+
+wd 'set shortcut maxwh ' ,  , (": (<. vocContextWidth * 0.12) , controlHeight) , ';'
+wd 'set logcheck maxwh ' , (": (<. vocContextWidth * 0.12) , controlHeight) , ';'
+wd 'set snapshotLog maxwh ' ,  (": (<. vocContextWidth * 0.1) , controlHeight) , ';'
+wd 'set dbUpdate maxwh ' , (": (<. vocContextWidth * 0.4) , controlHeight) , ';'
+wd 'set appUpdate maxwh ' , (": (<. vocContextWidth * 0.30) , controlHeight) , ';'
+
+wd 'set liveForum maxwh ' , (": (0.15 * vocContextWidth) , controlHeight) , ';'
+wd 'set liveWiki maxwh ' , (": (0.15 * vocContextWidth) , controlHeight) , ';'
+wd 'set liveGitHub maxwh ' , (": (0.15 * vocContextWidth) , controlHeight) , ';'
+wd 'set liveAgeLabel maxwh ' , (": (0.15 * vocContextWidth) , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (0.35 * vocContextWidth) , controlHeight) , ';'
+
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
-wd 'set bookmark maxwh ' , (": (browserWidth * 0.12), controlHeight) , ';'
+
+wd 'set bookmark maxwh ' , (": 100, controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
 wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
@@ -509,21 +519,15 @@ resetBookmarkButton ''
 resetForumPostLoadButton ''
 )
 
-vizform_searchBox_button =: 3 : 0
-return.
-log 'vizform_searchBox_button'
-try.
-	search searchBox
-	wd 'set searchBox text ""'
-	invalidateDisplay ''
-catch. catcht.
-	1 log (13!:12) ''
-	1 log dbError ''
-end.
-)
-
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox
+markLiveSearchDirty ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+animate 3
+)
+
+vizform_searchBoxWords_char =: 3 : 0
+log 'vizform_searchBoxWords_char ' , searchBoxWords
 markLiveSearchDirty ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 animate 3
@@ -1171,7 +1175,7 @@ jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
 LiveSearchResults =: '' NB. Title ; Snippet ; URL
 LastLiveSearchQuery =: ''
 
-createQuery =: 3 : 0
+createQueryOld =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. Return a NEAR query of JEnglish tokens and English tokens
@@ -1183,6 +1187,13 @@ englishPortion =. tokens -. jEnglishWords
 jPortion =. tokens -. englishPortion
 NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
 '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 200)'''
+)
+
+createQuery =: 3 : 0
+NB. Use searchBox and searchBoxWords to create a query.
+phrase =. '"' , (translateToJEnglish searchBox) , '"'
+words =. translateToJEnglish searchBoxWords
+'''NEAR(' , phrase , ' ' , words , ', 200)'''
 )
 
 dropSpacesSnippetTokens =: (jMnemonics -. , &. > ':' ; '.') , , &. > '(' ; ')'
@@ -1250,7 +1261,7 @@ else.
 	cutoffYear =. 1 + currentYear - ". liveAge
 end.
 query =. createQuery searchBox
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 10) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
 NB. try.
 log 'About to make a pyx for search: ' , fullSearch
 LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
