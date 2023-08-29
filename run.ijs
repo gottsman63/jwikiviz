@@ -259,7 +259,7 @@ end.
 buildForm =: 3 : 0
 log 'buildForm'
 wd 'pc vizform escclose;'
-wd 'pn *J Documentation Viewer Add-On'
+wd 'pn *J Viewer'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
@@ -789,14 +789,16 @@ forumName ; link ; (> monthIndex { ShortMonths) ; year
 resetForumPostLoadButton =: 3 : 0
 NB. If the current page is a forum post, show the forum load button.
 NB. Note that we only want to do this if we're looking at Search results.
-LayoutForumPostLoadButtonEnable =: shouldShowPostLoadButton LastUrlLoaded
+'url title' =. {. getHistoryMenu ''
+LayoutForumPostLoadButtonEnable =: shouldShowPostLoadButton url
 layoutForm ''
 )
 
 loadForumPost =: 3 : 0
 NB. Load the currently-displayed Forum post in the Forums section of the table of contents.
 NB. ForumCacheTable year ; month ; subject ; author ; link
-'forumName link month year' =. reverseEngineerForumUrl LastUrlLoaded
+'url title' =. {. getHistoryMenu ''
+'forumName link month year' =. reverseEngineerForumUrl url
 entries =. 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 setTocOutlineRailSelectedIndex (, 3 {"1 entries) i. < forumName
 resetForumCache forumName
