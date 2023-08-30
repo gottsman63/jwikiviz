@@ -933,6 +933,7 @@ setupTempDirectory ''
 setupDb ''
 writeStartTime ''
 setupTables ''
+pairsToVisit =: ,:  0 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.
 processCategory ''
 loadVoc ''
 loadAncillaryPages ''
