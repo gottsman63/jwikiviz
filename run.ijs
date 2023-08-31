@@ -514,9 +514,10 @@ vizform_browser_curl =: 3 : 0
 log 'vizform_browser_curl'
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
-if. -. +./ topHistoryUrl E. url do. addToHistoryMenu url ; url end.
+if. -. +./ topHistoryUrl -: url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
 resetForumPostLoadButton ''
+loadHistoryMenu ''
 )
 
 vizform_searchBox_char =: 3 : 0
