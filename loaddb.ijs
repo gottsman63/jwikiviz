@@ -735,10 +735,12 @@ for_entry. k =. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
 end.
 )
 
+prepToProcessCategory =: {{
 visitedPairs =: ,: a: , a:
 visitedChildren =: ''
 pairsToVisit =: ,:  0 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.
 emergencySeq =: 500
+}}
 
 processCategory =: 3 : 0
 NB. Retrieve and processs the HTML.  Recurse to handle any child categories.
@@ -933,7 +935,7 @@ setupTempDirectory ''
 setupDb ''
 writeStartTime ''
 setupTables ''
-pairsToVisit =: ,:  0 ; 1 ; 'Home' NB. Level ; ParentId ; Child Category.
+prepToProcessCategory ''
 processCategory ''
 loadVoc ''
 loadAncillaryPages ''
