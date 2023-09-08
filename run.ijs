@@ -405,6 +405,8 @@ layoutForm ''
 
 vizform_close =: 3 : 0
 log 'vizform_close'
+try. sqlclose__db catch. end.
+try. sqlclose__liveSearchDb catch. end.
 wd 'timer 0'
 wd 'pclose'
 )
