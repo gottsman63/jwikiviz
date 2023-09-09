@@ -290,6 +290,7 @@ wd     'bin h;'
 wd       'cc bookmark button; cn *Bookmark'
 wd       'cc history combolist;'
 wd       'cc launch button; cn Browser;'
+wd       'cc feedback button; cn Feedback;'
 wd     'bin z;'
 wd     'bin h;'
 wd       'cc shrinkBrowser button ; cn *> Shrink Browser <'
@@ -348,6 +349,7 @@ wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 wd 'set bookmark maxwh ' , (": 100, controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
+wd 'set feedback maxwh ' , (": 100, controlHeight) , ';'
 wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
@@ -544,6 +546,10 @@ loadPage (". history_select) { getHistoryMenu ''
 vizform_launch_button =: 3 : 0
 log 'vizform_launch_button ' , ": > 0 { 0 { getHistoryMenu ''
 launch_jbrowser_ > 0 { 0 { getHistoryMenu ''
+)
+
+vizform_feedback_button =: 3 : 0
+launch_jbrowser_ 'mailto:edward.j.gottsman@gmail.com'
 )
 
 vizform_loadPost_button =: 3 : 0
