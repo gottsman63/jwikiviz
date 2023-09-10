@@ -1185,8 +1185,10 @@ titleSnippetUrlYearSource =. y #~ (0 {"1 y) e. 1 {"1 LiveSearchWikiTitlesByCateg
 titles1 =. 0 {"1 titleSnippetUrlYearSource
 titles2 =. 1 {"1 LiveSearchWikiTitlesByCategory
 categories =. (titles2 i. titles1) { 0 {"1 LiveSearchWikiTitlesByCategory
-raw =. (~. categories) ,: categories < /. titleSnippetUrlYearSource
-result =. ((<'*All') ,: < y) ,. raw
+categoryKeys =. ~. categories
+groups =. (categories < /. titleSnippetUrlYearSource) /: categoryKeys
+sorted =. (/:~ categoryKeys) ,: groups
+result =. ((<'*All') ,: < y) ,. sorted
 smoutput '$ result' ; $ result
 result
 }}
@@ -1359,18 +1361,16 @@ else.
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
 	LiveSearchResults =: results
 	wikiResults =. results #~ sources = <'W'
-	LiveSearchCategorizedWikiResults =: categorizeLiveSearchTitles wikiResults NB. (0 {"1 wikiResults) ,. (1 {"1 wikiResults) ,. (2 {"1 wikiResults) ,. (3 {"1 wikiResults) ,. 4 {"1 wikiResults
-smoutput 'LiveSearchCategorizedWikiResults' ; < LiveSearchCategorizedWikiResults
-	categories =. /:~ 0 { LiveSearchCategorizedWikiResults
-	wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categories
-	setLiveSearchPageIndex 0
-smoutput 'LiveSearchWikiCategory' ; LiveSearchWikiCategory
-	wd 'set wikiSearchMenu select ' , LiveSearchWikiCategory
-	if. 0 < # LiveSearchWikiCategory do.
+	if. 0 < # wikiResults do.
+		LiveSearchCategorizedWikiResults =: categorizeLiveSearchTitles wikiResults NB. (0 {"1 wikiResults) ,. (1 {"1 wikiResults) ,. (2 {"1 wikiResults) ,. (3 {"1 wikiResults) ,. 4 {"1 wikiResults
+		categories =. 0 { LiveSearchCategorizedWikiResults
+		wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categories
+		setLiveSearchPageIndex 0
+		if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
 		index =. (0 { LiveSearchCategorizedWikiResults) i. < LiveSearchWikiCategory
-smoutput 'index' ; index
+		if. index = # categories do. index =. 0 end.
+		wd 'set wikiSearchMenu select ' , ": index
 		LiveSearchResults =: > index { (1 { LiveSearchCategorizedWikiResults)
-		smoutput 'LiveSearchResults' ; < LiveSearchResults
 	end.
 end.
 LiveSearchPyx =: a:
