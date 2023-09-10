@@ -278,8 +278,9 @@ wd       'cc appUpdate button; cn Wocka!;'
 wd     'bin z;'
 wd     'bin h;'
 wd       'cc liveForum checkbox; cn *Forum Posts'
-wd       'cc liveWiki checkbox; cn *Wiki Pages'
 wd       'cc liveGitHub checkbox; cn *GitHub'
+wd       'cc liveWiki checkbox; cn *Wiki'
+wd       'cc wikiSearchMenu combolist;'
 wd       'cc liveAgeLabel static'
 wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
@@ -339,10 +340,11 @@ wd 'set dbUpdate maxwh ' , (": (<. vocContextWidth * 0.4) , controlHeight) , ';'
 wd 'set appUpdate maxwh ' , (": (<. vocContextWidth * 0.30) , controlHeight) , ';'
 
 wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
-wd 'set liveWiki maxwh ' , (": 100 , controlHeight) , ';'
 wd 'set liveGitHub maxwh ' , (": 90 , controlHeight) , ';'
+wd 'set liveWiki maxwh ' , (": 100 , controlHeight) , ';'
+wd 'set wikiSearchMenu maxwh ' , (": 200 , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (vocContextWidth - 390) , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (vocContextWidth - 600) , controlHeight) , ';'
 
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 
@@ -455,12 +457,21 @@ markLiveSearchDirty ''
 invalidateDisplay ''
 )
 
+vizform_wikiSearchMenu_select =: 3 : 0
+log 'vizform_wikiSearchMenu_select ' , wikiSearchMenu
+LiveSearchWikiCategory =: wikiSearchMenu
+markLiveSearchDirty ''
+invalidateDisplay ''
+)
+
 vizform_expandBrowser_button =: 3 : 0
+log 'vizform_expandBrowser_button'
 LayoutRatioTarget =: 0.2
 animate 2
 )
 
 vizform_shrinkBrowser_button =: 3 : 0
+log 'vizform_shrinkBrowser_button'
 LayoutRatioTarget =: 0.8
 animate 2
 )
@@ -549,6 +560,7 @@ launch_jbrowser_ > 0 { 0 { getHistoryMenu ''
 )
 
 vizform_feedback_button =: 3 : 0
+log 'feedback'
 launch_jbrowser_ 'mailto:edward.j.gottsman@gmail.com'
 )
 
@@ -1160,6 +1172,25 @@ NB. indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
 liveSearchPageIndex =: 0
 
+buildLiveSearchWikiTitlesByCategory =: {{
+LiveSearchWikiTitlesByCategory =: > {: sqlreadm__db 'select category, title from categories, wiki where categories.categoryid = wiki.categoryid'
+}}
+
+categorizeLiveSearchTitles =: {{
+NB. y A list of boxed titles, snippets, urls, years, sources from the wiki search results
+NB. Return a table of Category Name .: (titles ; urls)
+NB. The first category should be a synthetic "all" containing all titles/urls.
+NB. LiveSearchWikiTitlesByCategory: Category ; Title
+titleSnippetUrlYearSource =. y #~ (0 {"1 y) e. 1 {"1 LiveSearchWikiTitlesByCategory
+titles1 =. 0 {"1 titleSnippetUrlYearSource
+titles2 =. 1 {"1 LiveSearchWikiTitlesByCategory
+categories =. (titles2 i. titles1) { 0 {"1 LiveSearchWikiTitlesByCategory
+raw =. (~. categories) ,: categories < /. titleSnippetUrlYearSource
+result =. ((<'*All') ,: < y) ,. raw
+smoutput '$ result' ; $ result
+result
+}}
+
 setLiveAgeLabel =: 3 : 0
 if. (". liveAge) = 10 do.
 	wd 'set liveAgeLabel text *' , 'All Docs'
@@ -1184,6 +1215,9 @@ jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
 jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
 
 LiveSearchResults =: '' NB. Title ; Snippet ; URL
+LiveSearchWikiTitlesByCategory =: '' NB. Category ; Title
+LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
+LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
 LastLiveSearchQuery =: ''
 
 createQueryOld =: 3 : 0
@@ -1324,7 +1358,20 @@ else.
 	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
 	LiveSearchResults =: results
+	wikiResults =. results #~ sources = <'W'
+	LiveSearchCategorizedWikiResults =: categorizeLiveSearchTitles wikiResults NB. (0 {"1 wikiResults) ,. (1 {"1 wikiResults) ,. (2 {"1 wikiResults) ,. (3 {"1 wikiResults) ,. 4 {"1 wikiResults
+smoutput 'LiveSearchCategorizedWikiResults' ; < LiveSearchCategorizedWikiResults
+	categories =. /:~ 0 { LiveSearchCategorizedWikiResults
+	wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categories
 	setLiveSearchPageIndex 0
+smoutput 'LiveSearchWikiCategory' ; LiveSearchWikiCategory
+	wd 'set wikiSearchMenu select ' , LiveSearchWikiCategory
+	if. 0 < # LiveSearchWikiCategory do.
+		index =. (0 { LiveSearchCategorizedWikiResults) i. < LiveSearchWikiCategory
+smoutput 'index' ; index
+		LiveSearchResults =: > index { (1 { LiveSearchCategorizedWikiResults)
+		smoutput 'LiveSearchResults' ; < LiveSearchResults
+	end.
 end.
 LiveSearchPyx =: a:
 if. LiveSearchIsDirty do. 
@@ -1348,7 +1395,6 @@ drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
 NB. Display the results of the current search against the local database.
 'xx yy width height' =. y
-NB. processLiveSearchResults ''
 setLiveAgeLabel ''
 glclip 0 0 10000 100000
 glrgb 0 0 0
@@ -2255,6 +2301,7 @@ try.
 	if. -. checkGethttpVersion '' do. return. end.
 	if. -. initialDbDownloadDialog '' do. return. end.
 	dbOpenDb ''
+	buildLiveSearchWikiTitlesByCategory ''
 	initAdmin ''
 	loadVoc ''
 	clearLog ''
