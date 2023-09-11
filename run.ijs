@@ -341,10 +341,10 @@ wd 'set appUpdate maxwh ' , (": (<. vocContextWidth * 0.30) , controlHeight) , '
 
 wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
 wd 'set liveGitHub maxwh ' , (": 90 , controlHeight) , ';'
-wd 'set liveWiki maxwh ' , (": 100 , controlHeight) , ';'
-wd 'set wikiSearchMenu maxwh ' , (": 200 , controlHeight) , ';'
+wd 'set liveWiki maxwh ' , (": 60 , controlHeight) , ';'
+wd 'set wikiSearchMenu maxwh ' , (": (-: vocContextWidth - 340) , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (vocContextWidth - 600) , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (-: vocContextWidth - 340) , controlHeight) , ';'
 
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 
@@ -459,7 +459,7 @@ invalidateDisplay ''
 
 vizform_wikiSearchMenu_select =: 3 : 0
 log 'vizform_wikiSearchMenu_select ' , wikiSearchMenu
-LiveSearchWikiCategory =: wikiSearchMenu
+LiveSearchWikiCategory =: ('\s\([^)]+\)' ; '') rxrplc wikiSearchMenu
 markLiveSearchDirty ''
 invalidateDisplay ''
 )
@@ -1270,6 +1270,7 @@ if. y = currentVisibility do. return. end.
 wd 'set liveAge visible ' , ": y
 wd 'set liveForum visible ' , ": y
 wd 'set liveWiki visible ' , ": y
+wd 'set wikiSearchMenu visible ' , ": y
 wd 'set liveGitHub visible ' , ": y
 wd 'set liveAgeLabel visible ' , ": y
 )
@@ -1308,7 +1309,7 @@ else.
 	cutoffYear =. 1 + currentYear - ". liveAge
 end.
 query =. createQuery searchBox
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
+fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 500'
 NB. try.
 log 'About to make a pyx for search: ' , fullSearch
 LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
@@ -1353,6 +1354,7 @@ catch. catcht. catchd.
 end.
 if. 0 = # result do. 
 	LiveSearchResults =: ''
+	wd 'set wikiSearchMenu items *'
 	log '...(processLiveSearchResults) zero results'
 else.
 	snippets =. translateToJ &. > 4 {"1 result
@@ -1364,13 +1366,19 @@ else.
 	if. 0 < # wikiResults do.
 		LiveSearchCategorizedWikiResults =: categorizeLiveSearchTitles wikiResults NB. (0 {"1 wikiResults) ,. (1 {"1 wikiResults) ,. (2 {"1 wikiResults) ,. (3 {"1 wikiResults) ,. 4 {"1 wikiResults
 		categories =. 0 { LiveSearchCategorizedWikiResults
-		wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categories
+		categoryCounts =. (< ' (' , (": # results) , ')') , }. ' ('&, &. > ,&')' &. > ":@# &. > 1 { LiveSearchCategorizedWikiResults
+		categoriesWithCounts =. categories , &. > categoryCounts
+		wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoriesWithCounts
 		setLiveSearchPageIndex 0
 		if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
-		index =. (0 { LiveSearchCategorizedWikiResults) i. < LiveSearchWikiCategory
+		index =. categories i. < LiveSearchWikiCategory
 		if. index = # categories do. index =. 0 end.
 		wd 'set wikiSearchMenu select ' , ": index
-		LiveSearchResults =: > index { (1 { LiveSearchCategorizedWikiResults)
+		if. index > 0 do.
+			LiveSearchResults =: > index { (1 { LiveSearchCategorizedWikiResults)
+		else.
+			LiveSearchResults =: results
+		end.
 	end.
 end.
 LiveSearchPyx =: a:
