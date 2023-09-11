@@ -1188,9 +1188,7 @@ categories =. (titles2 i. titles1) { 0 {"1 LiveSearchWikiTitlesByCategory
 categoryKeys =. ~. categories
 groups =. (categories < /. titleSnippetUrlYearSource) /: categoryKeys
 sorted =. (/:~ categoryKeys) ,: groups
-result =. ((<'*All') ,: < y) ,. sorted
-smoutput '$ result' ; $ result
-result
+((<'*All') ,: < y) ,. sorted
 }}
 
 setLiveAgeLabel =: 3 : 0
