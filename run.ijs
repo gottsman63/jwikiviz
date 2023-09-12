@@ -2325,6 +2325,7 @@ try.
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
 	setFontSize ". fs
+	setLiveAgeLabel ''
 	wd 'set liveForum value 1'
 	wd 'set liveWiki value 1'
 catch. catcht.
