@@ -1171,12 +1171,24 @@ NB. ---------------------- Live Search ---------------------------
 NB. indexDbFile =: '~temp/jsearch.db'
 liveSearchDb =: ''
 liveSearchPageIndex =: 0
+LiveSearchPyx =: a:
+LiveSearchIsDirty =: 0
+LiveSearchResults =: '' NB. Title ; Snippet ; URL
+LiveSearchWikiTitlesByCategory =: '' NB. Category ; Title
+LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
+LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
+LastLiveSearchQuery =: ''
+
+jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jMnemonics =: , &. > 0 {"1 jEnglishDict
+jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
+jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
 
 buildLiveSearchWikiTitlesByCategory =: {{
 LiveSearchWikiTitlesByCategory =: > {: sqlreadm__db 'select category, title from categories, wiki where categories.categoryid = wiki.categoryid'
 }}
 
-categorizeLiveSearchTitles =: {{
+categorizeLiveSearchWikiTitles =: {{
 NB. y A list of boxed titles, snippets, urls, years, sources from the wiki search results
 NB. Return a table of Category Name .: (titles ; urls)
 NB. The first category should be a synthetic "all" containing all titles/urls.
@@ -1187,8 +1199,27 @@ titles2 =. 1 {"1 LiveSearchWikiTitlesByCategory
 categories =. (titles2 i. titles1) { 0 {"1 LiveSearchWikiTitlesByCategory
 categoryKeys =. ~. categories
 groups =. (categories < /. titleSnippetUrlYearSource) /: categoryKeys
-sorted =. (/:~ categoryKeys) ,: groups
-((<'*All') ,: < y) ,. sorted
+(/:~ categoryKeys) ,: groups
+}}
+
+categorizeLiveSearchForumPosts =: {{
+NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
+NB. Return a table of Category (Forum) Name .: (subjects ; urls)
+lengths =. >:@{.@i.&' ' &. > }. &. > 0 {"1 y
+categories =. lengths {. &. > 0 {"1 y
+categoryKeys =. ~. categories
+groups =. (categories < /. y) /: categoryKeys
+(/:~ categoryKeys) ,: groups
+}}
+
+categorizeLiveSearchGitHubFiles =: {{
+NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
+NB. Return a table of Category (Repository) Name .: (subjects ; urls)
+lengths =. {.@i.&':' &. > 0 {"1 y
+categories =. lengths {. &. > 0 {"1 y
+categoryKeys =. ~. categories
+groups =. (categories < /. y) /: categoryKeys
+(/:~ categoryKeys) ,: groups
 }}
 
 setLiveAgeLabel =: 3 : 0
@@ -1207,31 +1238,6 @@ invalidateDisplay ''
 
 openLiveSearchDb =: 3 : 0
 if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end.
-)
-
-jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
-jMnemonics =: , &. > 0 {"1 jEnglishDict
-jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
-jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
-
-LiveSearchResults =: '' NB. Title ; Snippet ; URL
-LiveSearchWikiTitlesByCategory =: '' NB. Category ; Title
-LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
-LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
-LastLiveSearchQuery =: ''
-
-createQueryOld =: 3 : 0
-NB. y Text with J mnemonics and English words
-NB. Convert the J mnemonics to JEnglish.
-NB. Return a NEAR query of JEnglish tokens and English tokens
-raw =. ('''' ; ' ') rxrplc y
-rawTokens =. ;: raw
-hits =. jMnemonics i."1 0 rawTokens
-tokens =. hits {"0 1 jEnglishWords ,"1 0 rawTokens
-englishPortion =. tokens -. jEnglishWords
-jPortion =. tokens -. englishPortion
-NB. '''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 2)'''
-'''NEAR("' , (; jPortion ,. <' ') , '" ' , ( ; englishPortion ,. <' ') , ', 200)'''
 )
 
 createQuery =: 3 : 0
@@ -1283,8 +1289,6 @@ catch.
 end.
 )
 
-LiveSearchPyx =: a:
-
 submitLiveSearch =: 3 : 0
 NB. y Empty
 NB. Treat the J code as a quoted phrase for query purposes.
@@ -1319,8 +1323,6 @@ NB. return.
 NB. end.
 )
 
-LiveSearchIsDirty =: 0
-
 markLiveSearchDirty =: 3 : 0
 LiveSearchIsDirty =: 1
 )
@@ -1352,6 +1354,7 @@ catch. catcht. catchd.
 end.
 if. 0 = # result do. 
 	LiveSearchResults =: ''
+	categoryMenuList =. ''
 	wd 'set wikiSearchMenu items *'
 	log '...(processLiveSearchResults) zero results'
 else.
@@ -1360,23 +1363,23 @@ else.
 	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
 	LiveSearchResults =: results
-	wikiResults =. results #~ sources = <'W'
-	if. 0 < # wikiResults do.
-		LiveSearchCategorizedWikiResults =: categorizeLiveSearchTitles wikiResults NB. (0 {"1 wikiResults) ,. (1 {"1 wikiResults) ,. (2 {"1 wikiResults) ,. (3 {"1 wikiResults) ,. 4 {"1 wikiResults
-		categories =. 0 { LiveSearchCategorizedWikiResults
-		categoryCounts =. (< ' (' , (": # results) , ')') , }. ' ('&, &. > ,&')' &. > ":@# &. > 1 { LiveSearchCategorizedWikiResults
-		categoriesWithCounts =. categories , &. > categoryCounts
-		wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoriesWithCounts
-		setLiveSearchPageIndex 0
-		if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
-		index =. categories i. < LiveSearchWikiCategory
-		if. index = # categories do. index =. 0 end.
-		wd 'set wikiSearchMenu select ' , ": index
-		if. index > 0 do.
-			LiveSearchResults =: > index { (1 { LiveSearchCategorizedWikiResults)
-		else.
-			LiveSearchResults =: results
-		end.
+	categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
+	categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
+	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
+	categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults
+	categories =. {. categorizedResults
+	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
+	categoryMenuList =. categories , &. > categoryCounts
+	wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoryMenuList
+	setLiveSearchPageIndex 0
+	if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
+	index =. categories i. < LiveSearchWikiCategory
+	if. index = # categories do. index =. 0 end.
+	wd 'set wikiSearchMenu select ' , ": index
+	if. index > 0 do.
+		LiveSearchResults =: > index { (1 { categorizedResults)
+	else.
+		LiveSearchResults =: results
 	end.
 end.
 LiveSearchPyx =: a:
@@ -1817,6 +1820,7 @@ else.
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren y
 end.
+setLiveSearchControlsVisibility 1
 )
 
 drawTocRail =: 4 : 0
