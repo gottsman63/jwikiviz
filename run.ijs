@@ -313,6 +313,7 @@ LayoutRatioTarget =: 0.5
 layoutForm =: 3 : 0
 log 'layoutForm'
 'w h' =. ". wd 'getp wh'
+log 'layoutForm getp wh: ' , ": w , h 
 winW =. w - 40
 winH =. h - 45
 controlHeight =. 30
@@ -605,6 +606,7 @@ DisplayListRectAnimationStartTime =: 0
 
 setDisplayRects =: 3 : 0
 'w h' =. ". wd 'get vocContext wh'
+log 'setDisplayRects vocContext wh: ' , ": w , h
 DisplayListRect =: 0 0 175 , h
 DisplayDetailRect =: 175 0 , (w - 175) , h
 )
