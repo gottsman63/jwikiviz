@@ -68,6 +68,7 @@ NB. Title of the form /wiki/...
 getHtml =: 3 : 0
 NB. y Boxed urls
 NB. Return a list of boxed html, one for each url
+smoutput 'getHtml...'
 blockSize =. 100 <. # y
 urlBlocks =. (- blockSize) <\ y
 result =. ''
@@ -295,7 +296,7 @@ if. 0 = # > > {: sqlreadm__masterDb 'select count(*) from content where sourcety
 	updateMasterDbWithAllWikiPages ''
 	return.
 end.
-changedLinkHtml =. gethttp 'https://code.jsoftware.com/wiki/Special:RecentChanges?hidebots=1&limit=50&days=3&enhanced=1&urlversion=2'
+changedLinkHtml =. gethttp 'https://code.jsoftware.com/wiki/Special:RecentChanges?hidebots=1&namespace=0&limit=50&days=3&enhanced=1&urlversion=2'
 ol =. {:"2 (rxcomp '<a href="([^"]+)" class="mw-changeslist-title"') rxmatches changedLinkHtml
 wikiLinks =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
 ol =. {:"2 (rxcomp 'class="mw-changeslist-title" title="([^"]+)">') rxmatches changedLinkHtml

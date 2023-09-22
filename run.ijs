@@ -284,7 +284,7 @@ wd       'cc wikiSearchMenu combolist;'
 wd       'cc liveAgeLabel static'
 wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
-wd     'cc vocContext isigraph;'
+wd     'cc vocContext isidraw'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
@@ -356,6 +356,7 @@ wd 'set feedback maxwh ' , (": 100, controlHeight) , ';'
 wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
+NB. wd 'timer 20'
 )
 
 setLayoutRatioBrowser =: 3 : 0
@@ -507,6 +508,7 @@ NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. en
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 setLayoutRatioToc ''
 invalidateDisplay ''
+sys_timer_z_ ''
 )
 
 vizform_vocContext_mblup =: 3 : 0
@@ -577,9 +579,24 @@ wd 'timer 20'
 TimerCount =: y
 )
 
+sys_timer_z_ =: {{
+if. 0 = TimerCount_jwikiviz_ do. return. end.
+log_jwikiviz_ 'sys_timer_z_: ' , ": TimerCount_jwikiviz_
+try.
+	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
+	layoutForm_jwikiviz_ ''
+	trigger_paint_jwikiviz_ ''
+catch.
+	smoutput (13!:12) ''
+	smoutput dbError_jwikiviz_ ''
+	1 log (13!:12) ''
+	1 log dbError_jwikiviz_ ''
+end.
+}}
+
 TimerCount =: 0
 
-sys_timer_z_ =: 3 : 0
+sys_timer_z_old =: 3 : 0
 log_jwikiviz_ 'sys_timer_z_'
 try.
 if. TimerCount_jwikiviz_ > 0 do.
@@ -626,6 +643,8 @@ drawToc ''
 drawFloatingString vocW , vocH
 VocMouseClickXY =: 0 0
 glclip 0 0 10000 10000
+glpaint ''
+DisplayDirtyFlag =: 0
 catcht. catch. 
 1 log (13!:12) ''
 1 log dbError ''
@@ -635,7 +654,8 @@ end.
 )
 
 invalidateDisplay =: 3 : 0
-wd 'set vocContext invalid'
+NB. wd 'set vocContext invalid'
+TimerCount =: TimerCount + 1
 )
 NB. ======================================================
 
@@ -682,6 +702,7 @@ TocScrollIndex =: 0
 MaxTocDepth =: 3
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
+DisplayDirtyFlag =: 1
 Months =: ;:'January February March April May June July August September October November December'
 ShortMonths =: ;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
 ForumsCatString =: '*Forums'
@@ -2326,8 +2347,8 @@ try.
 	wd 'msgs'
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
-	setFontSize ". fs
 	setLiveAgeLabel ''
+	setFontSize ". fs
 	wd 'set liveForum value 1'
 	wd 'set liveWiki value 1'
 catch. catcht.
