@@ -54,28 +54,27 @@ manifest_version=: {{
   VERSION
 }}
 
-checkAppUpToDate =: 3 : 0
-NB. Return 0 if the app is out of date.
-NB. Return 1 if the app is up to date.
-NB. Return 2 if we failed to get a remote version number.
-log 'checkAppUpToDate'
+asyncCheckAppUpToDate =: 3 : 0
+NB. 0 if the app is out of date.
+NB. 1 if the app is up to date.
+NB. 2 if we failed to get a remote version number.
+NB. log 'asyncAppUpToDate'
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
 		v2 =. manifest_version c =. '-O - --header "Cache-Control: no-cache, no-store, must-revalidate" ' gethttp githubUrl
-NB.		v2 =. manifest_version (2!:0) 'wget --header="Cache-Control: no-cache, no-store, must-revalidate"'
 	else.
 		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
 	end.
-NB.	smoutput 'JWikiViz Versions' ; v1 ; v2
-	if. v2 -: 'none' do. 2 return. end.
-	if. v1 -: v2 do. 1 return. end.
+	if. v2 -: 'none' do. AppUpToDate =: 2 return. end.
+	if. v1 -: v2 do. AppUpToDate =: 1 return. end.
 catch.
-	smoutput 'Problem: ' , (13!:12) ''
+NB.	smoutput 'Problem: ' , (13!:12) ''
 	1 log 'Problem: ' , (13!:12) ''
-	0 return.
+	AppUpToDate =: 0
+	return.
 end.
-0
+AppUpToDate =: 0
 )
 
 updateAppVersion =: 3 : 0
@@ -223,14 +222,15 @@ VocMouseClickXY =: 0 0
 lastUpdateButtonCheckTime =: _10000000
 
 setUpdateButtons =: 3 : 0
-select. checkAppUpToDate ''
+select. AppUpToDate
+case. _1 do. appCap =. 'Checking for new version...'
 case. 0 do. appCap =. 'New add-on version available'
 case. 1 do. appCap =. 'Add-on is up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
 end.
 wd 'set appUpdate caption *' , appCap
-dbStatus =. checkForNewerDatabase ''
-select. dbStatus
+select. DatabaseDownloadStatus
+case. _1 do. dbCap =. 'Checking for new database...'
 case. 0 do. dbCap =. 'Local database is up to date'
 case. 1 do. dbCap =. 'Click to load the latest database...'
 case. 2 do. dbCap =. 'Database download required...'
@@ -357,6 +357,7 @@ wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
+setUpdateButtons ''
 )
 
 setLayoutRatioBrowser =: 3 : 0
@@ -580,7 +581,7 @@ animate =: 3 : 0
 NB. y Number of frames to animate
 log 'animate ' , ": y
 wd 'timer 20'
-TimerCount =: y
+TimerCount =: TimerCount + y
 )
 
 sys_timer_z_ =: {{
@@ -685,6 +686,11 @@ CountFont =: 'arial 15'
 WikiColor =: 0 127 127
 ForumColor =: 110 38 14
 GitHubColor =: 136 6 206
+
+AppUpToDate =: _1
+DatabaseDownloadStatus =: _1
+
+TimerCount =: 0
 
 VocSelectedGlyph =: ''
 DocumentSelectedIsletIndex =: _1
@@ -2179,7 +2185,7 @@ NB. Return 1 if a newer database is available.
 NB. Return 2 is a newer database is required.
 NB. Return 3 if we're not on the network.
 NB. Return 0 if the local database is up to date.
-if. -. dbExists '' do. 2 return. end.
+NB. if. -. dbExists '' do. 2 return. end.
 if. -. isOnTheNetwork '' do. 3 return. end.
 try. 
 	dbOpenDb ''
@@ -2251,12 +2257,18 @@ catch. catcht.
 end.
 )
 
+asyncCheckForNewerDatabase =: {{
+NB. Set DatabaseDownloadStatus
+NB. Note that this routine is meant to be called as a task.
+DatabaseDownloadStatus =: checkForNewerDatabase ''
+animate 5
+}}
 
 initialDbDownloadDialog =: 3 : 0
 status =. {. , checkForNewerDatabase ''
 select. status
-case. 0 do. 1
-case. 1 do. 1
+NB. case. 0 do. 1
+NB. case. 1 do. 1
 case. 2 do.
 	if. isOnTheNetwork'' do.
 		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download ~100 MB (which will decompress and index to ~1 GB in ~temp); No to quit."'
@@ -2271,9 +2283,9 @@ case. 2 do.
 		wdinfo '' ; 'Cannot connect to the CDN and a new database is required.  Please be sure you have an internet connection.  OK to exit.'
 		0
 	end.
-case. 3 do.
-	wdinfo '' ; 'Cannot connect to the CDN.  Please be sure you have an internet connection.'
-	1
+NB. case. 3 do.
+NB.	wdinfo '' ; 'Cannot connect to the CDN.  Please be sure you have an internet connection.'
+NB.	1
 end.
 )
 
@@ -2320,20 +2332,23 @@ manageLoad ''
 go =: 3 : 0
 try.
 	if. -. checkGethttpVersion '' do. return. end.
-	if. -. initialDbDownloadDialog '' do. return. end.
+	if. -. dbExists '' do. 
+		if. -. initialDbDownloadDialog '' do. return. end.
+	end.
+	0&T."(0) (0 >. 5 - 1 T. '') # 0
+	asyncCheckForNewerDatabase t. 'worker' ''
+	asyncCheckAppUpToDate t. 'worker' ''
 	dbOpenDb ''
-	buildLiveSearchWikiTitlesByCategory ''
 	initAdmin ''
+	buildLiveSearchWikiTitlesByCategory ''
 	loadVoc ''
 	clearLog ''
 	buildForm ''
 	layoutForm ''
-	setUpdateButtons ''
 	loadHistoryMenu ''
-	0&T."(0) (0 >. 5 - 1 T. '') # 0
 	wd 'pshow maximized'
 	wd 'msgs'
-	animate 2
+	animate 10
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
 	setFontSize ". fs
