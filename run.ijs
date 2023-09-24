@@ -356,7 +356,7 @@ wd 'set feedback maxwh ' , (": 100, controlHeight) , ';'
 wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
-NB. wd 'timer 20'
+setLiveAgeLabel ''
 )
 
 setLayoutRatioBrowser =: 3 : 0
@@ -441,22 +441,25 @@ vizform_liveForum_button =: 3 : 0
 NB. liveSearchShowForumPosts =: ". liveForum
 markLiveSearchDirty ''
 invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveWiki_button =: 3 : 0
-NB. liveSearchShowWikiPages =: ". liveWiki
 markLiveSearchDirty ''
 invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveGitHub_button =: 3 : 0
 markLiveSearchDirty ''
 invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveAge_changed =: 3 : 0
 markLiveSearchDirty ''
 invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_wikiSearchMenu_select =: 3 : 0
@@ -464,6 +467,7 @@ log 'vizform_wikiSearchMenu_select ' , wikiSearchMenu
 LiveSearchWikiCategory =: ('\s\([^)]+\)' ; '') rxrplc wikiSearchMenu
 markLiveSearchDirty ''
 invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_expandBrowser_button =: 3 : 0
@@ -1246,11 +1250,14 @@ groups =. (categories < /. y) /: categoryKeys
 }}
 
 setLiveAgeLabel =: 3 : 0
+try.
 if. (". liveAge) = 10 do.
 	wd 'set liveAgeLabel text *' , 'All Docs'
 else.
 	cutoffYear =. 1 + ({. (6!:0) '') - ". liveAge
 	wd 'set liveAgeLabel text * >= ' , ": cutoffYear
+end.
+catch.
 end.
 )
 
@@ -1288,18 +1295,6 @@ catch. catcht.
 1 log 'translateToJ problem: ' , y
 1 log (13!:12) '' 
 end.
-)
-
-setLiveSearchControlsVisibility =: 3 : 0
-NB. y 0 or 1 for visible or invisible
-currentVisibility =. ". wd 'get liveAge visible '
-if. y = currentVisibility do. return. end.
-wd 'set liveAge visible ' , ": y
-wd 'set liveForum visible ' , ": y
-wd 'set liveWiki visible ' , ": y
-wd 'set wikiSearchMenu visible ' , ": y
-wd 'set liveGitHub visible ' , ": y
-wd 'set liveAgeLabel visible ' , ": y
 )
 
 performLiveSearch =: 3 : 0
@@ -1824,26 +1819,19 @@ NB. x Toc outline rail entry whose children need to be drawn.
 NB. y The rectangle in which to draw.
 entry =. x
 if.  +./ '*NuVoc' E. > 3 { entry do.
-	setLiveSearchControlsVisibility 0
 	drawVoc ''
 elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
-	setLiveSearchControlsVisibility 0
 	(> 3 { entry) drawTocEntryForum y
 elseif. TagCatString -: > 3 { entry do.
-	setLiveSearchControlsVisibility 0
 	drawTocEntryTags y
 elseif. LiveSearchCatString -: > 3 { entry do.
-	setLiveSearchControlsVisibility 1
 	drawTocEntryLiveSearch y
 elseif. (< SearchCatString) = 3 { entry do.
-	setLiveSearchControlsVisibility 0
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree y
 else.
-	setLiveSearchControlsVisibility 0
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren y
 end.
-setLiveSearchControlsVisibility 1
 )
 
 drawTocRail =: 4 : 0
@@ -2345,12 +2333,10 @@ try.
 	0&T."(0) (0 >. 5 - 1 T. '') # 0
 	wd 'pshow maximized'
 	wd 'msgs'
+	animate 2
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
-	setLiveAgeLabel ''
 	setFontSize ". fs
-	wd 'set liveForum value 1'
-	wd 'set liveWiki value 1'
 catch. catcht.
 	smoutput 'Problem: ' , (13!:12) ''
 	smoutput 'Database error (if any): ' , sqlerror__db ''

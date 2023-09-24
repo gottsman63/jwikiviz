@@ -6,9 +6,9 @@ DESCRIPTION=: 0 : 0
 Interactive visualization of the J wiki and forums.
 )
 
-VERSION=: '1.66'
+VERSION=: '1.6.7'
 
-RELEASE=: 'j904'
+RELEASE=: 'j9.4'
 
 DEPENDS =: 0 : 0
 data/sqlite
