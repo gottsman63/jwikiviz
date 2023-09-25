@@ -2188,7 +2188,7 @@ NB. Return 0 if the local database is up to date.
 NB. if. -. dbExists '' do. 2 return. end.
 if. -. isOnTheNetwork '' do. 3 return. end.
 try. 
-	dbOpenDb ''
+NB.	dbOpenDb ''
 	localHash =. , > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
 	if. 0 = # localHash do. 
 		2
@@ -2336,9 +2336,9 @@ try.
 		if. -. initialDbDownloadDialog '' do. return. end.
 	end.
 	0&T."(0) (0 >. 5 - 1 T. '') # 0
+	dbOpenDb ''
 	asyncCheckForNewerDatabase t. 'worker' ''
 	asyncCheckAppUpToDate t. 'worker' ''
-	dbOpenDb ''
 	initAdmin ''
 	buildLiveSearchWikiTitlesByCategory ''
 	loadVoc ''
