@@ -535,6 +535,7 @@ VocMouseXY =: _1 _1
 vizform_browser_curl =: 3 : 0
 log 'vizform_browser_curl'
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
+LastUrlLoaded =: url
 topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
 if. -. +./ topHistoryUrl -: url do. addToHistoryMenu url ; url end.
 resetBookmarkButton ''
@@ -555,6 +556,18 @@ markLiveSearchDirty ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 animate 3
 )
+
+vizform_searchBox_button =: {{
+log 'vizform_searchBox_button ' , searchBox
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+animate 3
+}}
+
+vizform_searchBoxWords_button =: {{
+log 'vizform_searchBoxWords_button ' , searchBoxWords
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+animate 3
+}}
 
 vizform_history_select =: 3 : 0
 log 'vizform_history_select'
