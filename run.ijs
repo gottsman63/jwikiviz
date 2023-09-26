@@ -395,6 +395,7 @@ VocCellFont =: 'consolas ' , (": 14 + FontAdjustment) , ' bold'
 VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
 LiveSearchFont =: 'courier ' , ": 16 + FontAdjustment
+SectionFont =: 'arial bold ' , ": 16 + FontAdjustment
 'FontSlider' setKeyValue ": y
 invalidateDisplay ''
 )
