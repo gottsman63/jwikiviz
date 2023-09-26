@@ -1052,14 +1052,27 @@ window =. <. TocLineHeight %~ -: h
 maxLineCount =. <. h % TocLineHeight
 margin =. 30
 squishedLineHeight =. TocLineHeight <. (window -~ # strings) %~ h - window * TocLineHeight
+NB. if. VocMouseXY pointInRect xx , yy , w , h do.
+NB.          'scrollX scrollY'=. (VocMouseXY - xx,yy) % w,h
+NB.          targetIndex=. scrollY * window + # strings  NB. retain fractional part, for now
+NB.          limit=. (#strings) - window
+NB.          'lo hi'=. <.0.5+ 0 >. (+<./@,&0) limit <. window -~ targetIndex (-,+) scrollX * window%2
+NB.          bump=. (scrollIndex < lo) - scrollIndex > hi
+NB.          scrollIndex=. 0 >. scrollIndex + bump
+NB.          if. bump do. animate 2 end.
+NB. end.
 if. VocMouseXY pointInRect xx , yy , w , h do.
-         'scrollX scrollY'=. (VocMouseXY - xx,yy) % w,h
-         targetIndex=. scrollY * window + # strings  NB. retain fractional part, for now
-         limit=. (#strings) - window
-         'lo hi'=. <.0.5+ 0 >. (+<./@,&0) limit <. window -~ targetIndex (-,+) scrollX * window%2
-         bump=. (scrollIndex < lo) - scrollIndex > hi
-         scrollIndex=. 0 >. scrollIndex + bump
-         if. bump do. animate 2 end.
+	mouseY =. ({: VocMouseXY) - yy
+	upperWindowY =. squishedLineHeight * scrollIndex
+	lowerWindowY =. upperWindowY + window * TocLineHeight
+	maxScrollIndex =. window -~ # strings
+	if. mouseY < upperWindowY do.
+		scrollIndex =. <: scrollIndex
+		animate 2
+	elseif. (mouseY > lowerWindowY) *. scrollIndex < maxScrollIndex do.
+		scrollIndex =. >: scrollIndex
+		animate 2
+	end.
 end.
 windowStartIndex =. scrollIndex NB. <. 0 >. (# strings) <. 0 >. scrollIndex - -: window
 heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # TocLineHeight) , 1000 # squishedLineHeight
