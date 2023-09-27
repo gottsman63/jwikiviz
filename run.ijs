@@ -547,7 +547,7 @@ vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox NB. This won't actually reflect the current contents of the search box.
 markLiveSearchDirty ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
-LiveSearchCountdown =: 20
+LiveSearchCountdown =: 30
 animate 3
 )
 
