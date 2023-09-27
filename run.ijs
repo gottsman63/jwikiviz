@@ -2358,7 +2358,7 @@ try.
 	setUpdateButtons ''
 	loadHistoryMenu ''
 	0&T."(0) (0 >. 5 - 1 T. '') # 0
-	wd 'pshow maximized'
+	wd 'pshow fullscreen'
 	wd 'msgs'
 	animate 2
 	fs =. '5' getKeyValue 'FontSlider'
