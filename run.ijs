@@ -544,9 +544,10 @@ loadHistoryMenu ''
 )
 
 vizform_searchBox_char =: 3 : 0
-log 'vizform_searchBox_char ' , searchBox
+log 'vizform_searchBox_char ' , searchBox NB. This won't actually reflect the current contents of the search box.
 markLiveSearchDirty ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
+LiveSearchCountdown =: 20
 animate 3
 )
 
@@ -1231,11 +1232,19 @@ LiveSearchWikiTitlesByCategory =: '' NB. Category ; Title
 LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
 LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
 LastLiveSearchQuery =: ''
+LiveSearchCountdown =: 0
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
 jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
+
+checkLiveSearchCountdown =: {{
+if. LiveSearchCountdown > 0 do.
+	LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
+	if. 0 = LiveSearchCountdown do. markLiveSearchDirty '' end.
+end.
+}}
 
 buildLiveSearchWikiTitlesByCategory =: {{
 LiveSearchWikiTitlesByCategory =: > {: sqlreadm__db 'select category, title from categories, wiki where categories.categoryid = wiki.categoryid'
@@ -1335,8 +1344,6 @@ end.
 
 submitLiveSearch =: 3 : 0
 NB. y Empty
-NB. Treat the J code as a quoted phrase for query purposes.
-NB. Treat the English (non-J) tokens separately in the query.
 NB. Set and return a table of title ; Snippet ; Url
 log 'submitLiveSearch: ' , searchBox
 LiveSearchResults =: ''
@@ -1375,8 +1382,13 @@ processLiveSearchResults =: 3 : 0
 log 'processLiveSearchResults ' , ": rattleResult =. 4 T. LiveSearchPyx
 if. rattleResult = _1001 do. NB. Not a pyx.
 	if. LiveSearchIsDirty do. 
-		submitLiveSearch ''
-		animate 1
+		NB. The goal below is to delay executing one-character searches (which are slow) to give the user a chance to enter another character.
+		if. LiveSearchCountdown > 0 do. animate 1 end.
+		LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
+		if. (0 = LiveSearchCountdown) +. 1 < # searchBox do.
+			submitLiveSearch ''
+			animate 1
+		end.
 	end.
 	rattleResult
 	return.
