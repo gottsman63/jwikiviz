@@ -314,14 +314,12 @@ layoutForm =: 3 : 0
 log 'layoutForm'
 'w h' =. ". wd 'getp wh'
 log 'layoutForm getp wh: ' , ": w , h 
-winW =. w - 40
+winW =. w NB. - 40
 winH =. h - 45
 controlHeight =. 30
 vocContextHeight =. winH >. 760
-NB. LayoutRatio =: 0.8 <. 0.2 >. LayoutRatio + 0.1 * LayoutDirection
-NB. if. w > 1500 do. LayoutRatio =: 0.5 end.
 if. 0.1 < | LayoutRatioTarget - LayoutRatio do.
-	sgn =. LayoutRatioTarget - LayoutRatio
+	sgn =. * LayoutRatioTarget - LayoutRatio
 	LayoutRatio =: LayoutRatio + sgn * 0.1 <. | LayoutRatioTarget - LayoutRatio
 else.
 	LayoutRatio =: LayoutRatioTarget
@@ -359,12 +357,14 @@ if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
 )
 
+MinScreenWidth =: 1500
+
 setLayoutRatioBrowser =: 3 : 0
 if. LayoutRatioTarget < 0.4 do. return. end.
 'w h' =. ". wd 'getp wh'
 centerW =. w * LayoutRatio
-if. w < 1500 do. NB. Small screen
-	LayoutRatioTarget =: 0.2
+if. w < MinScreenWidth do. NB. Small screen
+	LayoutRatioTarget =: 0.3
 else.
 	LayoutRatioTarget =: 0.5
 end.
@@ -375,8 +375,8 @@ setLayoutRatioToc =: 3 : 0
 if. LayoutRatioTarget > 0.6 do. return. end.
 'w h' =. ". wd 'getp wh'
 centerW =. w * LayoutRatio
-if. w < 1500 do. NB. Small screen
-	LayoutRatioTarget =: 0.8
+if. w < MinScreenWidth do. NB. Small screen
+	LayoutRatioTarget =: 0.7
 else.
 	LayoutRatioTarget =: 0.5
 end.
@@ -385,16 +385,16 @@ animate 2
 
 setFontSize =: 3 : 0
 NB. y A font slider value (1..9)
-NB. use fontSlider's value to set various font-oriented metrics.
+NB. use y to set various font-oriented metrics.
 log 'setFontSize'
 FontAdjustment =: y - 5
 log '...FontAdjustment: ' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
 TocLineHeight =: 2 * 13 + FontAdjustment
-VocCellFont =: 'consolas ' , (": 14 + FontAdjustment) , ' bold'
+VocCellFont =: 'arial ' , (": 14 + FontAdjustment) , ' bold'
 VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
-LiveSearchFont =: 'courier ' , ": 16 + FontAdjustment
+LiveSearchFont =: 'arial ' , ": 16 + FontAdjustment
 SectionFont =: 'arial bold ' , ": 16 + FontAdjustment
 'FontSlider' setKeyValue ": y
 invalidateDisplay ''
@@ -439,7 +439,6 @@ snapshotLogToBrowser ''
 )
 
 vizform_liveForum_button =: 3 : 0
-NB. liveSearchShowForumPosts =: ". liveForum
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
