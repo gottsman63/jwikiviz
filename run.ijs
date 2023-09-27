@@ -387,7 +387,10 @@ setFontSize =: 3 : 0
 NB. y A font slider value (1..9)
 NB. use y to set various font-oriented metrics.
 log 'setFontSize'
-FontAdjustment =: y - 5
+glfont 'arial 15'
+factor =. 15 %~ {: glqextent 'M'
+smoutput 'factor' ; factor
+FontAdjustment =: <. factor * y - 5
 log '...FontAdjustment: ' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
 TocLineHeight =: 2 * 13 + FontAdjustment
