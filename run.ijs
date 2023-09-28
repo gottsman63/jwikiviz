@@ -389,7 +389,6 @@ NB. use y to set various font-oriented metrics.
 log 'setFontSize'
 glfont 'arial 15'
 factor =. 15 %~ {: glqextent 'M'
-smoutput 'factor' ; factor
 FontAdjustment =: <. factor * y - 5
 log '...FontAdjustment: ' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
@@ -2372,7 +2371,8 @@ try.
 	setUpdateButtons ''
 	loadHistoryMenu ''
 	0&T."(0) (0 >. 5 - 1 T. '') # 0
-	wd 'pshow fullscreen'
+	version =. ". '.' -.~ 9 10 11 12 13 { JVERSION
+	if. version < 950 do. wd 'pshow maximized' else. wd 'pshow fullscreen' end.
 	wd 'msgs'
 	animate 2
 	fs =. '5' getKeyValue 'FontSlider'
