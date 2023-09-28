@@ -2299,7 +2299,7 @@ case. 0 do. 1
 case. 1 do. 1
 case. 2 do.
 	if. isOnTheNetwork'' do.
-		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download ~100 MB (which will decompress and index to ~1 GB in ~temp); No to quit."'
+		result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download ~100 MB (which will decompress and index to ~1 GB in ~temp); THIS MAY TAKE OVER A MINUTE."'
 		if. result -: 'yes' do. 
 			downloadAndTransferDatabase ''
 			downloadAndBuildFullTextIndexDb ''
