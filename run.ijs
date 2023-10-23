@@ -35,6 +35,7 @@ addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
 githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
 awsPrefix =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com'
 indexUrl =: awsPrefix , '/jwikiviz.fulltext.txt.lz4'
+githubContentUrl =: awsPrefix , '/jwikiviz.gitHub.dat.lz4'
 dateUrl =: awsPrefix , '/jwikiviz.dat'
 stageDbUrl =: awsPrefix , '/jwikiviz.stage.db'
 
@@ -548,7 +549,7 @@ loadHistoryMenu ''
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox NB. This won't actually reflect the current contents of the search box.
 markLiveSearchDirty ''
-setTocOutlineRailTopLevelEntry LiveSearchCatString
+NB. setTocOutlineRailTopLevelEntry LiveSearchCatString
 LiveSearchCountdown =: 30
 animate 3
 )
@@ -730,6 +731,7 @@ BookmarkCatString =: '*Bookmarks'
 SearchCatString =: '*Search'
 SearchHiddenCatId =: 200000
 LiveSearchCatString =: '*Live Search'
+GitHubCatString =: '*GitHub'
 TagCatString =: '*Tags'
 TagHiddenCatId =: 500000
 QueuedUrl =: ''
@@ -1558,6 +1560,107 @@ end.
 )
 NB. ---------------------- End Live Search ------------------------
 
+NB. ---------------------- GitHub Search --------------------------
+GitHubTable =: ''
+GitHubTextString =: ''
+GitHubLines =: ''
+GitHubCompressedText =: ''
+SearchCode =: ''
+GitHubLfIndices =: ''
+GitHubFileIndices =: ''
+GitHubFileLineCounts =: ''
+GitHubFileCumulativeLineCounts =: ''
+GitHubResults =: ''
+GitHubPageIndex =: 0
+GitHubLastSearch =: ''
+
+getGitHubTable =: {{
+if. '' -: GitHubTable do.
+	openLiveSearchDb ''
+	gitHubContent =. , > {. > {: sqlreadm__liveSearchDb 'select content from github'
+	GitHubTable =: _3 ]\ < ;._2 gitHubContent
+	GitHubTextString =: ; (2 {"1 GitHubTable) ,. < 0 { a.
+	GitHubLines =: < ;. _2 GitHubTextString , LF
+	GitHubCompressedText =: GitHubTextString -. ' '
+	SearchCode =: E. & GitHubCompressedText
+	GitHubLfIndices =: I. SearchCode LF
+	GitHubFileIndices =: I. SearchCode 0 { a.
+	GitHubFileLineCounts =: > +/ &. > (SearchCode 0 { a.) < ;.2 SearchCode LF
+	GitHubFileCumulativeLineCounts =: }: 0 , +/\ GitHubFileLineCounts
+end.
+GitHubTable
+}}
+
+searchGitHub =: {{
+NB. y A search string.  Remove spaces and search.
+GitHubLastSearch =: y
+s =. y -. ' '
+if. 0 = # s do. GitHubResults =: '' return. end.
+getGitHubTable ''
+maxLineCount =. _2 + <. (3 { DisplayDetailRect) % TocLineHeight
+rawIndices =. I. SearchCode s
+if. 0 = # rawIndices do. GitHubResults =: '' return. end.
+hitIndices =. > GitHubPageIndex { (- maxLineCount) <\ rawIndices
+lfIndices =. +/"(1) 0 < hitIndices -/ GitHubLfIndices 
+hitLines =. lfIndices { GitHubLines
+fileIndices =. +/"(1) 0 < hitIndices -/ GitHubFileIndices
+lineNumbers =. <"0 >: lfIndices - fi =. fileIndices { GitHubFileCumulativeLineCounts
+lineCounts =. fileIndices { GitHubFileLineCounts
+urls =. fileIndices { 1 {"1 GitHubTable
+GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. lineNumbers ,. hitLines)
+NB. lineNumbers =. lfIndices - fileIndices { gitHubFileCumulativeLineCounts 
+NB. launch_jbrowser_ > 0 { urls
+}}
+
+drawTocEntryGitHubSearch =: {{
+NB. y xx yy width height
+NB. Render the GitHub search display.
+log 'drawTocEntryGitHubSearch ' , ": y
+'xx yy width height' =. y
+glclip 0 0 10000 100000
+glrgb 0 0 0
+gltextcolor ''
+glpen 1
+glrgb BackgroundColor
+glbrush ''
+glrect xx , yy , width , height
+glfont LiveSearchFont
+if. -. GitHubLastSearch -: searchBox do.
+	GitHubPageIndex =: 0
+	searchGitHub searchBox
+end.
+if. GitHubResults -: '' do.
+	startY =. yy + <. -: height
+	message1 =. 'GitHub Code Search'
+	startX =. <. (xx + -: width) - -: {. glqextent message1
+	(startX , startY) drawStringAt message1
+	message2 =. '(Use the "Phrase:" input text box.)'
+	startX =. <. (xx + -: width) - -: {. glqextent message2
+	(startX , startY + TocLineHeight) drawStringAt message2
+	return.
+end.
+projects =. 0 {"1 GitHubResults
+maxProjectWidth =. 10 + >./ > {.@glqextent &. > projects
+filenames =. >@{: &. > < ;. _2 &. > ,&'/' &. > 1 {"1 GitHubResults
+maxFilenameWidth =. 10 + >./ > {.@glqextent &. > filenames 
+lineNumbers =. 2 {"1 GitHubResults
+codes =. 3 {"1 GitHubResults
+leftMargin =. 6
+topMargin =. TocLineHeight * 2
+ys =. topMargin + yy + TocLineHeight * i. # codes
+glrgb 127 0 0
+gltextcolor ''
+(<"(1) (leftMargin + xx) ,. ys) drawStringAt &. > projects
+glrgb 0 0 127
+gltextcolor ''
+(<"(1) (leftMargin + xx + maxProjectWidth) ,. ys) drawStringAt &. > filenames
+glrgb GitHubColor
+gltextcolor ''
+(<"(1) (leftMargin + xx + maxProjectWidth + maxFilenameWidth) ,. ys) drawStringAt &. > codes
+
+}}
+NB. -------------------- End GitHub Search ------------------------
+
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
 ForumCurrentName =: ''
 ForumSubjectScrollIndex =: 0
@@ -1866,6 +1969,8 @@ elseif. TagCatString -: > 3 { entry do.
 	drawTocEntryTags y
 elseif. LiveSearchCatString -: > 3 { entry do.
 	drawTocEntryLiveSearch y
+elseif. GitHubCatString -: > 3 { entry do.
+	drawTocEntryGitHubSearch y
 elseif. (< SearchCatString) = 3 { entry do.
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree y
 else.
@@ -2324,6 +2429,7 @@ sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
 sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
 sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'
+sqlcmd__liveSearchDb 'CREATE TABLE github (content BLOB)'
 lz4String =. gethttp indexUrl
 NB. lz4String =. (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.lz4'
 sep =. 2 3 4 { a.
@@ -2336,6 +2442,14 @@ urls =. 0 {"1 table
 try.
 	sqlinsert__liveSearchDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
 	sqlinsert__liveSearchDb 'jindex' ; (;: 'body') ;  << bodies
+catch. catcht.
+	smoutput (13!:12) ''
+	smoutput sqlerror__liveSearchDb ''
+end.
+gitHubLz4String =. gethttp githubContentUrl
+gitHubString =. lz4_uncompressframe gitHubLz4String
+try.
+	sqlinsert__liveSearchDb 'github' ; (;: 'content') ; < gitHubString
 catch. catcht.
 	smoutput (13!:12) ''
 	smoutput sqlerror__liveSearchDb ''

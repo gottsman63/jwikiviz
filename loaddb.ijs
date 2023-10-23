@@ -28,6 +28,7 @@ masterDbFile =: appDir , '/master.db'
 indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
 dateFile =: appDir , '/jwikiviz.dat'
 tokenFile =: appDir , '/token.txt'
+gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
@@ -39,7 +40,13 @@ translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
-try. raw =. ('''' ; ' ') rxrplc y catch. smoutput 'Problem!' return. end.
+try.
+	raw =. ('''' ; ' ') rxrplc y 
+catch.  
+	smoutput 'JEnglish Failure'
+	'JEnglish Failure'
+	return.
+end.
 translatedHtml =. translateHtmlEncodings raw
 rawTokens =. ;: translatedHtml
 hits =. jMnemonics i."1 0 rawTokens
@@ -104,7 +111,9 @@ result
 )
 
 NB. ============================ Crawling GitHiub ======================================
-indexSuffixes =: '.txt' ; '.ijs'
+indexSuffixes =: < '.ijs'
+sep =: 0 { a.
+gitHubContent =: ''
 
 updateMasterDbWithGitHubDocs =: 3 : 0
 NB. y Project name from the jsoftware section of GitHub
@@ -124,15 +133,17 @@ try.
 	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
 	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
 	filenames =. ; < ;. _2 @(2!:0) &. > commands
-	contents =. translateToJEnglish &. > <@(1!:1)"0 filenames
+	contents =. translateToJEnglish &. > rawContents =. <@(1!:1)"0 filenames
 	urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
 	for_i. i. # urls do.
-		content =: i { contents
+		content =. i { contents
+		rawContent =. i { rawContents
 		url =. i { urls
 		filename =. i { filenames
 		subject =. project , ': ' , (('^.*/' , project, '/[^/]+/') ; '') rxrplc > filename
 		data =. url ; filename ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
 		sqlinsert__masterDb 'content' ; masterCols ; < data
+		gitHubContent =: gitHubContent , ; ((< project) , url , rawContent) ,. < sep
 	end.
 NB.	data =. urls ; filenames ; ((<project) #~ # urls) ; ((< 'G') #~ # urls) ; (9999 #~ # urls) ; (0 #~ # urls) ; (0 #~ # urls) ; filenames ; filenames ; < contents
 NB.	sqlinsert__masterDb 'content' ; masterCols ; < data
@@ -146,6 +157,7 @@ try. (2!:0) 'rm ' , zipFilename catch. end.
 
 updateMasterDbWithGitHubProjects =: 3 : 0
 NB. Update master.db with the jsoftware projects from GitHub.
+gitHubContent =: ''
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "G"'
 page =. 1
@@ -158,6 +170,7 @@ whilst. 0 < # ol do.
 	page =. >: page
 	smoutput 'page' ; page
 end.
+(lz4_compressframe gitHubContent) (1!:2) < gitHubContentFile
 NB. updateMasterDbWithGitHubDocs 'arc_zip'
 )
 NB. ========================== End Crawling GitHiub ====================================
@@ -813,6 +826,7 @@ setupTables =: 3 : 0
 NB. Note that these should be the first rows inserted into the categories table.
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category parentseq count') ;      < 0 ; _1 ; 1 ; '' ; 0 ; _1
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Live Search' ; _1 ; 7 ; ''
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 25 ; '*GitHub' ; _1 ; 7 ; ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 10 ; '*NuVoc' ; _1 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
 NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Search' ; _1 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 30 ; '*Forums' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
