@@ -1572,6 +1572,7 @@ GitHubFileLineCounts =: ''
 GitHubFileCumulativeLineCounts =: ''
 GitHubResults =: ''
 GitHubPageIndex =: 0
+GitHubPageCount =: 1
 GitHubLastSearch =: ''
 
 getGitHubTable =: {{
@@ -1591,6 +1592,14 @@ end.
 GitHubTable
 }}
 
+setGitHubPageIndex =: {{
+NB. y A new page index for the GitHub search.
+NB. Set it and perform a new search.
+GitHubPageIndex =: y
+searchGitHub searchBox
+animate 1
+}}
+
 searchGitHub =: {{
 NB. y A search string.  Remove spaces and search.
 GitHubLastSearch =: y
@@ -1599,6 +1608,7 @@ if. 0 = # s do. GitHubResults =: '' return. end.
 getGitHubTable ''
 maxLineCount =. _2 + <. (3 { DisplayDetailRect) % TocLineHeight
 rawIndices =. I. SearchCode s
+GitHubPageCount =: >. (# rawIndices) % maxLineCount
 if. 0 = # rawIndices do. GitHubResults =: '' return. end.
 hitIndices =. > GitHubPageIndex { (- maxLineCount) <\ rawIndices
 lfIndices =. +/"(1) 0 < hitIndices -/ GitHubLfIndices 
@@ -1631,7 +1641,7 @@ if. -. GitHubLastSearch -: searchBox do.
 end.
 if. GitHubResults -: '' do.
 	startY =. yy + <. -: height
-	message1 =. 'GitHub Code Search'
+	message1 =. 'GitHub Code Search (JSoftware Account Only)'
 	startX =. <. (xx + -: width) - -: {. glqextent message1
 	(startX , startY) drawStringAt message1
 	message2 =. '(Use the "Phrase:" input text box.)'
@@ -1639,25 +1649,49 @@ if. GitHubResults -: '' do.
 	(startX , startY + TocLineHeight) drawStringAt message2
 	return.
 end.
+pageLabelHeight =. 30
+pageLabelWidth =. 30
+pageLabels =. <@":"0 >: i. GitHubPageCount
+pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. GitHubPageCount) ,. 5
+pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
+(pageLabelRects -"(1 1) 4 4 0 0) registerRectLink"1 1 ('*setGitHubPageIndex '&, &. > <@":"0 i. GitHubPageCount) ,"0 1 (< ' ') , <1
+(<"1 pageLabelOrigins) drawStringAt &. > pageLabels
+((GitHubPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
+((5 + xx) , 5) drawStringAt 'Page:'
+columnGap =. 10
+glrgb 0 0 0
+gltextcolor ''
 projects =. 0 {"1 GitHubResults
-maxProjectWidth =. 10 + >./ > {.@glqextent &. > projects
+maxProjectWidth =. columnGap + >./ > {.@glqextent &. > projects
 filenames =. >@{: &. > < ;. _2 &. > ,&'/' &. > 1 {"1 GitHubResults
-maxFilenameWidth =. 10 + >./ > {.@glqextent &. > filenames 
+maxFilenameWidth =. columnGap + >./ > {.@glqextent &. > filenames 
 lineNumbers =. 2 {"1 GitHubResults
+stringLineNumbers =. _4&{. &. > '000'&, &. > ": &. > lineNumbers
+maxLineNumberWidth =. columnGap + >./ > {.@glqextent &. > stringLineNumbers
+urls =. 1 {"1 GitHubResults
 codes =. 3 {"1 GitHubResults
 leftMargin =. 6
 topMargin =. TocLineHeight * 2
 ys =. topMargin + yy + TocLineHeight * i. # codes
 glrgb 127 0 0
 gltextcolor ''
-(<"(1) (leftMargin + xx) ,. ys) drawStringAt &. > projects
+(<"(1) projectOrigins =. (leftMargin + xx) ,. ys) drawStringAt &. > projects
+projectRects =. _2 _2 4 4 +"1 1 projectOrigins ,. > glqextent &. > projects
+projectUrls =. 'https://github.com/jsoftware/'&, &. > projects
+(<"1 projectRects) registerRectLink &. ><"1 projectUrls ,. projects ,. < 1
 glrgb 0 0 127
 gltextcolor ''
-(<"(1) (leftMargin + xx + maxProjectWidth) ,. ys) drawStringAt &. > filenames
+filenameOffsets =. _5 + maxFilenameWidth - > {.@glqextent &. > filenames 
+(<"(1) (filenameOffsets +"0 0 leftMargin + xx + maxProjectWidth) ,. ys) drawStringAt &. > filenames
+glrgb 164 164 164
+gltextcolor ''
+(<"(1) (leftMargin + xx + maxProjectWidth + maxFilenameWidth) ,. ys) drawStringAt &. > stringLineNumbers
 glrgb GitHubColor
 gltextcolor ''
-(<"(1) (leftMargin + xx + maxProjectWidth + maxFilenameWidth) ,. ys) drawStringAt &. > codes
-
+(<"(1) codeOrigins =. (leftMargin + xx + maxProjectWidth + maxFilenameWidth + maxLineNumberWidth) ,. ys) drawStringAt &. > codes
+names =. projects , &. > ':'&, &. > filenames 
+codeRects =. _2 _2 4 4 +"1 1 codeOrigins ,. > glqextent &. > codes
+(<"1 codeRects) registerRectLink &. > <"1 urls ,. names ,. < 1
 }}
 NB. -------------------- End GitHub Search ------------------------
 
@@ -2425,7 +2459,7 @@ end.
 downloadAndBuildFullTextIndexDb =: 3 : 0
 try. (1!:55) < liveSearchDbPath catch. end.
 liveSearchDb =: sqlcreate_psqlite_ liveSearchDbPath
-sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body)'
+sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
 sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
 sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'

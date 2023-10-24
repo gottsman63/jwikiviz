@@ -166,7 +166,7 @@ whilst. 0 < # ol do.
 	html =. gethttp url
 	ol =. }. {:"2 (rxcomp 'd-inline-block">\s+([^<]+)<') rxmatches html
 	projects =. -.&LF &. > (<"0 {:"1 ol) {. &. > ({."1 ol) <@}."0 1 html
-	updateMasterDbWithGitHubDocs &. > projects -. 'jsource' ; 'winget-pkgs'
+	updateMasterDbWithGitHubDocs &. > projects NB. -. 'jsource' ; 'winget-pkgs'
 	page =. >: page
 	smoutput 'page' ; page
 end.
