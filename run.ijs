@@ -549,7 +549,12 @@ loadHistoryMenu ''
 vizform_searchBox_char =: 3 : 0
 log 'vizform_searchBox_char ' , searchBox NB. This won't actually reflect the current contents of the search box.
 markLiveSearchDirty ''
-NB. setTocOutlineRailTopLevelEntry LiveSearchCatString
+entry =. TocOutlineRailSelectedIndex { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
+category =. > 3 { entry
+smoutput category ; GitHubCatString
+if. -. category -: GitHubCatString do. 
+	setTocOutlineRailTopLevelEntry LiveSearchCatString
+end.
 LiveSearchCountdown =: 30
 animate 3
 )
@@ -1602,6 +1607,8 @@ animate 1
 
 searchGitHub =: {{
 NB. y A search string.  Remove spaces and search.
+NB. Fill in the GitHubResults data structure:
+NB. project ; filename ; url ; lineNumber ; hitLine ; contextLines
 GitHubLastSearch =: y
 s =. y -. ' '
 if. 0 = # s do. GitHubResults =: '' return. end.
@@ -1640,11 +1647,11 @@ if. -. GitHubLastSearch -: searchBox do.
 	searchGitHub searchBox
 end.
 if. GitHubResults -: '' do.
-	startY =. yy + <. -: height
-	message1 =. 'GitHub Code Search (JSoftware Account Only)'
+	startY =. yy + <. (-: height) - TocLineHeight
+	message1 =. 'GitHub Dedicated Code Search (JSoftware Account Only)'
 	startX =. <. (xx + -: width) - -: {. glqextent message1
 	(startX , startY) drawStringAt message1
-	message2 =. '(Use the "Phrase:" input text box.)'
+	message2 =. 'Use the "Phrase:" input text box.'
 	startX =. <. (xx + -: width) - -: {. glqextent message2
 	(startX , startY + TocLineHeight) drawStringAt message2
 	return.
