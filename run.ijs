@@ -1518,27 +1518,30 @@ colWidth =. <. -: width - colSep
 snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
 titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
-glrgb WikiColor
+NB. glrgb WikiColor
 gltextcolor ''
 sieve =. sources = <'W'
 glclip xx , yy , colWidth , height
-(<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < WikiColor
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-glrgb ForumColor
+NB. glrgb ForumColor
 gltextcolor ''
 sieve =. sources = <'F'
 glclip xx , yy , colWidth , height
-(<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < ForumColor
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-glrgb GitHubColor
+NB. glrgb GitHubColor
 gltextcolor ''
 sieve =. sources = <'G'
 glclip xx , yy , colWidth , height
-(<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < GitHubColor
 glclip (xx + 5 + colWidth) , yy , colWidth , height
 (<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
@@ -1618,7 +1621,7 @@ rawIndices =. I. SearchCode s
 GitHubPageCount =: >. (# rawIndices) % maxLineCount
 if. 0 = # rawIndices do. GitHubResults =: '' return. end.
 hitIndices =. > GitHubPageIndex { (- maxLineCount) <\ rawIndices
-lfIndices =. +/"(1) 0 < hitIndices -/ GitHubLfIndices 
+lfIndices =. +/"(1) 0 < hitIndices -/ GitHubLfIndices
 hitLines =. lfIndices { GitHubLines
 fileIndices =. +/"(1) 0 < hitIndices -/ GitHubFileIndices
 lineNumbers =. <"0 >: lfIndices - fi =. fileIndices { GitHubFileCumulativeLineCounts
@@ -1629,13 +1632,15 @@ NB. lineNumbers =. lfIndices - fileIndices { gitHubFileCumulativeLineCounts
 NB. launch_jbrowser_ > 0 { urls
 }}
 
-drawGitHubCodeWithHighlights =: {{
+drawCodeWithHighlights =: {{
 NB. x xx yy width height
-NB. y term ; code
+NB. y term ; code ; code color
 NB. "Term" is the search term, which may have spaces.  The code may have spaces
 NB. Matched tokens should be rendered in reverse video
-'xx yy width height' =. x
-'term code' =. y
+if. y -: a: do. '' return. end.
+'xx yy width height' =. > x
+'term code color' =. y
+if. 0 = # code -. ' ' do. '' return. end.
 term =. term -. ' '
 codeWithSpaces =. (code ~: ' ') < ;.1 code
 highlightIndices =. , (i. # term) +"1 0 I. term E. code -. ' '
@@ -1646,16 +1651,17 @@ for_i. i. # codeWithSpaces do.
 	fragment =. > i { codeWithSpaces
 	offset =. i { offsets
 	if. i { highlightFlags do.
-		glrgb 164 164 164
+		glrgb 255 0 0
 		glbrush ''
 		glpen ''
-		glrect offset, (yy + height - 4), (i { lengths) , 4
+		glrect offset, (yy + height - <. TocLineHeight * 0.3), (i { lengths) , 4
 	else.
-		glrgb GitHubColor
+		glrgb color
 		gltextcolor ''
 	end.
 	(offset, yy) drawStringAt fragment
 end.
+''
 }}
 
 drawTocEntryGitHubSearch =: {{
@@ -1733,7 +1739,7 @@ gltextcolor ''
 names =. projects , &. > ':'&, &. > filenames 
 codeRects =. _2 _2 4 4 +"1 1 codeOrigins ,. > glqextent &. > codes
 (<"1 codeRects) registerRectLink &. > <"1 urls ,. names ,. < 1
-(<"1 codeRects) drawGitHubCodeWithHighlights &. > <"1 (< searchBox) ,. codes
+(<"1 codeOrigins ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights &. > <"1 (< searchBox) ,. codes ,. < GitHubColor
 }}
 NB. -------------------- End GitHub Search ------------------------
 
