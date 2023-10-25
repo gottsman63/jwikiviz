@@ -1629,6 +1629,35 @@ NB. lineNumbers =. lfIndices - fileIndices { gitHubFileCumulativeLineCounts
 NB. launch_jbrowser_ > 0 { urls
 }}
 
+drawGitHubCodeWithHighlights =: {{
+NB. x xx yy width height
+NB. y term ; code
+NB. "Term" is the search term, which may have spaces.  The code may have spaces
+NB. Matched tokens should be rendered in reverse video
+'xx yy width height' =. x
+'term code' =. y
+term =. term -. ' '
+codeWithSpaces =. (code ~: ' ') < ;.1 code
+highlightIndices =. , (i. # term) +"1 0 I. term E. code -. ' '
+highlightFlags =. (1) highlightIndices } (# codeWithSpaces) # 0
+lengths =. > {.@glqextent &. > codeWithSpaces
+offsets =. xx + }: 0 , +/\ lengths
+for_i. i. # codeWithSpaces do.
+	fragment =. > i { codeWithSpaces
+	offset =. i { offsets
+	if. i { highlightFlags do.
+		glrgb 164 164 164
+		glbrush ''
+		glpen ''
+		glrect offset, (yy + height - 4), (i { lengths) , 4
+	else.
+		glrgb GitHubColor
+		gltextcolor ''
+	end.
+	(offset, yy) drawStringAt fragment
+end.
+}}
+
 drawTocEntryGitHubSearch =: {{
 NB. y xx yy width height
 NB. Render the GitHub search display.
@@ -1700,10 +1729,11 @@ gltextcolor ''
 (<"(1) (leftMargin + xx + maxProjectWidth + maxFilenameWidth) ,. ys) drawStringAt &. > stringLineNumbers
 glrgb GitHubColor
 gltextcolor ''
-(<"(1) codeOrigins =. (leftMargin + xx + maxProjectWidth + maxFilenameWidth + maxLineNumberWidth) ,. ys) drawStringAt &. > codes
+(<"(1) codeOrigins =. (leftMargin + xx + maxProjectWidth + maxFilenameWidth + maxLineNumberWidth) ,. ys) NB. drawStringAt &. > codes
 names =. projects , &. > ':'&, &. > filenames 
 codeRects =. _2 _2 4 4 +"1 1 codeOrigins ,. > glqextent &. > codes
 (<"1 codeRects) registerRectLink &. > <"1 urls ,. names ,. < 1
+(<"1 codeRects) drawGitHubCodeWithHighlights &. > <"1 (< searchBox) ,. codes
 }}
 NB. -------------------- End GitHub Search ------------------------
 
