@@ -551,7 +551,6 @@ log 'vizform_searchBox_char ' , searchBox NB. This won't actually reflect the cu
 markLiveSearchDirty ''
 entry =. TocOutlineRailSelectedIndex { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 category =. > 3 { entry
-smoutput category ; GitHubCatString
 if. -. category -: GitHubCatString do. 
 	setTocOutlineRailTopLevelEntry LiveSearchCatString
 end.
@@ -1579,6 +1578,7 @@ GitHubResults =: ''
 GitHubPageIndex =: 0
 GitHubPageCount =: 1
 GitHubLastSearch =: ''
+GitHubLastLiveSearchFont =: LiveSearchFont
 
 getGitHubTable =: {{
 if. '' -: GitHubTable do.
@@ -1643,6 +1643,10 @@ glbrush ''
 glrect xx , yy , width , height
 glfont LiveSearchFont
 if. -. GitHubLastSearch -: searchBox do.
+	GitHubPageIndex =: 0
+	searchGitHub searchBox
+end.
+if. -. GitHubLastLiveSearchFont -: LiveSearchFont do.
 	GitHubPageIndex =: 0
 	searchGitHub searchBox
 end.
