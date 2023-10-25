@@ -1650,12 +1650,13 @@ if. -. GitHubLastLiveSearchFont -: LiveSearchFont do.
 	GitHubPageIndex =: 0
 	searchGitHub searchBox
 end.
+GitHubLastLiveSearchFont =: LiveSearchFont
 if. GitHubResults -: '' do.
 	startY =. yy + <. (-: height) - TocLineHeight
 	message1 =. 'GitHub Dedicated Code Search (JSoftware Account Only)'
 	startX =. <. (xx + -: width) - -: {. glqextent message1
 	(startX , startY) drawStringAt message1
-	message2 =. 'Use the "Phrase:" input text box.'
+	message2 =. 'Enter code in the "Phrase:" input text box.'
 	startX =. <. (xx + -: width) - -: {. glqextent message2
 	(startX , startY + TocLineHeight) drawStringAt message2
 	return.
