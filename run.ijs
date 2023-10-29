@@ -1569,35 +1569,25 @@ NB. ---------------------- End Live Search ------------------------
 
 NB. ---------------------- GitHub Search --------------------------
 GitHubTable =: ''
-GitHubTextString =: ''
-GitHubLines =: ''
-GitHubCompressedText =: ''
+GitHubWords =: ''
 SearchCode =: ''
-GitHubLfIndices =: ''
-GitHubFileIndices =: ''
-GitHubFileLineCounts =: ''
-GitHubFileCumulativeLineCounts =: ''
 GitHubResults =: ''
+GitHubResultsNextCharacters =: ''
+GitHubResultsNextTokens =: ''
 GitHubPageIndex =: 0
 GitHubPageCount =: 1
 GitHubLastSearch =: ''
 GitHubLastLiveSearchFont =: LiveSearchFont
 
-getGitHubTable =: {{
+setupGitHubTable =: {{
 if. '' -: GitHubTable do.
 	openLiveSearchDb ''
 	gitHubContent =. , > {. > {: sqlreadm__liveSearchDb 'select content from github'
 	GitHubTable =: _3 ]\ < ;._2 gitHubContent
-	GitHubTextString =: ; (2 {"1 GitHubTable) ,. < 0 { a.
-	GitHubLines =: < ;. _2 GitHubTextString , LF
-	GitHubCompressedText =: GitHubTextString -. ' '
-	SearchCode =: E. & GitHubCompressedText
-	GitHubLfIndices =: I. SearchCode LF
-	GitHubFileIndices =: I. SearchCode 0 { a.
-	GitHubFileLineCounts =: > +/ &. > (SearchCode 0 { a.) < ;.2 SearchCode LF
-	GitHubFileCumulativeLineCounts =: }: 0 , +/\ GitHubFileLineCounts
+	gitHubWordsInFiles =. ;: :: a: &. > ,&LF &. > 2 {"1 GitHubTable
+	GitHubWords =: ; ,&(<0 { a.) &. > gitHubWordsInFiles
+	SearchCode =: E. & GitHubWords
 end.
-GitHubTable
 }}
 
 setGitHubPageIndex =: {{
@@ -1608,28 +1598,34 @@ searchGitHub searchBox
 animate 1
 }}
 
-searchGitHub =: {{
-NB. y A search string.  Remove spaces and search.
-NB. Fill in the GitHubResults data structure:
-NB. project ; filename ; url ; lineNumber ; hitLine ; contextLines
-GitHubLastSearch =: y
-s =. y -. ' '
-if. 0 = # s do. GitHubResults =: '' return. end.
+d =: {{
 getGitHubTable ''
+}}
+
+searchGitHub =: {{
+s =: ;: y
+if. 0 = # s do. GitHubResults =: '' return. end.
+setupGitHubTable ''
 maxLineCount =. _2 + <. (3 { DisplayDetailRect) % TocLineHeight
 rawIndices =. I. SearchCode s
 GitHubPageCount =: >. (# rawIndices) % maxLineCount
 if. 0 = # rawIndices do. GitHubResults =: '' return. end.
 hitIndices =. > GitHubPageIndex { (- maxLineCount) <\ rawIndices
-lfIndices =. +/"(1) 0 < hitIndices -/ GitHubLfIndices
-hitLines =. lfIndices { GitHubLines
-fileIndices =. +/"(1) 0 < hitIndices -/ GitHubFileIndices
-lineNumbers =. <"0 >: lfIndices - fi =. fileIndices { GitHubFileCumulativeLineCounts
-lineCounts =. fileIndices { GitHubFileLineCounts
+dotCount =. +/ SearchCode ;: y , '.'
+colonCount =. +/ SearchCode ;: y , ':'
+nextTokens =. (< LF) -.~ (rawIndices + # s) { GitHubWords
+uniqueNextTokens =. ~. nextTokens
+prefixes =. ('' ; '<space>') {~ (uniqueNextTokens = (< , '.')) +. uniqueNextTokens = (< , ':')
+uniqueNextTokens =. prefixes , &. > uniqueNextTokens
+nextTokenCounts =. #/.~ nextTokens
+GitHubResultsNextTokens =: (uniqueNextTokens \: nextTokenCounts) ,: <"(0) \:~ nextTokenCounts
+lineIndices =. +/"(1) 0 < hitIndices -/ I. SearchCode < , LF
+lineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
+lineNumbers =. lineIndices - cumulative {~ <: +/"1 lineIndices >/ cumulative =. 0 , +/\lineCounts 
+hitLines =. lineIndices  { < ;. _2 GitHubWords , (< , LF)
+fileIndices =. +/"(1) 0 < hitIndices -/ I. SearchCode < 0 { a.
 urls =. fileIndices { 1 {"1 GitHubTable
-GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. lineNumbers ,. hitLines)
-NB. lineNumbers =. lfIndices - fileIndices { gitHubFileCumulativeLineCounts 
-NB. launch_jbrowser_ > 0 { urls
+GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. (<"0 lineNumbers) ,. ; &. > hitLines)
 }}
 
 drawCodeWithHighlights =: {{
@@ -1651,7 +1647,7 @@ for_i. i. # codeWithSpaces do.
 	fragment =. > i { codeWithSpaces
 	offset =. i { offsets
 	if. i { highlightFlags do.
-		glrgb 255 0 0
+		glrgb 0 0 0
 		glbrush ''
 		glpen ''
 		glrect offset, (yy + height - <. TocLineHeight * 0.3), (i { lengths) , 4
@@ -1687,16 +1683,15 @@ if. -. GitHubLastLiveSearchFont -: LiveSearchFont do.
 end.
 GitHubLastLiveSearchFont =: LiveSearchFont
 if. GitHubResults -: '' do.
-	startY =. yy + <. (-: height) - TocLineHeight
-	message1 =. 'GitHub Dedicated Code Search (JSoftware Account Only)'
-	startX =. <. (xx + -: width) - -: {. glqextent message1
-	(startX , startY) drawStringAt message1
-	message2 =. 'Enter code in the "Phrase:" input text box.'
-	startX =. <. (xx + -: width) - -: {. glqextent message2
-	(startX , startY + TocLineHeight) drawStringAt message2
+	glfont SectionFont
+	text =. 'GitHub Code Search' ; '(JSoftware Account Only)' ; 'Enter code in the "Phrase:" input text box.' ; '0 Results'
+	startY =. yy + <. (-: height) - TocLineHeight * # text
+	xs =. xx + (-: width) - -: > {.@glqextent &. > text
+	ys =. startY + TocLineHeight * i. # text
+	(<"1 xs ,. ys) drawStringAt &. > text
 	return.
 end.
-pageLabelHeight =. 30
+pageLabelHeight =. TocLineHeight
 pageLabelWidth =. 30
 pageLabels =. <@":"0 >: i. GitHubPageCount
 pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. GitHubPageCount) ,. 5
@@ -1705,6 +1700,20 @@ pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
 (<"1 pageLabelOrigins) drawStringAt &. > pageLabels
 ((GitHubPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
 ((5 + xx) , 5) drawStringAt 'Page:'
+nextTokens =. 0 { GitHubResultsNextTokens 
+tokenWidths =. 5 + > {.@glqextent &. > nextTokens
+tokenCounts =. 1 { GitHubResultsNextTokens
+tokenCountsWidths =. 15 + > {.@glqextent &. > tokenCountStrings =. ": &. > tokenCounts
+tokenOffsets =. xx + 5 + +/\ }: 0 , tokenWidths + tokenCountsWidths
+tokenCountsOffsets =. xx + 5 + +/\ tokenWidths + }: , 0 , tokenCountsWidths
+glfont SectionFont
+glrgb 180 180 180
+gltextcolor ''
+(<"1 tokenCountsOffsets ,. yy + pageLabelHeight) drawStringAt &. > tokenCountStrings
+glrgb GitHubColor 
+gltextcolor ''
+(<"1 tokenOffsets ,. yy + pageLabelHeight) drawStringAt &. > nextTokens
+glfont LiveSearchFont
 columnGap =. 10
 glrgb 0 0 0
 gltextcolor ''
