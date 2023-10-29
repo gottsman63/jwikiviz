@@ -1641,13 +1641,12 @@ uniqueNextTokens =. prefixes , &. > uniqueNextTokens
 nextTokenCounts =. #/.~ nextTokens
 GitHubResultsNextTokens =: (uniqueNextTokens \: nextTokenCounts) ,: <"(0) \:~ nextTokenCounts
 lineIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < , LF
-NB. lineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
-lineNumbers =. >: lineIndices - GitHubCumulativeLineCounts {~ <: +/"1 lineIndices >/ GitHubCumulativeLineCounts
-hitLines =. lineIndices { GitHubLines
+lineIndicesInFiles =. lineIndices - GitHubCumulativeLineCounts {~ <: +/"1 lineIndices >/ GitHubCumulativeLineCounts
+lineNumbers =. >: lineIndicesInFiles
 fileIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < 0 { a.
-NB. smoutput ,. hitLines =. (<"0 lineIndices) { &. > fileIndices { GitHubOriginalLinesByFile
+hitLines =. > (<"0 lineIndicesInFiles) { &. > fileIndices { GitHubOriginalLinesByFile
 urls =. fileIndices { 1 {"1 GitHubTable
-GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. (<"0 lineNumbers) ,. ;@addSpacesToCodeWords &. > hitLines)
+GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. (<"0 lineNumbers) ,. hitLines)
 }}
 
 drawCodeWithHighlights =: {{
@@ -1706,7 +1705,7 @@ end.
 GitHubLastLiveSearchFont =: LiveSearchFont
 if. GitHubResults -: '' do.
 	glfont SectionFont
-	text =. '0 Results' ;'GitHub Code Search' ; '(JSoftware Account Only)' ; 'Enter code in the "Phrase:" input text box.' ; 'Common following tokens are shown.'
+	text =. 'GitHub Code Search' ; '0 Results' ; '(JSoftware Account Only)' ; 'Enter code in the "Phrase:" input text box.' ; 'Common following tokens are shown.'
 	startY =. yy + <. (-: height) - TocLineHeight * # text
 	xs =. xx + (-: width) - -: > {.@glqextent &. > text
 	ys =. startY + TocLineHeight * i. # text
