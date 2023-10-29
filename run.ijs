@@ -264,6 +264,7 @@ wd 'pn *J Viewer'
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
+wd       'cc closeButton button; cn *X'
 wd       'cc fontSlider slider 2 1 1 1 9 3'
 wd       'cc searchStatic static; cn *Phrase:'
 wd       'cc searchBox edit;'
@@ -327,6 +328,7 @@ else.
 end.
 vocContextWidth =. <. winW * LayoutRatio
 browserWidth =. winW - vocContextWidth
+wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
 wd 'set fontSlider maxwh ' , (": (<. vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set searchStatic maxwh ' , (": (<. vocContextWidth * 0.06) , controlHeight) , ';'
 wd 'set searchBox maxwh ' , (": (<. vocContextWidth * 0.35) , controlHeight) , ';'
@@ -420,6 +422,10 @@ try. sqlclose__liveSearchDb catch. end.
 wd 'timer 0'
 wd 'pclose'
 )
+
+vizform_closeButton_button =: {{
+vizform_close ''
+}}
 
 vizform_escape =: 3 : 0
 vizform_close ''
@@ -1604,10 +1610,6 @@ searchGitHub searchBox
 animate 1
 }}
 
-d =: {{
-getGitHubTable ''
-}}
-
 addSpacesToCodeWords =: {{
 NB. y Code in boxed word form.
 NB. Add a space to either side of a . or a :
@@ -1699,7 +1701,7 @@ end.
 GitHubLastLiveSearchFont =: LiveSearchFont
 if. GitHubResults -: '' do.
 	glfont SectionFont
-	text =. 'GitHub Code Search' ; '(JSoftware Account Only)' ; 'Enter code in the "Phrase:" input text box.' ; '0 Results'
+	text =. '0 Results' ;'GitHub Code Search' ; '(JSoftware Account Only)' ; 'Enter code in the "Phrase:" input text box.' ; 'Common following tokens are shown.'
 	startY =. yy + <. (-: height) - TocLineHeight * # text
 	xs =. xx + (-: width) - -: > {.@glqextent &. > text
 	ys =. startY + TocLineHeight * i. # text
