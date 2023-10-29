@@ -1576,6 +1576,7 @@ NB. ---------------------- End Live Search ------------------------
 NB. ---------------------- GitHub Search --------------------------
 GitHubTable =: ''
 GitHubWords =: ''
+GitHubLines =: ''
 GitHubLineCounts =: ''
 GitHubCumulativeLineCounts =: ''
 GitHubOriginalLinesByFile =: ''
@@ -1595,6 +1596,7 @@ if. '' -: GitHubTable do.
 	GitHubTable =: _3 ]\ < ;._2 gitHubContent
 	gitHubWordsInFiles =. ;: :: a: &. > lines =. ,&LF &. > 2 {"1 GitHubTable
 	GitHubWords =: ; ,&(<0 { a.) &. > gitHubWordsInFiles
+	GitHubLines =: < ;. _2 GitHubWords , (< , LF)
 	GitHubOriginalLinesByFile =: < ;. _2 &. > lines
 	SearchCode =: E. & GitHubWords
 	GitHubLineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
@@ -1638,7 +1640,7 @@ GitHubResultsNextTokens =: (uniqueNextTokens \: nextTokenCounts) ,: <"(0) \:~ ne
 lineIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < , LF
 NB. lineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
 lineNumbers =. >: lineIndices - GitHubCumulativeLineCounts {~ <: +/"1 lineIndices >/ GitHubCumulativeLineCounts
-hitLines =. lineIndices  { < ;. _2 GitHubWords , (< , LF)
+hitLines =. lineIndices { GitHubLines
 fileIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < 0 { a.
 NB. smoutput ,. hitLines =. (<"0 lineIndices) { &. > fileIndices { GitHubOriginalLinesByFile
 urls =. fileIndices { 1 {"1 GitHubTable
