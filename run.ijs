@@ -1570,6 +1570,9 @@ NB. ---------------------- End Live Search ------------------------
 NB. ---------------------- GitHub Search --------------------------
 GitHubTable =: ''
 GitHubWords =: ''
+GitHubLineCounts =: ''
+GitHubCumulativeLineCounts =: ''
+GitHubOriginalLinesByFile =: ''
 SearchCode =: ''
 GitHubResults =: ''
 GitHubResultsNextCharacters =: ''
@@ -1584,9 +1587,12 @@ if. '' -: GitHubTable do.
 	openLiveSearchDb ''
 	gitHubContent =. , > {. > {: sqlreadm__liveSearchDb 'select content from github'
 	GitHubTable =: _3 ]\ < ;._2 gitHubContent
-	gitHubWordsInFiles =. ;: :: a: &. > ,&LF &. > 2 {"1 GitHubTable
+	gitHubWordsInFiles =. ;: :: a: &. > lines =. ,&LF &. > 2 {"1 GitHubTable
 	GitHubWords =: ; ,&(<0 { a.) &. > gitHubWordsInFiles
+	GitHubOriginalLinesByFile =: < ;. _2 &. > lines
 	SearchCode =: E. & GitHubWords
+	GitHubLineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
+	GitHubCumulativeLineCounts =: +/\ GitHubLineCounts
 end.
 }}
 
@@ -1602,12 +1608,20 @@ d =: {{
 getGitHubTable ''
 }}
 
+addSpacesToCodeWords =: {{
+NB. y Code in boxed word form.
+NB. Add a space to either side of a . or a :
+dots =. (<' . ') (I. (< , '.') E. y) } y
+(<' : ') (I. (< , ':') E. dots) } dots
+}}
+
 searchGitHub =: {{
 s =: ;: y
+GitHubLastSearch =: y
 if. 0 = # s do. GitHubResults =: '' return. end.
 setupGitHubTable ''
 maxLineCount =. _2 + <. (3 { DisplayDetailRect) % TocLineHeight
-rawIndices =. I. SearchCode s
+rawIndices =. I.@SearchCode s
 GitHubPageCount =: >. (# rawIndices) % maxLineCount
 if. 0 = # rawIndices do. GitHubResults =: '' return. end.
 hitIndices =. > GitHubPageIndex { (- maxLineCount) <\ rawIndices
@@ -1619,13 +1633,14 @@ prefixes =. ('' ; '<space>') {~ (uniqueNextTokens = (< , '.')) +. uniqueNextToke
 uniqueNextTokens =. prefixes , &. > uniqueNextTokens
 nextTokenCounts =. #/.~ nextTokens
 GitHubResultsNextTokens =: (uniqueNextTokens \: nextTokenCounts) ,: <"(0) \:~ nextTokenCounts
-lineIndices =. +/"(1) 0 < hitIndices -/ I. SearchCode < , LF
-lineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
-lineNumbers =. lineIndices - cumulative {~ <: +/"1 lineIndices >/ cumulative =. 0 , +/\lineCounts 
+lineIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < , LF
+NB. lineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
+lineNumbers =. >: lineIndices - GitHubCumulativeLineCounts {~ <: +/"1 lineIndices >/ GitHubCumulativeLineCounts
 hitLines =. lineIndices  { < ;. _2 GitHubWords , (< , LF)
-fileIndices =. +/"(1) 0 < hitIndices -/ I. SearchCode < 0 { a.
+fileIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < 0 { a.
+NB. smoutput ,. hitLines =. (<"0 lineIndices) { &. > fileIndices { GitHubOriginalLinesByFile
 urls =. fileIndices { 1 {"1 GitHubTable
-GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. (<"0 lineNumbers) ,. ; &. > hitLines)
+GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. (<"0 lineNumbers) ,. ;@addSpacesToCodeWords &. > hitLines)
 }}
 
 drawCodeWithHighlights =: {{
