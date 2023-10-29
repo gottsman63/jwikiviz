@@ -1615,8 +1615,11 @@ animate 1
 addSpacesToCodeWords =: {{
 NB. y Code in boxed word form.
 NB. Add a space to either side of a . or a :
-dots =. (<' . ') (I. (< , '.') E. y) } y
-(<' : ') (I. (< , ':') E. dots) } dots
+t =. y
+for_w. ;: '. : if. do. else. end. while. whilst. break. return. try. catch. catcht. catchd.' do.
+t =. (< ' ' , (> w) , ' ') (I. w E. t) } t
+end.
+t
 }}
 
 searchGitHub =: {{
