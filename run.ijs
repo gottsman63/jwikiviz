@@ -1600,7 +1600,7 @@ if. '' -: GitHubTable do.
 	GitHubOriginalLinesByFile =: < ;. _2 &. > lines
 	SearchCode =: E. & GitHubWords
 	GitHubLineCounts =. (SearchCode < 0 { a.) +/ ;. 2 SearchCode < , LF
-	GitHubCumulativeLineCounts =: +/\ GitHubLineCounts
+	GitHubCumulativeLineCounts =: }: 0 , +/\ GitHubLineCounts
 end.
 }}
 
@@ -1623,7 +1623,7 @@ t
 }}
 
 searchGitHub =: {{
-s =: ;: y
+s =. ;: y
 GitHubLastSearch =: y
 if. 0 = # s do. GitHubResults =: '' return. end.
 setupGitHubTable ''
@@ -1644,6 +1644,8 @@ lineIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < , LF
 lineIndicesInFiles =. lineIndices - GitHubCumulativeLineCounts {~ <: +/"1 lineIndices >/ GitHubCumulativeLineCounts
 lineNumbers =. >: lineIndicesInFiles
 fileIndices =. +/"(1) 0 < hitIndices -/ I.@SearchCode < 0 { a.
+smoutput 'GitHubCumulativeLineCounts' ; GitHubCumulativeLineCounts
+smoutput 'fileIndices' ; fileIndices ; 'lineIndices' ; lineIndices ; 'lineIndicesInFiles' ; lineIndicesInFiles
 hitLines =. > (<"0 lineIndicesInFiles) { &. > fileIndices { GitHubOriginalLinesByFile
 urls =. fileIndices { 1 {"1 GitHubTable
 GitHubResults =: ((fileIndices { 0 {"1 GitHubTable) ,. urls ,. (<"0 lineNumbers) ,. hitLines)

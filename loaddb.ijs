@@ -728,7 +728,12 @@ sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count paren
 headerIds =. (anchorId getCategoryId '*Tags')&getCategoryId &. > headerCategories
 for_entry. k =. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
 	'headerId category link' =. entry
-	catHtml =. (2!:0) 'curl "' , link , '"'
+	try. 
+		catHtml =. (2!:0) 'curl "' , link , '"'
+	catch.
+		smoutput (13!:12) ''
+		continue.
+	end.
 	catHtml =. (I. 'printfooter' E. catHtml) {. catHtml =. (I. 'mw-category-generated' E. catHtml) }. catHtml
 	pagePat =. 'href="([^"]+)"[^>]+>([^<]+)<'
 	pageOffsetLengths =. }."2 pagePat rxmatches catHtml
