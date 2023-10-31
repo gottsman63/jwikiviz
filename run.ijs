@@ -2316,7 +2316,6 @@ glrgb 0 0 255
 gltextcolor ''
 (leftX , yy) drawStringAt s
 ((leftX - 4) , (yy - 1) , (width + 8) , 20) registerRectLink link ; label ; 1
-NB. end.
 0
 )
 
@@ -2517,15 +2516,9 @@ asyncCheckForNewerDatabase =: {{
 NB. Set DatabaseDownloadStatus
 NB. Note that this routine is meant to be called as a task.
 DatabaseDownloadStatus =: checkForNewerDatabase ''
-NB. animate 5
 }}
 
 initialDbDownloadDialog =: 3 : 0
-NB. status =. {. , checkForNewerDatabase ''
-NB. select. status
-NB. case. 0 do. 1
-NB. case. 1 do. 1
-NB. case. 2 do.
 if. isOnTheNetwork'' do.
 	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download ~100 MB (which will decompress and index to ~1 GB in ~temp); THIS MAY TAKE OVER A MINUTE."'
 	if. result -: 'yes' do. 
@@ -2539,10 +2532,6 @@ else.
 	wdinfo '' ; 'Cannot connect to the CDN and a new database is required.  Please be sure you have an internet connection.  OK to exit.'
 	0
 end.
-NB. case. 3 do.
-NB.	wdinfo '' ; 'Cannot connect to the CDN.  Please be sure you have an internet connection.'
-NB.	1
-NB. end.
 )
 
 downloadAndBuildFullTextIndexDb =: 3 : 0
@@ -2610,11 +2599,8 @@ try.
 	clearLog ''
 	buildForm ''
 	layoutForm ''
-NB.	setUpdateButtons ''
 	loadHistoryMenu ''
-NB.	0&T."(0) (0 >. 5 - 1 T. '') # 0
 	version =. ". '.' -.~ 9 10 11 12 13 { JVERSION
-NB. 	if. version < 950 do. wd 'pshow maximized' else. wd 'pshow fullscreen' end.
 	wd 'pshow maximized'
 	wd 'msgs'
 	animate 10
