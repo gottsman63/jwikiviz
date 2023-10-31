@@ -221,7 +221,7 @@ VocMouseClickXY =: 0 0
 lastUpdateButtonCheckTime =: _10000000
 
 setUpdateButtons =: 3 : 0
-1 log 'setUpdateButtons'
+log 'setUpdateButtons'
 select. AppUpToDate
 case. _1 do. appCap =. 'Checking for new version...'
 case. 0 do. appCap =. 'New add-on version available'
