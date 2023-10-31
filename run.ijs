@@ -59,6 +59,7 @@ asyncCheckAppUpToDate =: 3 : 0
 NB. 0 if the app is out of date.
 NB. 1 if the app is up to date.
 NB. 2 if we failed to get a remote version number.
+AppUpToDate =: 0
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
@@ -67,15 +68,12 @@ NB.		v2 =. manifest_version (2!:0) 'wget --header="Cache-Control: no-cache, no-s
 	else.
 		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
 	end.
-NB.	smoutput 'JWikiViz Versions' ; v1 ; v2
-	if. v2 -: 'none' do. AppUpToDate =: 2 return. end.
-	if. v1 -: v2 do. AppUpToDate =: 1 return. end.
+	if. v2 -: 'none' do. AppUpToDate =: 2
+	elseif. v1 -: v2 do. AppUpToDate =: 1 end.
 catch.
-NB.	1 log 'Problem: ' , (13!:12) ''
 	AppUpToDate =: 0
-	return.
 end.
-AppUpToDate =: 0
+animate 5
 )
 
 updateAppVersion =: 3 : 0
@@ -223,6 +221,7 @@ VocMouseClickXY =: 0 0
 lastUpdateButtonCheckTime =: _10000000
 
 setUpdateButtons =: 3 : 0
+1 log 'setUpdateButtons'
 select. AppUpToDate
 case. _1 do. appCap =. 'Checking for new version...'
 case. 0 do. appCap =. 'New add-on version available'
@@ -606,8 +605,7 @@ loadForumPost ''
 
 animate =: 3 : 0
 NB. y Number of frames to animate
-log 'animate ' , ": y
-wd 'timer 20'
+NB. log 'animate ' , ": y
 TimerCount =: TimerCount + y
 )
 
@@ -627,25 +625,6 @@ end.
 }}
 
 TimerCount =: 0
-
-sys_timer_z_old =: 3 : 0
-log_jwikiviz_ 'sys_timer_z_'
-try.
-if. TimerCount_jwikiviz_ > 0 do.
-	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
-	invalidateDisplay_jwikiviz_ ''
-	layoutForm_jwikiviz_ ''
-	wd 'timer 20'
-else.
-	wd 'timer 0'
-end.
-catch.
-	smoutput (13!:12) ''
-	smoutput dbError_jwikiviz_ ''
-	1 log (13!:12) ''
-	1 log dbError_jwikiviz_ ''
-end.
-)
 
 wd 'timer 0'
 
@@ -2516,6 +2495,7 @@ asyncCheckForNewerDatabase =: {{
 NB. Set DatabaseDownloadStatus
 NB. Note that this routine is meant to be called as a task.
 DatabaseDownloadStatus =: checkForNewerDatabase ''
+animate 5
 }}
 
 initialDbDownloadDialog =: 3 : 0
@@ -2607,6 +2587,7 @@ try.
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
 	setFontSize ". fs
+	wd 'timer 20'
 catch. catcht.
 	smoutput 'Problem: ' , (13!:12) ''
 	smoutput 'Database error (if any): ' , sqlerror__db ''
