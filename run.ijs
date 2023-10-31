@@ -59,7 +59,7 @@ asyncCheckAppUpToDate =: 3 : 0
 NB. 0 if the app is out of date.
 NB. 1 if the app is up to date.
 NB. 2 if we failed to get a remote version number.
-AppUpToDate =: 0
+AppUpToDate =: _1
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
