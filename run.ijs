@@ -1706,19 +1706,25 @@ pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
 (<"1 pageLabelOrigins) drawStringAt &. > pageLabels
 ((GitHubPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
 ((5 + xx) , 5) drawStringAt 'Page:'
-nextTokens =. 0 { GitHubResultsNextTokens 
+pageLabelMargin =. 5
+glrgb 180 180 180
+gltextcolor ''
+nextTokensLabel =. 'Next Tokens: '
+((xx + 5) , yy + pageLabelMargin + pageLabelHeight) drawStringAt nextTokensLabel
+nextTokensLabelWidth =. {. glqextent nextTokensLabel
+nextTokens =. 0 { GitHubResultsNextTokens
 tokenWidths =. 5 + > {.@glqextent &. > nextTokens
 tokenCounts =. 1 { GitHubResultsNextTokens
 tokenCountsWidths =. 15 + > {.@glqextent &. > tokenCountStrings =. ": &. > tokenCounts
-tokenOffsets =. xx + 5 + +/\ }: 0 , tokenWidths + tokenCountsWidths
-tokenCountsOffsets =. xx + 5 + +/\ tokenWidths + }: , 0 , tokenCountsWidths
+tokenOffsets =. xx + 5 + nextTokensLabelWidth + +/\ }: 0 , tokenWidths + tokenCountsWidths
+tokenCountsOffsets =. xx + 5 + nextTokensLabelWidth + +/\ tokenWidths + }: , 0 , tokenCountsWidths
 glfont SectionFont
 glrgb 180 180 180
 gltextcolor ''
-(<"1 tokenCountsOffsets ,. yy + pageLabelHeight) drawStringAt &. > tokenCountStrings
+(<"1 tokenCountsOffsets ,. yy + pageLabelHeight + pageLabelMargin) drawStringAt &. > tokenCountStrings
 glrgb GitHubColor 
 gltextcolor ''
-(<"1 tokenOffsets ,. yy + pageLabelHeight) drawStringAt &. > nextTokens
+(<"1 tokenOffsets ,. yy + pageLabelHeight + pageLabelMargin) drawStringAt &. > nextTokens
 glfont LiveSearchFont
 columnGap =. 10
 glrgb 0 0 0
