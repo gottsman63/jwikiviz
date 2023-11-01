@@ -133,6 +133,8 @@ try.
 	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
 	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
 	filenames =. ; < ;. _2 @(2!:0) &. > commands
+f =: filenames
+return.
 	contents =. translateToJEnglish &. > rawContents =. <@(1!:1)"0 filenames
 	urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
 	for_i. i. # urls do.
