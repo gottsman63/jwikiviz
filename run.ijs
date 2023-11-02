@@ -33,7 +33,8 @@ NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are 
 NB. ===================== Version Updates =====================
 addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
 githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
-awsPrefix =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com'
+NB. awsPrefix =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com'
+awsPrefix =: 'https://jviewer.s3.us-east-2.amazonaws.com'
 indexUrl =: awsPrefix , '/jwikiviz.fulltext.txt.lz4'
 githubContentUrl =: awsPrefix , '/jwikiviz.gitHub.dat.lz4'
 dateUrl =: awsPrefix , '/jwikiviz.dat'
@@ -2575,9 +2576,13 @@ sqlcmd__localDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, 
 sqlcmd__localDb 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__localDb 'CREATE INDEX source_index ON auxiliary (source)'
 sqlcmd__localDb 'CREATE TABLE github (content BLOB)'
-NB. lz4String =. gethttp indexUrl
-dataString =. lz4_uncompressframe gethttp indexUrl
-NB. lz4String =. (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.lz4'
+try.
+	dataString =. lz4_uncompressframe gethttp indexUrl
+catch.
+	smoutput 'Problem in buildFullTextIndexDb (0)'
+	smoutput (13!:12) ''
+	return.
+end.
 sep =. 2 3 4 { a.
 table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. dataString
 bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
@@ -2589,6 +2594,7 @@ try.
 	sqlinsert__localDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
 	sqlinsert__localDb 'jindex' ; (;: 'body') ;  << bodies
 catch. catcht.
+	smoutput 'Problem in buildFullTextIndexDb (1)'
 	smoutput (13!:12) ''
 	smoutput sqlerror__localDb ''
 end.
@@ -2600,7 +2606,7 @@ try.
 	(1!:22) < stageFullTextDbPath
 	GitHubTable =: ''
 catch. catcht.
-	s =. 'Problem in buidFullTextIndedDb ' , (13!:12) ''
+	s =. 'Problem in buidFullTextIndedDb (2) ' , (13!:12) ''
 	s =. s , ' / ' , sqlerror__localDb ''
 	return.
 end.
