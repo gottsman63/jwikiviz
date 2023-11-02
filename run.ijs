@@ -2526,6 +2526,7 @@ try.
 			end.
 			sqlclose__sdb ''
 			sqlclose__tdb ''
+			(1!:22) < targetPath NB. Close the file.
  			try. (1!:55) < targetDbPath catch. smoutput 'del targetDbPath: ' , (13!:12) '' end.
 		end.
 		try. targetDbPath frename stageDbPath catch. smoutput 'rename targetDbPath: ' , (13!:12) '' end.
@@ -2626,6 +2627,7 @@ try.
 	liveSearchDb =: ''
 	try. (1!:22) < liveSearchDbPath catch. smoutput 'close liveSearchDbPath: ' , (13!:12) '' end.  NB. Close the file.
 	try. (1!:55) < liveSearchDbPath catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the file.
+	try. (1!:22) < stageDatePath catch. smoutput 'close stageDatePath: ' , (13!:12) '' end.  NB. Close the file.
 	try. (1!:55) < stageDatePath catch.  smoutput 'del stageDatePath: ' , (13!:12) '' end. NB. Delete the date file.
 	try. liveSearchDbPath frename stageFullTextDbPath catch. smoutput 'rename fullTextDb ' , (13!:12) '' end.  NB. Rename the file.
 	asyncCheckForNewerDatabase '' NB. It's okay to call it synchronously.
