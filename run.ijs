@@ -2526,9 +2526,9 @@ try.
 			end.
 			sqlclose__sdb ''
 			sqlclose__tdb ''
- 			(1!:55) < targetDbPath
+ 			try. (1!:55) < targetDbPath catch. smoutput 'del targetDbPath: ' , (13!:12) '' end.
 		end.
-		targetDbPath frename stageDbPath
+		try. targetDbPath frename stageDbPath catch. smoutput 'rename targetDbPath: ' , (13!:12) '' end.
 		try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
 	end.
 	hash =. getRemoteDatabaseHash ''
@@ -2627,7 +2627,7 @@ try.
 	try. (1!:22) < liveSearchDbPath catch. smoutput 'close liveSearchDbPath: ' , (13!:12) '' end.  NB. Close the file.
 	try. (1!:55) < liveSearchDbPath catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the file.
 	try. (1!:55) < stageDatePath catch.  smoutput 'del stageDatePath: ' , (13!:12) '' end. NB. Delete the date file.
-	liveSearchDbPath frename stageFullTextDbPath 
+	try. liveSearchDbPath frename stageFullTextDbPath catch. smoutput 'rename fullTextDb ' , (13!:12) '' end.  NB. Rename the file.
 	asyncCheckForNewerDatabase '' NB. It's okay to call it synchronously.
 	setUpdateButtons ''
 catch. catcht.
