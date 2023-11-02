@@ -286,8 +286,11 @@ end.
 
 buildForm =: 3 : 0
 log 'buildForm'
+datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
+version =. manifest_version (1!:1) < jpath addonPath
+caption =. 'J Viewer ' , version , ' (Crawl: ' , datetime , ')'
 wd 'pc vizform escclose;'
-wd 'pn *J Viewer'
+wd 'pn *' , caption
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
@@ -2605,7 +2608,7 @@ try.
 	(1!:22) < stageFullTextDbPath
 	GitHubTable =: ''
 catch. catcht.
-	s =. 'Problem in buidFullTextIndedDb (2) ' , (13!:12) ''
+	s =. 'Problem in buidFullTextIndexDb (2) ' , (13!:12) ''
 	s =. s , ' / ' , sqlerror__localDb ''
 	return.
 end.
