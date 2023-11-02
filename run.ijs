@@ -2481,6 +2481,8 @@ end.
 
 downloadLatestData =: {{
 try.
+	(1!:55) :: 0: < stageFullTextPath
+	(1!:55) :: 0: < stageDbPath
 	buildFullTextIndexDb ''
 	(gethttp stageDbUrl) (1!:2) < stageDbPath
 catch.
