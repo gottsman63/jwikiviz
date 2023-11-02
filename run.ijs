@@ -66,6 +66,7 @@ manifest_version=: {{
 }}
 
 asyncCheckAppUpToDate =: 3 : 0
+NB. _1 if we're checking for a new version.
 NB. 0 if the app is out of date.
 NB. 1 if the app is up to date.
 NB. 2 if we failed to get a remote version number.
@@ -73,16 +74,19 @@ AppUpToDate =: _1
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
-		v2 =. manifest_version c =. '-O - --header "Cache-Control: no-cache, no-store, must-revalidate" ' gethttp githubUrl
-NB.		v2 =. manifest_version (2!:0) 'wget --header="Cache-Control: no-cache, no-store, must-revalidate"'
+		v2 =. manifest_version gethttp githubUrl
+NB.		v2 =. manifest_version c =. '-O - --header "Cache-Control: no-cache, no-store, must-revalidate" ' gethttp githubUrl
 	else.
-		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
+NB.		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
+		v2 =. manifest_version gethttp githubUrl
 	end.
 	if. v2 -: 'none' do. AppUpToDate =: 2
-	elseif. v1 -: v2 do. AppUpToDate =: 1 end.
+	elseif. v1 -: v2 do. AppUpToDate =: 1 
+	else. AppUpToDate =: 0 end.
 catch.
 	AppUpToDate =: 0
 end.
+smoutput v1 ; v2 ; AppUpToDate
 animate 5
 )
 
