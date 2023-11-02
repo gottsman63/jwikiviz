@@ -86,7 +86,6 @@ NB.		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-reva
 catch.
 	AppUpToDate =: 0
 end.
-smoutput v1 ; v2 ; AppUpToDate
 animate 5
 )
 
