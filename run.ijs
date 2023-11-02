@@ -243,7 +243,6 @@ case. 2 do. appCap =. 'Offline (apparently)'
 end.
 wd 'set appUpdate caption *' , appCap
 select. DatabaseDownloadStatus
-case. _4 do. dbCap =. 'Building index (background)...'
 case. _3 do. dbCap =. 'Click to bring new data online'
 case. _2 do. dbCap =. 'Downloading data (background)...'
 case. _1 do. dbCap =. 'Checking for new database...'
@@ -266,7 +265,6 @@ vizform_dbUpdate_button =: {{
 downloadFlag =. 0
 log 'vizform_dbUpdate_Button'
 select. DatabaseDownloadStatus 
-case. _4 do. wdinfo 'Currently building the index in the background'
 case. _3 do. bringNewDataOnline ''
 case. _2 do. wdinfo 'Currently downloading data in the background'
 case. _1 do. wdinfo 'Checking for new data in the background'
@@ -632,9 +630,9 @@ TimerCount =: TimerCount + y
 FrameCounter =: 0
 
 sys_timer_z_ =: {{
-if. 0 = 100 | FrameCounter_jwikiviz_ do. smoutput '4 T. downloadPyx' ; 4 T. downloadPyx_jwikiviz_ end.
+NB. if. 0 = 100 | FrameCounter_jwikiviz_ do. smoutput '4 T. downloadPyx' ; 4 T. downloadPyx_jwikiviz_ end.
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
-if. (0 = 100 | FrameCounter_jwikiviz_) *.  DatabaseDownloadStatus_jwikiviz_ = _2 do. 
+if. (0 = 100 | FrameCounter_jwikiviz_) *. (DatabaseDownloadStatus_jwikiviz_ = _2) +. DatabaseDownloadStatus_jwikiviz_ = _3 do. 
 	checkWhetherStageDatabasesHaveArrived_jwikiviz_ ''
 	setUpdateButtons_jwikiviz_ ''
 	if. -. DatabaseDownloadMessage_jwikiviz_ -: '' do.
@@ -1335,9 +1333,10 @@ if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end
 
 createQuery =: 3 : 0
 NB. Use searchBox and searchBoxWords to create a query.
-phrase =. '"' , (translateToJEnglish searchBox) , '"'
-words =. translateToJEnglish searchBoxWords
-'''NEAR(' , phrase , ' ' , words , ', 200)'''
+phrase =. ; }: , (<'+') ,.~ a: -.~ < ;. _2 (translateToJEnglish searchBox) , ' '
+words =. ; }: , (<' AND ') ,.~ a: -.~ < ;. _2 (translateToJEnglish searchBoxWords) , ' '
+if. 0 = # words do. and =. '' else. and =. ' AND ' end.
+'"' , phrase , and , words , '"'
 )
 
 dropSpacesSnippetTokens =: (jMnemonics -. , &. > ':' ; '.') , , &. > '(' ; ')'
@@ -2466,7 +2465,7 @@ remoteHash =. getRemoteDatabaseHash ''
 )
 
 checkWhetherStageDatabasesHaveArrived =: {{
-if. (fexist stageDbPath) *. (fexist stageFullTextDbPath) *. (fexist stageGitHubPath) *. fexist stageDatePath do.
+if. (fexist stageDbPath) *. (fexist stageFullTextDbPath) do.
 	DatabaseDownloadStatus =: _3
 	1
 else.
@@ -2474,16 +2473,9 @@ else.
 end.
 }}
 
-deleteStageFiles =: {{
-(1!:55) :: 0: < stageDatePath
-(1!:55) :: 0: < stageDbPath
-}}
-
 downloadLatestData =: {{
 try.
-	deleteStageFiles ''
 	buildFullTextIndexDb ''
-	(gethttp dateUrl) (1!:2) < stageDatePath
 	(gethttp stageDbUrl) (1!:2) < stageDbPath
 catch.
 	DatabaseDownloadMessage =: (13!:12) ''
@@ -2565,12 +2557,12 @@ end.
 
 buildFullTextIndexDb =: 3 : 0
 try. (1!:55) < stageFullTextDbPath catch. end.
-liveSearchDb =: sqlcreate_psqlite_ stageFullTextDbPath
-sqlcmd__liveSearchDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
-sqlcmd__liveSearchDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
-sqlcmd__liveSearchDb 'CREATE INDEX year_index ON auxiliary (year)'
-sqlcmd__liveSearchDb 'CREATE INDEX source_index ON auxiliary (source)'
-sqlcmd__liveSearchDb 'CREATE TABLE github (content BLOB)'
+localDb =. sqlcreate_psqlite_ stageFullTextDbPath
+sqlcmd__localDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
+sqlcmd__localDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
+sqlcmd__localDb 'CREATE INDEX year_index ON auxiliary (year)'
+sqlcmd__localDb 'CREATE INDEX source_index ON auxiliary (source)'
+sqlcmd__localDb 'CREATE TABLE github (content BLOB)'
 NB. lz4String =. gethttp indexUrl
 dataString =. lz4_uncompressframe gethttp indexUrl
 NB. lz4String =. (1!:1) < jpath '~temp/jwikiviz.fulltext.txt.lz4'
@@ -2582,43 +2574,43 @@ years =. > ". &. > 2 {"1 table
 sources =. 1 {"1 table
 urls =. 0 {"1 table
 try.
-	sqlinsert__liveSearchDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
-	sqlinsert__liveSearchDb 'jindex' ; (;: 'body') ;  << bodies
+	sqlinsert__localDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
+	sqlinsert__localDb 'jindex' ; (;: 'body') ;  << bodies
 catch. catcht.
 	smoutput (13!:12) ''
-	smoutput sqlerror__liveSearchDb ''
+	smoutput sqlerror__localDb ''
 end.
-gitHubString =. (1!:1) < stageGitHubPath
+gitHubStringCompressed =. gethttp githubContentUrl
+gitHubString =. lz4_uncompressframe gitHubStringCompressed
 try.
-	sqlinsert__liveSearchDb 'github' ; (;: 'content') ; < gitHubString
+	sqlinsert__localDb 'github' ; (;: 'content') ; < gitHubString
+	sqlclose__localDb ''
+	(1!:22) < stageFullTextDbPath
+	GitHubTable =: ''
 catch. catcht.
-	smoutput (13!:12) ''
-	smoutput sqlerror__liveSearchDb ''
+	s =. 'Problem in buidFullTextIndedDb ' , (13!:12) ''
+	s =. s , ' / ' , sqlerror__localDb ''
+	return.
 end.
 ''
-sqlclose__liveSearchDb ''
-(1!:22) < stageFullTextDbPath
 )
 
 bringNewDataOnline =: {{
 if. -. checkWhetherStageDatabasesHaveArrived '' do.
-	smoutput 'Cannot bring new data online; not all data has arrived.'
+	'Cannot bring new data online; not all data has arrived.'
 	return.
 end.
 try.
-	DatabaseDownloadStatus =: _4
-	setUpdateButtons ''
 	transferDatabase ''
-	deleteStageFiles ''
-	sqlclose__liveSearchDb ''
-	(1!:22) :: 0: < liveSearchDbPath NB. Close the file.
-	(1!:55) :: 0: < liveSearchDbPath
+	try. sqlclose__liveSearchDb '' catch. end.
+	liveSearchDb =: ''
+	try. (1!:22) < liveSearchDbPath catch. end.  NB. Close the file.
+	try. (1!:55) < liveSearchDbPath catch. end. NB. Delete the file.
 	liveSearchDbPath frename stageFullTextDbPath 
 	asyncCheckForNewerDatabase '' NB. It's okay to call it synchronously.
 	setUpdateButtons ''
 catch. catcht.
-	smoutput 'Problem in bringNewDataOnline: ' , (13!:12) ''
-	smoutput sqlerror__liveSearchDb ''
+	'Problem in bringNewDataOnline: ' , (13!:12) ''
 end.
 }}
 NB. ==================== End Database Management ======================
@@ -2642,7 +2634,7 @@ try.
 	if. -. dbExists '' do. 
 		if. -. initialDbDownloadDialog '' do. return. end.
 	end.
-	if. 0 < count =. (0 >. 5 - 1 T. '') # 0 do. 0&T."(0) count end.
+	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
 	dbPyx =: asyncCheckForNewerDatabase t. 'worker' ''
 	appPyx =: asyncCheckAppUpToDate t. 'worker' ''
 	dbOpenDb ''
