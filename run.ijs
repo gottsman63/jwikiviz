@@ -2471,7 +2471,8 @@ remoteHash =. getRemoteDatabaseHash ''
 )
 
 checkWhetherStageDatabasesHaveArrived =: {{
-if. (fexist stageDbPath) *. (fexist stageFullTextDbPath) do.
+NB. if. (fexist stageDbPath) *. (fexist stageFullTextDbPath) do.
+if. fexist stageDatePath do.
 	DatabaseDownloadStatus =: _3
 	1
 else.
@@ -2483,8 +2484,10 @@ downloadLatestData =: {{
 try.
 	(1!:55) :: 0: < stageFullTextPath
 	(1!:55) :: 0: < stageDbPath
+	(1!:55) :: 0: < stageDatePath
 	buildFullTextIndexDb ''
 	(gethttp stageDbUrl) (1!:2) < stageDbPath
+	(gethttp dateUrl) (1!:2) < stageDatePath
 catch.
 	DatabaseDownloadMessage =: (13!:12) ''
 end.
@@ -2526,6 +2529,7 @@ try.
 	end.
 	hash =. getRemoteDatabaseHash ''
 	try. (1!:22) < targetDbPath catch. end.
+	try. (1!:55) < stageDatePath catch. end.
 	dbOpenDb ''
 	sqlclose__db ''
 	dbOpenDb ''
@@ -2552,7 +2556,7 @@ if. isOnTheNetwork'' do.
 	if. result -: 'yes' do. 
 		downloadLatestData ''
 		transferDatabase ''
-		buildFullTextIndexDb ''
+NB. 		buildFullTextIndexDb ''
 		1
 	else.
 		0
