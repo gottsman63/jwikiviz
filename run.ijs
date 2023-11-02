@@ -2664,7 +2664,7 @@ try.
 	layoutForm ''
 	loadHistoryMenu ''
 	version =. ". '.' -.~ 9 10 11 12 13 { JVERSION
-	wd 'pshow maximized'
+	wd 'pshow fullscreen'
 	wd 'msgs'
 	animate 10
 	fs =. '5' getKeyValue 'FontSlider'
