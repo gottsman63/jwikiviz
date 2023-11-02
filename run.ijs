@@ -635,6 +635,7 @@ FrameCounter =: 0
 sys_timer_z_ =: {{
 NB. if. 0 = 100 | FrameCounter_jwikiviz_ do. smoutput '4 T. downloadPyx' ; 4 T. downloadPyx_jwikiviz_ end.
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
+try.
 if. (0 = 100 | FrameCounter_jwikiviz_) *. (DatabaseDownloadStatus_jwikiviz_ = _2) +. DatabaseDownloadStatus_jwikiviz_ = _3 do. 
 	checkWhetherStageDatabasesHaveArrived_jwikiviz_ ''
 	setUpdateButtons_jwikiviz_ ''
@@ -642,6 +643,8 @@ if. (0 = 100 | FrameCounter_jwikiviz_) *. (DatabaseDownloadStatus_jwikiviz_ = _2
 		smoutput DatabaseDownloadMessage_jwikiviz_
 		DatabaseDownloadMessage_jwikiviz_ =: ''
 	end.
+end.
+catch.
 end.
 if. 0 = TimerCount_jwikiviz_ do. return. end.
 log_jwikiviz_ 'sys_timer_z_: ' , ": TimerCount_jwikiviz_
