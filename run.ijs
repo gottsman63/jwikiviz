@@ -426,7 +426,7 @@ factor =. 15 %~ {: glqextent 'M'
 FontAdjustment =: <. factor * y - 5
 log '...FontAdjustment: ' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
-TocLineHeight =: 2 * 13 + FontAdjustment
+TocLineHeight =: <. 2.2 * 13 + FontAdjustment
 VocCellFont =: 'arial ' , (": 14 + FontAdjustment) , ' bold'
 VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
