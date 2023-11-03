@@ -2623,7 +2623,7 @@ if. -. checkWhetherStageDatabasesHaveArrived '' do.
 end.
 try.
 	transferDatabase ''
-	try. sqlclose__liveSearchDb '' catch. end.
+	try. sqlclose__liveSearchDb '' catch. smoutput 'sqlclose__liveSearchDb: ' , (13!:12) '' end.
 	liveSearchDb =: ''
 	try. (1!:22) < liveSearchDbPath catch. smoutput 'close liveSearchDbPath: ' , (13!:12) '' end.  NB. Close the file.
 	try. (1!:55) < liveSearchDbPath catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the file.

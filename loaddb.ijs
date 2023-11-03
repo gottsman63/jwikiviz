@@ -111,7 +111,7 @@ result
 )
 
 NB. ============================ Crawling GitHiub ======================================
-indexSuffixes =: < '.ijs'
+indexSuffixes =:  '.ijs' ; '.ijt'
 sep =: 0 { a.
 gitHubContent =: ''
 
@@ -133,8 +133,6 @@ try.
 	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
 	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
 	filenames =. ; < ;. _2 @(2!:0) &. > commands
-f =: filenames
-return.
 	contents =. translateToJEnglish &. > rawContents =. <@(1!:1)"0 filenames
 	urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
 	for_i. i. # urls do.
@@ -172,8 +170,8 @@ whilst. 0 < # ol do.
 	page =. >: page
 	smoutput 'page' ; page
 end.
-(lz4_compressframe gitHubContent) (1!:2) < gitHubContentFile
-NB. updateMasterDbWithGitHubDocs 'arc_zip'
+(s =. lz4_compressframe gitHubContent) (1!:2) < gitHubContentFile
+smoutput 'updateMasterDbWithGitHubProjects size: ' ; ": # s
 )
 NB. ========================== End Crawling GitHiub ====================================
 
