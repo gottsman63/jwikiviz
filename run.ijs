@@ -2623,10 +2623,11 @@ if. -. checkWhetherStageDatabasesHaveArrived '' do.
 end.
 try.
 	transferDatabase ''
+smoutput 'liveSearchDb' ; liveSearchDb ; 'liveSearchDbPath' ; liveSearchDbPath
 	try. sqlclose__liveSearchDb '' catch. smoutput 'sqlclose__liveSearchDb: ' , (13!:12) '' end.
 	liveSearchDb =: ''
 	try. (1!:22) < liveSearchDbPath catch. smoutput 'close liveSearchDbPath: ' , (13!:12) '' end.  NB. Close the file.
-	try. (1!:55) < liveSearchDbPath catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the file.
+	try. (1!:55) < liveSearchDbPath catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the full-text index file.
 	try. (1!:22) < stageDatePath catch. smoutput 'close stageDatePath: ' , (13!:12) '' end.  NB. Close the file.
 	try. (1!:55) < stageDatePath catch.  smoutput 'del stageDatePath: ' , (13!:12) '' end. NB. Delete the date file.
 	try. liveSearchDbPath frename stageFullTextDbPath catch. smoutput 'rename fullTextDb ' , (13!:12) '' end.  NB. Rename the file.
