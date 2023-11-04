@@ -637,21 +637,17 @@ TimerCount =: TimerCount + y
 FrameCounter =: 0
 
 sys_timer_z_ =: {{
-NB. if. 0 = 100 | FrameCounter_jwikiviz_ do. smoutput '4 T. downloadPyx' ; 4 T. downloadPyx_jwikiviz_ end.
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
+fps =. <. 1000 % TimerFractionMsec_jwikiviz_
 try.
-if. (0 = 100 | FrameCounter_jwikiviz_) *. (DatabaseDownloadStatus_jwikiviz_ = _2) +. DatabaseDownloadStatus_jwikiviz_ = _3 do. 
+if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check for download completion.
 	checkWhetherStageDatabasesHaveArrived_jwikiviz_ ''
 	setUpdateButtons_jwikiviz_ ''
-	if. -. DatabaseDownloadMessage_jwikiviz_ -: '' do.
-		smoutput DatabaseDownloadMessage_jwikiviz_
-		DatabaseDownloadMessage_jwikiviz_ =: ''
-	end.
-end.
+end.  
 catch.
 end.
 if. 0 = TimerCount_jwikiviz_ do. return. end.
-log_jwikiviz_ 'sys_timer_z_: ' , ": TimerCount_jwikiviz_
+NB. log_jwikiviz_ 'sys_timer_z_: ' , ": TimerCount_jwikiviz_
 try.
 	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
 	layoutForm_jwikiviz_ ''
@@ -2454,10 +2450,12 @@ NB. 0 < # gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/upload.test?c
 )
 
 checkForNewerDatabase =: 3 : 0
+NB. Return _3 if a databases are staged and ready to be brought online.
 NB. Return 1 if a newer database is available.  
 NB. Return 2 if a newer database is required.
 NB. Return 3 if we're not on the network.
 NB. Return 0 if the local database is up to date.
+if. checkWhetherStageDatabasesHaveArrived '' do. _3 return. end.
 if. -. isOnTheNetwork '' do. 3 return. end.
 try. 
 	dbOpenDb ''
@@ -2550,6 +2548,7 @@ end.
 asyncCheckForNewerDatabase =: {{
 NB. Set DatabaseDownloadStatus
 NB. Note that this routine is meant to be called as a task.
+if. checkWhetherStageDatabasesHaveArrived '' do. 0 return. end.
 DatabaseDownloadStatus =: checkForNewerDatabase ''
 animate 5
 }}
@@ -2627,9 +2626,9 @@ smoutput 'liveSearchDb' ; liveSearchDb ; 'liveSearchDbPath' ; liveSearchDbPath
 	try. sqlclose__liveSearchDb '' catch. smoutput 'sqlclose__liveSearchDb: ' , (13!:12) '' end.
 	liveSearchDb =: ''
 	try. (1!:22) < liveSearchDbPath catch. smoutput 'close liveSearchDbPath: ' , (13!:12) '' end.  NB. Close the file.
-	try. (1!:55) < liveSearchDbPath catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the full-text index file.
+	(1!:55) < liveSearchDbPath NB. catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the full-text index file.
 	try. (1!:22) < stageDatePath catch. smoutput 'close stageDatePath: ' , (13!:12) '' end.  NB. Close the file.
-	try. (1!:55) < stageDatePath catch.  smoutput 'del stageDatePath: ' , (13!:12) '' end. NB. Delete the date file.
+	(1!:55) < stageDatePath NB. catch.  smoutput 'del stageDatePath: ' , (13!:12) '' end. NB. Delete the date file.
 	try. liveSearchDbPath frename stageFullTextDbPath catch. smoutput 'rename fullTextDb ' , (13!:12) '' end.  NB. Rename the file.
 	asyncCheckForNewerDatabase '' NB. It's okay to call it synchronously.
 	setUpdateButtons ''
@@ -2651,6 +2650,8 @@ try. wd 'pclose' catch. end.
 )
 
 manageLoad ''
+
+TimerFractionMsec =: 50 NB. Milliseconds per frame
 
 go =: 3 : 0
 try.
@@ -2676,7 +2677,7 @@ try.
 	fs =. '5' getKeyValue 'FontSlider'
 	wd 'set fontSlider ' , fs
 	setFontSize ". fs
-	wd 'timer 20'
+	wd 'timer ' , ": TimerFractionMsec
 catch. catcht.
 	smoutput 'Problem: ' , (13!:12) ''
 	smoutput 'Database error (if any): ' , sqlerror__db ''
