@@ -11,11 +11,6 @@ coinsert 'jgl2'
 
 NB. Stephen's Notes
 NB. Try 1280 for the minimum monitor width.
-NB. Color code (make a key) for Wiki vs. Forum in the search results display
-NB. Highlight the term that matches the search
-
-NB. *** Wiki Meeting Discussion Items ***
-NB. Expanded test user base (send them the draft announcement email)
 
 NB. *** A Items ***
 NB. Test initial installation.  
@@ -43,15 +38,15 @@ stageDbUrl =: awsPrefix , '/jwikiviz.stage.db'
 stageDbFile =: 'jwikiviz.stage.db'
 stageFullTextDbFile =: 'jwikiviz.fulltext.stage.db'
 stageDateFile =: 'jwikiviz.dat'
-stageGitHubFile =: 'jwikiviz.github.stage.dat'
+NB. stageGitHubFile =: 'jwikiviz.github.stage.dat'
 stageDatePath =: jpath '~temp/' , stageDateFile
 stageDbPath =: jpath '~temp/' , stageDbFile
-stageFullTextDbPath =: jpath '~temp/' , stageFullTextDbFile
-stageGitHubPath =: jpath '~temp/' , stageGitHubFile
+NB. stageFullTextDbPath =: jpath '~temp/' , stageFullTextDbFile
+NB. stageGitHubPath =: jpath '~temp/' , stageGitHubFile
 targetDbPath =: jpath '~temp/jwikiviz.db'
-curlTracePath =: jpath '~temp/jwikiviz.trace'
-liveSearchDbPath =: jpath '~temp/jwikiviz.fulltext.db'
-
+NB. curlTracePath =: jpath '~temp/jwikiviz.trace'
+NB. liveSearchDbPath =: jpath '~temp/jwikiviz.fulltext.db'
+logPath =: jpath '~temp/jwikiviz.log'
 AppUpToDate =: _1
 DatabaseDownloadStatus =: _1
 DatabaseDownloadMessage =: ''
@@ -71,6 +66,7 @@ NB. _1 if we're checking for a new version.
 NB. 0 if the app is out of date.
 NB. 1 if the app is up to date.
 NB. 2 if we failed to get a remote version number.
+0 log 'asyncCheckAppUpToDate'
 AppUpToDate =: _1
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
@@ -87,12 +83,13 @@ NB.		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-reva
 catch.
 	AppUpToDate =: 0
 end.
+0 log '...AppUpToDate = ' , ": AppUpToDate
 animate 5
 )
 
 updateAppVersion =: 3 : 0
 log 'updateAppVersion'
-sqlclose__db  ''
+dbCloseDb ''
 wd 'set appUpdate caption *Updating the add-on...'
 wd 'msgs'
 (9!:29) 1
@@ -121,26 +118,32 @@ NB. ====================== End Key/Value Store =========================
 NB. ============= Database ===============
 db =: ''
 
-clearTrace =: 3 : 0
-'' (1!:2) < tracePath
-)
-
-trace =: 3 : 0
-LF (1!:3) < tracePath
-y (1!:3) < tracePath
-)
-
 dbError =: 3 : 0
-sqlerror__db ''
+if. '' ~: db do. sqlerror__db '' else. 'Error?  Database is closed!' end.
 )
 
 dbOpenDb =: 3 : 0
+if. fexist stageDbPath do. path =. stageDbPath else. path =. targetDbPath end.
 try.
-	db =: sqlopen_psqlite_ targetDbPath
-catcht.
-	smoutput 'Error opening database'
+NB.	if. -. db -: '' do. dbCloseDb '' end.
+	if. db -: '' do. 
+		db =: sqlopen_psqlite_ path
+NB.		initializeWithDatabase ''
+	end.
+catch. catcht.
+	1 log 'dbOpenDb: Error opening database: ' , path
+	1 log (13!:12) ''
 end.
 )
+
+dbCloseDb =: {{
+try.
+	if. db ~: '' do. sqlclose__db '' end.
+catch. catcht.
+	1 log 'dbCloseDb: Error closing database'
+end.
+db =: ''
+}}
 NB. ================== Logging ===================
 logHtmlPrefix =: 0 : 0
 <!DOCTYPE html>
@@ -149,7 +152,10 @@ logHtmlPrefix =: 0 : 0
     <meta charset="utf-8">
     <title>Log</title>
   </head>
-  <body>
+  <body style="font-family: 'Avenir', Verdana, sans-serif; font-size: 16px">
+<p style="font-family: 'Avenir', Verdana, sans-serif; font-size: 18px; font-weight: bold">
+Log (most recent first)
+</p>
   <pre>
 )
 
@@ -159,44 +165,89 @@ logHtmlSuffix =: 0 : 0
 </html>
 )
 
+LogBackgroundEvents =: ''
+LogMutex =: ''
+LogLoadBrowserFlag =: 0
+LogNewEventsWrittenFlag =: 0
+LogBrowserUpdateRequired =: 0
+
 setSnapshotLogButtonState =: 3 : 0
-count =. > > {: sqlreadm__db 'select count(*) from log'
-if. count = 0 do.
-	wd 'set snapshotLog visible 0'
-else.
-	wd 'set snapshotLog visible 1'	
-	wd 'set snapshotLog caption Show: ' , , ": count
-end.
+count =. +/ LF = (1!:1) < logPath
+wd 'set snapshotLog caption *Show Log (' , , (": count) , ')'
 )
 
 snapshotLogToBrowser =: 3 : 0
-entries =. |. > {: sqlreadm__db 'select datetime, msg from log'
-datetimes =. ,&'    ' &. > 0 {"1 entries
-msgs =. 1 {"1 entries
-html =. logHtmlPrefix , (; datetimes ,. ,&'<br>' &. > msgs) , logHtmlSuffix
-wd 'set browser html *' , html
+NB. y Number of records to snapshot (0 for all)
+try.
+	LogLoadBrowserFlag =: 1
+	allEntries =. |. < ;. _2 (1!:1) < logPath
+	if. (y = 0) +. y >: # allEntries do.
+		entries =. allEntries
+	else.
+		if. (50 + y) > # allEntries do. ellipsis =. a: else. ellipsis =. < '...' end.
+		entries =. a: -.~ ~. (y {. allEntries) , ellipsis , (_50 {. allEntries)
+	end.
+	html =. logHtmlPrefix , (; ,&'<br>' &. > entries) , logHtmlSuffix
+	wd 'set browser html *' , html
+	LogBrowserUpdateRequired =: 0
+catch.
+wd 'set browser html *Problem in snapshotLogToBrowser: ' , (13!:12) ''
+end.
 )
 
-isLogEmpty =: 3 : 0
-NB. Return 1 if the log is empty
-0 = > > {: sqlreadm__db 'select count(*) from log'
-)
+writeBackgroundEvents =: {{
+if. 0 = # LogBackgroundEvents_jwikiviz_ do. return. end.
+try.
+	try. 13 T. LogMutex_jwikiviz_ catch. end. NB. Release, just in case...
+	11 T. LogMutex_jwikiviz_ NB. Take a lock.
+	boxedPath =. < logPath_jwikiviz_
+	((1!:3)&boxedPath) &. > LogBackgroundEvents_jwikiviz_
+	LogBackgroundEvents_jwikiviz_ =: ''
+	try. 13 T. LogMutex_jwikiviz_ catch. end. NB. Release the lock.
+catch.
+	smoutput 'Problem in writeBackgroundEvents: ' , (13!:12) ''
+end.
+}}
 
 log =: 0&baseLog : baseLog
 
 baseLog =: 4 : 0
 if. (x = 0) *. -. LogFlag do. return. end.
-try.
-	sqlinsert__db 'log' ; (;: 'datetime msg') ; < ((6!:0) 'YYYY MM DD hh mm sssss') ; y
-	setSnapshotLogButtonState ''
-catch.
-	smoutput 'Log error logging: ' , y
+LogNewEventsWrittenFlag =: 1
+LogBrowserUpdateRequired =: 1
+event =. ((6!:0) 'YYYY MM DD hh mm sssss') , '      ' , y , LF
+if. 0 ~: 3 T. '' do. NB. If we're not on the main thread...
+	try. 13 T. LogMutex catch. end. NB. Release, just in case...
+	11 T. LogMutex NB. Take a lock.
+	LogBackgroundEvents =: LogBackgroundEvents , < event
+	13 T. LogMutex NB. Release the lock.
+else. 
+	writeBackgroundEvents ''
+	event (1!:3) < logPath
 end.
+if. x = 1 do. LogBrowserUpdateRequired =: 1 end.
 )
 
 clearLog =: 3 : 0
-sqlcmd__db 'delete from log'
+'' (1!:2) < logPath
+LogBackgroundEvents =: ''
+if. LogMutex -: '' do. LogMutex =: 10 T. 0 end.
+2 log 'Path: ' , logPath
+2 log 'email to edward.j.gottsman@gmail.com'
+2&log &. > < ;. _2 JVERSION , LF
+2 log 'qscreen: ' , wd 'qscreen'
 )
+
+logVersionInfo =: {{
+version =. manifest_version (1!:1) < jpath addonPath
+2 log 'J Viewer Version ' , version
+if. isDatabaseAvailable '' do.
+	datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
+	2 log 'Crawl: ' , datetime
+else.
+	2 log '(No database open.)'
+end.
+}}
 NB. =============== End Logging ===================
 
 initAdmin =: 3 : 0
@@ -235,19 +286,17 @@ NB. ==================== Form =====================
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
 
-lastUpdateButtonCheckTime =: _10000000
-
 setUpdateButtons =: 3 : 0
 log 'setUpdateButtons'
 select. AppUpToDate
 case. _1 do. appCap =. 'Checking for new version...'
-case. 0 do. appCap =. 'New add-on version available'
-case. 1 do. appCap =. 'Add-on is up to date' 
+case. 0 do. appCap =. 'New J Viewer version available'
+case. 1 do. appCap =. 'J Viewer is up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
 end.
 wd 'set appUpdate caption *' , appCap
 select. DatabaseDownloadStatus
-case. _3 do. dbCap =. 'Click to bring new data online'
+case. _3 do. dbCap =. 'Click to move new data online'
 case. _2 do. dbCap =. 'Downloading data (background)...'
 case. _1 do. dbCap =. 'Checking for new database...'
 case. 0 do. dbCap =. 'Local database is up to date'
@@ -256,6 +305,7 @@ case. 2 do. dbCap =. 'Database download required...'
 case. 3 do. dbCap =. 'Offline (apparently)'
 end.
 wd 'set dbUpdate caption *' , dbCap
+if. DatabaseDownloadStatus >: 0 do. wd 'set appUpdate enable 1' else. wd 'set appUpdate enable 0' end.
 wd 'msgs'
 )
 
@@ -263,6 +313,7 @@ vizform_appUpdate_button =: 3 : 0
 log 'vizform_appUpdate_button'
 updateAppVersion ''
 )
+
 downloadPyx =: a:
 
 vizform_dbUpdate_button =: {{
@@ -270,25 +321,28 @@ downloadFlag =. 0
 log 'vizform_dbUpdate_Button'
 select. DatabaseDownloadStatus 
 case. _3 do. bringNewDataOnline ''
-case. _2 do. wdinfo 'Currently downloading data in the background'
+case. _2 do. wdinfo 'Downloading data in the background'
 case. _1 do. wdinfo 'Checking for new data in the background'
 case. 0 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
 case. 1 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
-NB. case. 2 do. dbCap =. 'Database download required...' (Should not happen.)
+case. 2 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
 case. 3 do. setUpdateButtons ''  NB. We were offline; check whether we're connected again.
 end.
 if. downloadFlag do. 
 	DatabaseDownloadStatus =: _2
 	downloadPyx =: downloadLatestData t. 'worker' ''
 	setUpdateButtons ''
+	if. -. isDatabaseAvailable '' do. snapshotLogToBrowser 0 end.
 end.
 }}
 
 buildForm =: 3 : 0
 log 'buildForm'
-datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
+NB.	datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
 version =. manifest_version (1!:1) < jpath addonPath
-caption =. 'J Viewer ' , version , ' (Crawl: ' , datetime , ')'
+NB.	caption =. 'J Viewer ' , version , ' (Crawl: ' , datetime , ')'
+caption =. 'J Viewer ' , version
+
 wd 'pc vizform escclose;'
 wd 'pn *' , caption
 wd 'bin h;'
@@ -333,7 +387,7 @@ wd     'cc loadPost button; cn *Show Post in Thread'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
-wd 'set snapshotLog visible 0'
+wd 'set snapshotLog visible 1'
 wd 'set loadPost font arial 14 bold'
 )
 
@@ -389,7 +443,34 @@ wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
 setUpdateButtons ''
+setControlVisibility isDatabaseAvailable ''
 )
+
+setControlVisibility =: {{
+NB. y Visibility flag for controls that are hidden when database is unavailable.
+log 'setControlVisibility'
+try.
+	flag =. ": y
+	wd 'set fontSlider enable ' , flag
+	wd 'set searchStatic enable ' , flag
+	wd 'set searchBox enable ' , flag
+	wd 'set searchWordsStatic enable ' , flag
+	wd 'set searchBoxWords enable ' , flag
+	wd 'set liveForum enable ' , flag
+	wd 'set liveGitHub enable ' , flag
+	wd 'set liveWiki enable ' , flag
+	wd 'set wikiSearchMenu enable ' , flag
+	wd 'set liveAgeLabel enable ' , flag
+	wd 'set liveAge enable ' , flag
+NB.	wd 'set vocContext enable ' , flag
+	wd 'set bookmark enable ' , flag
+	wd 'set history enable ' , flag
+	wd 'set launch enable ' , flag
+	wd 'set loadPost enable ' , flag
+catch.
+	1 log 'Problem in setControlVisibility: ' , (13!:12) ''
+end.
+}}
 
 MinScreenWidth =: 1500
 
@@ -428,10 +509,11 @@ log '...FontAdjustment: ' , ": FontAdjustment
 TocFont =: 'arial ' , ": 13 + FontAdjustment
 TocLineHeight =: <. 2.2 * 13 + FontAdjustment
 VocCellFont =: 'arial ' , (": 14 + FontAdjustment) , ' bold'
-VocValenceFont =: 'arial ' , ": 14 + FontAdjustment
+VocValenceFont =: 'arial ' , ": 12 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
 LiveSearchFont =: 'arial ' , ": 16 + FontAdjustment
 SectionFont =: 'arial bold ' , ": 16 + FontAdjustment
+CellLineHeight =: TocLineHeight
 'FontSlider' setKeyValue ": y
 invalidateDisplay ''
 )
@@ -442,8 +524,7 @@ layoutForm ''
 
 vizform_close =: 3 : 0
 log 'vizform_close'
-try. sqlclose__db catch. end.
-try. sqlclose__liveSearchDb catch. end.
+dbCloseDb ''
 wd 'timer 0'
 wd 'pclose'
 )
@@ -469,7 +550,7 @@ setFontSize ". fontSlider
 )
 
 vizform_snapshotLog_button =: 3 : 0
-snapshotLogToBrowser ''
+snapshotLogToBrowser 0
 )
 
 vizform_liveForum_button =: 3 : 0
@@ -568,10 +649,17 @@ VocMouseXY =: _1 _1
 
 vizform_browser_curl =: 3 : 0
 log 'vizform_browser_curl'
+if. -. isDatabaseAvailable '' do. return. end.
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
+if. -. 'http' -: 4 {. url do. return. end.  NB. Probably loading html, not a url.
 LastUrlLoaded =: url
-topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
-if. -. +./ topHistoryUrl -: url do. addToHistoryMenu url ; url end.
+historyMenu =. getHistoryMenu ''
+if. 0 = # historyMenu do.
+	addToHistoryMenu url ; url
+else.
+	topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
+	if. -. +./ topHistoryUrl -: url do. addToHistoryMenu url ; url end.
+end.
 resetBookmarkButton ''
 resetForumPostLoadButton ''
 loadHistoryMenu ''
@@ -610,6 +698,7 @@ animate 3
 
 vizform_history_select =: 3 : 0
 log 'vizform_history_select'
+LogLoadBrowserFlag =: 0
 loadPage (". history_select) { getHistoryMenu ''
 )
 
@@ -637,10 +726,17 @@ TimerCount =: TimerCount + y
 FrameCounter =: 0
 
 sys_timer_z_ =: {{
+wd 'psel vizform'
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
 fps =. <. 1000 % TimerFractionMsec_jwikiviz_
+if. LogNewEventsWrittenFlag_jwikiviz_ do. 
+	setSnapshotLogButtonState_jwikiviz_ ''
+	writeBackgroundEvents_jwikiviz_ ''
+	LogNewEventsWrittenFlag_jwikiviz_ =: 0
+	if. LogLoadBrowserFlag_jwikiviz_ *. LogBrowserUpdateRequired_jwikiviz_ do. snapshotLogToBrowser_jwikiviz_ 300 end.
+end.
 try.
-if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check for download completion.
+if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
 	checkWhetherStageDatabasesHaveArrived_jwikiviz_ ''
 	setUpdateButtons_jwikiviz_ ''
 end.  
@@ -678,25 +774,26 @@ DisplayDetailRect =: 175 0 , (w - 175) , h
 trigger_paint =: 3 : 0
 log 'trigger_paint ' , (wd 'getp wh') , '   ' , (": getFrameRate '') , ' fps'
 try.
-glfill BackgroundColor , 255
-'w h' =. ". wd 'getp wh'
-if. (w < 200) +. h < 200 do.
-	1 log 'trigger_paint--dimensions too small.  Aborting.'
-	return.
-end.
-setDisplayRects ''
-drawToc ''
-'vocW vocH' =. ". wd 'get vocContext wh'
-drawFloatingString vocW , vocH
-VocMouseClickXY =: 0 0
-glclip 0 0 10000 10000
-glpaint ''
-DisplayDirtyFlag =: 0
+	glfill BackgroundColor , 255
+	if. -. isDatabaseAvailable '' do. return. end.
+	'w h' =. ". wd 'getp wh'
+	if. (w < 200) +. h < 200 do.
+		1 log 'trigger_paint--dimensions too small.  Aborting.'
+		return.
+	end.
+	setDisplayRects ''
+	drawToc ''
+	'vocW vocH' =. ". wd 'get vocContext wh'
+	drawFloatingString vocW , vocH
+	VocMouseClickXY =: 0 0
+	glclip 0 0 10000 10000
+	glpaint ''
+	DisplayDirtyFlag =: 0
 catcht. catch. 
-1 log (13!:12) ''
-1 log dbError ''
-smoutput (13!:12) ''
-smoutput dbError ''
+	1 log (13!:12) ''
+	1 log dbError ''
+	smoutput (13!:12) ''
+	smoutput dbError ''
 end.
 )
 
@@ -936,20 +1033,28 @@ QueuedUrl =: ''
 addToHistoryMenu =: 3 : 0
 NB. y Label ; Link
 log 'addToHistoryMenu ' , (0 {:: y) , ' ' , 1 {:: y
-if. y -: '' do. return. end.
-loadHistoryMenu ''
-if. HistoryMenu -: '' do. HistoryMenu =: ,: y else. HistoryMenu =: ~. y , HistoryMenu end.
-s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
-wd 'set history items *' , s
-wd 'set history select 0'
-HistoryMenu =: (30 <. # HistoryMenu) {. HistoryMenu
-sqlcmd__db 'delete from history'
-sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 HistoryMenu
+try.
+	if. y -: '' do. return. end.
+	if. -. 'http' -: 4 {. > 1 { y do. return. end. NB. Probably loading html, not a url.
+	loadHistoryMenu ''
+	if. HistoryMenu -: '' do. HistoryMenu =: ,: y else. HistoryMenu =: ~. y , HistoryMenu end.
+	s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
+	wd 'set history items *' , s
+	wd 'set history select 0'
+	HistoryMenu =: (30 <. # HistoryMenu) {. HistoryMenu
+	sqlcmd__db 'delete from history'
+	sqlinsert__db 'history' ; (;: 'label link') ; < ({:"1 HistoryMenu) ; < {."1 HistoryMenu
+catch.
+	1 log 'Problem in addToHistoryMenu: ' , (13!:12) ''
+	1 log 'db error (if any): ' , sqlerror__db ''
+end.
 )
 
 loadHistoryMenu =: 3 : 0
 log 'loadHistoryMenu'
+dbOpenDb ''
 HistoryMenu =: > {: sqlreadm__db 'select link, label from history'
+if. 0 = # HistoryMenu do. return. end.
 s =. }: ; ,&'" ' &. > '"'&, &. > ('^ *';'')&rxrplc &. > 1 {"1 HistoryMenu
 wd 'set history items *' , s
 wd 'set history select 0'
@@ -966,6 +1071,7 @@ LastUrlLoaded =: ''
 loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
 try.
+LogLoadBrowserFlag =: 0
 if. 0 = # y do. return. end.
 'url title' =. y
 NB. url =. > {. y
@@ -1265,6 +1371,7 @@ LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
 LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
 LastLiveSearchQuery =: ''
 LiveSearchCountdown =: 0
+LiveSearchRawResult =: ''
 
 jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jMnemonics =: , &. > 0 {"1 jEnglishDict
@@ -1333,9 +1440,9 @@ liveSearchPageIndex =: y
 invalidateDisplay ''
 )
 
-openLiveSearchDb =: 3 : 0
-if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end.
-)
+NB. openLiveSearchDb =: 3 : 0
+NB. if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end.
+NB. )
 
 createQuery =: 3 : 0
 NB. Use searchBox and searchBoxWords to create a query.
@@ -1351,7 +1458,7 @@ translateToJ =: 3 : 0
 NB. y A string possibly containing JEnglish tokens
 NB. Convert the JEnglish to J tokens.
 NB. Drop most of the spaces between the J tokens.
-log 'translateToJ ' , y
+NB. log 'translateToJ ' NB. , y
 try.
 	tokens =. ;: y -. ''''
 	hits =. jEnglishWords i."1 0 tokens
@@ -1368,80 +1475,72 @@ end.
 performLiveSearch =: 3 : 0
 NB. y A SQL statement
 try.
-	> {: sqlreadm__liveSearchDb y
+	LiveSearchRawResult =: ''
+	dbOpenDb ''
+	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
+NB.	LiveSearchRawResult =: > {: sqlreadm__db y
+	1 log '...performLiveSearch sqlreadm returned; count: ' , (": # LiveSearchRawResult) , '...execution time: ' , ": time
 catch.
 1 log 'Live Search problem: ' , (13!:12) ''
-1 log 'DB Error (if any): ' , sqlerror__liveSearchDb ''
+1 log 'DB Error (if any): ' , dbError ''
 end.
+LiveSearchRawResult
 )
 
 submitLiveSearch =: 3 : 0
 NB. y Empty
 NB. Set and return a table of title ; Snippet ; Url
 log 'submitLiveSearch: ' , searchBox
-LiveSearchResults =: ''
-LastLiveSearchQuery =: searchBox
-setLiveSearchPageIndex 0
-try. openLiveSearchDb '' catch. return. end.
-forumFlag =. liveForum = '1'
-wikiFlag =. liveWiki = '1'
-gitHubFlag =. liveGitHub = '1'
-if. 0 = +./ forumFlag , wikiFlag , gitHubFlag do. forumFlag =. wikiFlag =. gitHubFlag =. 1 end.
-whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag) # '"F"' ; '"W"' ; '"G"')) , ') '
-currentYear =. {. (6!:0) ''
-if. 10 = ". liveAge do.
-	cutoffYear =. 0
-else.
-	cutoffYear =. 1 + currentYear - ". liveAge
+try.
+	LiveSearchRawResult =: ''
+	if. 0 = # searchBox do. return. end.
+NB.	rattleResult =. 4 T. LiveSearchPNB.yx
+NB.	if.  rattleResult > 0 do. NB. Make sure we don't step on a running search. 
+NB.		1 log 'submitLiveSearch: search in progress already.  Returning.'
+NB.		return.
+NB.	end.
+	LastLiveSearchQuery =: searchBox
+	setLiveSearchPageIndex 0
+	forumFlag =. liveForum = '1'
+	wikiFlag =. liveWiki = '1'
+	gitHubFlag =. liveGitHub = '1'
+	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag do. forumFlag =. wikiFlag =. gitHubFlag =. 1 end.
+	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag) # '"F"' ; '"W"' ; '"G"')) , ') '
+	currentYear =. {. (6!:0) ''
+	if. 10 = ". liveAge do.
+		cutoffYear =. 0
+	else.
+		cutoffYear =. 1 + currentYear - ". liveAge
+	end.
+	query =. createQuery searchBox
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 100' NB., ' order by rank limit 100'
+	log 'About to make a pyx for search: ' , fullSearch
+NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
+	LiveSearchRawResult =: performLiveSearch fullSearch
+	LiveSearchIsDirty =: 0
+catch.
+	1 log 'Problem in submitLiveSearch: ' , (13!:12) ''
+	1 log '...db error (if any): ' , dbError ''
 end.
-query =. createQuery searchBox
-fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 500'
-log 'About to make a pyx for search: ' , fullSearch
-LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
-LiveSearchIsDirty =: 0
 )
 
 markLiveSearchDirty =: 3 : 0
 LiveSearchIsDirty =: 1
 )
 
-processLiveSearchResults =: 3 : 0
-log 'processLiveSearchResults ' , ": rattleResult =. 4 T. LiveSearchPyx
-if. rattleResult = _1001 do. NB. Not a pyx.
-	if. LiveSearchIsDirty do. 
-		NB. The goal below is to delay executing one-character searches (which are slow) to give the user a chance to enter another character.
-		if. LiveSearchCountdown > 0 do. animate 1 end.
-		LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
-		if. (0 = LiveSearchCountdown) +. 1 < # searchBox do.
-			submitLiveSearch ''
-			animate 1
-		end.
-	end.
-	rattleResult
-	return.
-end.
-if. 0 <: rattleResult do. 
-	log '...(processLiveSearchResults) no results yet.' 
-	animate 1
-	rattleResult
-	return. 
-end.
-result =. ''
+processLiveSearchResults =: {{
+log 'processLiveSearchResults'
 try.
-	result =. > LiveSearchPyx
-catch. catcht. catchd.
-	1 log 'Error opening pyx: ' , (13!:12) ''
-	1 log 'DB error (if any): ' , sqlerror__liveSearchDb ''
-	rattleResult
-	return.
-end.
-if. 0 = # result do. 
-	LiveSearchResults =: ''
-	categoryMenuList =. ''
-	wd 'set wikiSearchMenu items *'
-	log '...(processLiveSearchResults) zero results'
-else.
-	snippets =. translateToJ &. > 4 {"1 result
+	if. -. LiveSearchIsDirty do. 1 return. end.
+	submitLiveSearch ''
+	result =. LiveSearchRawResult
+	if. 0 = # result do. 
+		LiveSearchResults =: ''
+		log 'processLiveSearchResults: no results found'
+		1 NB. Fake rattleResult indicating that we're done with the query.
+		return.
+	end.
+	snippets =. 4 {"1 result
 	sources =. {. &. > 3 {"1 result
 	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
@@ -1464,11 +1563,86 @@ else.
 	else.
 		LiveSearchResults =: results
 	end.
+catch.
+	1 log 'Problem in processLiveSearchResults: ' , (13!:12) ''
+	1 log 'DB error (if any): ' , dbError ''
 end.
-LiveSearchPyx =: a:
-if. LiveSearchIsDirty do. 
-	submitLiveSearch '' 
-	animate 1
+1 NB. Fake rattleResult indicating that we're done with the query.
+}}
+
+processLiveSearchResultsBackground =: 3 : 0
+rattleResult =. _9999
+try.
+NB.	log 'processLiveSearchResults: ' , ": rattleResult =. 4 T. LiveSearchPyx
+	
+	if. rattleResult = _1001 do. NB. Not a pyx.
+		if. LiveSearchIsDirty do. 
+			NB. The goal below is to delay executing one-character searches (which are slow) to give the user a chance to enter another character.
+			if. LiveSearchCountdown > 0 do. animate 1 end.
+			LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
+			if. (0 = LiveSearchCountdown) +. 1 < # searchBox do.
+				submitLiveSearch ''
+				animate 1
+			end.
+		end.
+		rattleResult
+		return.
+	end.
+	if. 0 <: rattleResult do. 
+		log '...(processLiveSearchResults) no results yet.' 
+		animate 1
+		rattleResult
+		return. 
+	end.
+	result =. ''
+	try.
+		result =. > LiveSearchPyx
+	catch. catcht. catchd.
+		1 log 'Error opening pyx: ' , (13!:12) ''
+		1 log 'DB error (if any): ' , sqlerror__liveSearchDb ''
+		rattleResult
+		return.
+	end.
+	if. 0 = # result do. 
+		LiveSearchResults =: ''
+		categoryMenuList =. ''
+		wd 'set wikiSearchMenu items *'
+		log '...(processLiveSearchResults) zero results'
+	else.
+	NB.	snippets =. translateToJ &. > 4 {"1 result
+		snippets =. 4 {"1 result
+		sources =. {. &. > 3 {"1 result
+		results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
+		log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
+		LiveSearchResults =: results
+		categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
+		categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
+		categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
+		categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults
+		categories =. {. categorizedResults
+		categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
+		categoryMenuList =. categories , &. > categoryCounts
+		wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoryMenuList
+		setLiveSearchPageIndex 0
+		if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
+		index =. categories i. < LiveSearchWikiCategory
+		if. index = # categories do. index =. 0 end.
+		wd 'set wikiSearchMenu select ' , ": index
+		if. index > 0 do.
+		LiveSearchResults =: > index { (1 { categorizedResults)
+			else.
+		LiveSearchResults =: results
+		end.
+	end.
+	LiveSearchPyx =: a:
+	if. LiveSearchIsDirty do.
+		submitLiveSearch '' 
+		animate 1
+	end.
+catch.
+	1 log 'Problem in processLiveSearchResults: ' , (13!:12) ''
+	1 log '...rattleResult: ' , ": rattleResult
+	1 log '...db error (if any): ' , dbError ''
 end.
 rattleResult
 )
@@ -1486,102 +1660,107 @@ string
 drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
 NB. Display the results of the current search against the local database.
-'xx yy width height' =. y
-setLiveAgeLabel ''
-glclip 0 0 10000 100000
-glrgb 0 0 0
-gltextcolor ''
-glpen 1
-glrgb BackgroundColor
-glbrush ''
-glrect xx , yy , width , height
-glfont LiveSearchFont
-colSep =: 20
-NB. if. -. searchBox -: LastLiveSearchQuery do. submitLiveSearch '' end.
-rattleResult =. processLiveSearchResults ''
-if. (0 = # LiveSearchResults) do.
-	glfont 'arial 30'
-	startY =. <. yy + -: height
-	if. (rattleResult > 0) *. 0 < # searchBox do.
-		n =.  192 * | 1 o. 2 * (6!:1) ''
-		glrgb n , n , n
-		gltextcolor ''
-		startX =. <. (xx + -: width) - -: {. glqextent searchBox
-		(startX , startY) drawStringAt searchBox
-	elseif. rattleResult < 0 do.
-		noResults =. 'No Results'
-		startX =. <. (xx + -: width) - -: {. glqextent noResults
-		(startX , startY) drawStringAt noResults
+try.
+	'xx yy width height' =. y
+	setLiveAgeLabel ''
+	glclip 0 0 10000 100000
+	glrgb 0 0 0
+	gltextcolor ''
+	glpen 1
+	glrgb BackgroundColor
+	glbrush ''
+	glrect xx , yy , width , height
+	glfont LiveSearchFont
+	colSep =: 20
+	NB. if. -. searchBox -: LastLiveSearchQuery do. submitLiveSearch '' end.
+	rattleResult =. processLiveSearchResults ''
+	if. (0 = # LiveSearchResults) do.
+		glfont 'arial 30'
+		startY =. <. yy + -: height
+		if. (rattleResult > 0) *. 0 < # searchBox do.
+			n =.  192 * | 1 o. 2 * (6!:1) ''
+			glrgb n , n , n
+			gltextcolor ''
+			startX =. <. (xx + -: width) - -: {. glqextent searchBox
+			(startX , startY) drawStringAt searchBox
+		elseif. rattleResult < 0 do.
+			noResults =. 'No Results'
+			startX =. <. (xx + -: width) - -: {. glqextent noResults
+			(startX , startY) drawStringAt noResults
+		end.
+		return. 
 	end.
-	return. 
-end.
-pageLabelHeight =. 30
-pageLabelWidth =. 30
-contentHeight =. height - pageLabelHeight
-contentLineCount =. <. contentHeight % TocLineHeight
-pageLabelCount =. >. (# LiveSearchResults) % contentLineCount
-pageLabels =. <@":"0 >: i. pageLabelCount
-pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. pageLabelCount) ,. 5
-pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
-(pageLabelRects -"(1 1) 4 4 0 0) registerRectLink"1 1 ('*setLiveSearchPageIndex '&, &. > <@":"0 i. pageLabelCount) ,"0 1 (< ' ') , <1
-((liveSearchPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
+	pageLabelHeight =. 30
+	pageLabelWidth =. 30
+	contentHeight =. height - pageLabelHeight
+	contentLineCount =. <. contentHeight % TocLineHeight
+	pageLabelCount =. >. (# LiveSearchResults) % contentLineCount
+	pageLabels =. <@":"0 >: i. pageLabelCount
+	pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. pageLabelCount) ,. 5
+	pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
+	(pageLabelRects -"(1 1) 4 4 0 0) registerRectLink"1 1 ('*setLiveSearchPageIndex '&, &. > <@":"0 i. pageLabelCount) ,"0 1 (< ' ') , <1
+	((liveSearchPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
 
-results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
-(<"1 pageLabelOrigins) drawStringAt &. > pageLabels
-((5 + xx) , 5) drawStringAt 'Page:'
-titles =. 0 {"1 results
-snippets =. 1 {"1 results
-links =. 2 {"1 results
-sources =. 4 {"1 results
-colWidth =. <. -: width - colSep
-snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
-titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
+	results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
+	(<"1 pageLabelOrigins) drawStringAt &. > pageLabels
+	((5 + xx) , 5) drawStringAt 'Page:'
+	titles =. 0 {"1 results
+	snippets =. translateToJ &. > 1 {"1 results
+	links =. 2 {"1 results
+	sources =. 4 {"1 results
+	colWidth =. <. -: width - colSep
+	snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
+	titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
-NB. glrgb WikiColor
-gltextcolor ''
-sieve =. sources = <'W'
-glclip xx , yy , colWidth , height
-NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < WikiColor
-glclip (xx + 5 + colWidth) , yy , colWidth , height
-(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+	NB. glrgb WikiColor
+	gltextcolor ''
+	sieve =. sources = <'W'
+	glclip xx , yy , colWidth , height
+	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < WikiColor
+	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-NB. glrgb ForumColor
-gltextcolor ''
-sieve =. sources = <'F'
-glclip xx , yy , colWidth , height
-NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < ForumColor
-glclip (xx + 5 + colWidth) , yy , colWidth , height
-(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+	NB. glrgb ForumColor
+	gltextcolor ''
+	sieve =. sources = <'F'
+	glclip xx , yy , colWidth , height
+	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < ForumColor
+	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-NB. glrgb GitHubColor
-gltextcolor ''
-sieve =. sources = <'G'
-glclip xx , yy , colWidth , height
-NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < GitHubColor
-glclip (xx + 5 + colWidth) , yy , colWidth , height
-(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+	NB. glrgb GitHubColor
+	gltextcolor ''
+	sieve =. sources = <'G'
+	glclip xx , yy , colWidth , height
+	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < GitHubColor
+	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-glclip 0 0 10000 100000
-(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
-(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
-
-textColors =. WikiColor , ForumColor ,: GitHubColor
-if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
-	title =. > titleIndex { titles
-	colorIndex =. ('W' ; 'F' ; 'G') i. titleIndex { sources
-	textColor =. colorIndex { textColors
-	floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
-	floatRect registerFloatingString title ; LiveSearchFont ; textColor
-end.
-if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
-	snippet =. > snippetIndex { snippets
-	colorIndex =. ('W' ; 'F' ; 'G') i. snippetIndex { sources
-	textColor =. colorIndex { textColors
-	floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
-	floatRect registerFloatingString snippet ; LiveSearchFont ; textColor
+	glclip 0 0 10000 100000
+	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
+	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
+	
+	textColors =. WikiColor , ForumColor ,: GitHubColor
+	if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
+		title =. > titleIndex { titles
+		colorIndex =. ('W' ; 'F' ; 'G') i. titleIndex { sources
+		textColor =. colorIndex { textColors
+		floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
+		floatRect registerFloatingString title ; LiveSearchFont ; textColor
+	end.
+	if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
+		snippet =. > snippetIndex { snippets
+		colorIndex =. ('W' ; 'F' ; 'G') i. snippetIndex { sources
+		textColor =. colorIndex { textColors
+		floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
+		floatRect registerFloatingString snippet ; LiveSearchFont ; textColor
+	end.
+catch.
+	1 log 'Problem in drawTocEntryLiveSearch: ' , (13!:12) ''
+	1 log '...db error (if any): ' , dbError ''
 end.
 )
 NB. ---------------------- End Live Search ------------------------
@@ -1604,8 +1783,8 @@ GitHubLastLiveSearchFont =: LiveSearchFont
 
 setupGitHubTable =: {{
 if. '' -: GitHubTable do.
-	openLiveSearchDb ''
-	gitHubContent =. , > {. > {: sqlreadm__liveSearchDb 'select content from github'
+	dbOpenDb ''
+	gitHubContent =. , > {. > {: sqlreadm__db 'select content from github'
 	GitHubTable =: _3 ]\ < ;._2 gitHubContent
 	gitHubWordsInFiles =. ;: :: a: &. > lines =. ,&LF &. > 2 {"1 GitHubTable
 	GitHubWords =: ; ,&(<0 { a.) &. > gitHubWordsInFiles
@@ -1623,16 +1802,6 @@ NB. Set it and perform a new search.
 GitHubPageIndex =: y
 searchGitHub searchBox
 animate 1
-}}
-
-addSpacesToCodeWords =: {{
-NB. y Code in boxed word form.
-NB. Add a space to either side of a . or a :
-t =. y
-for_w. ;: '. : if. do. else. end. while. whilst. break. return. try. catch. catcht. catchd.' do.
-t =. (< ' ' , (> w) , ' ') (I. w E. t) } t
-end.
-t
 }}
 
 searchGitHub =: {{
@@ -1792,6 +1961,7 @@ codeRects =. _2 _2 4 4 +"1 1 codeOrigins ,. > glqextent &. > codes
 }}
 NB. -------------------- End GitHub Search ------------------------
 
+NB. ------------------------- Forums ------------------------------
 ForumCacheTable =: '' NB. Year ; Month ; Subject ; Author ; Link
 ForumCurrentName =: ''
 ForumSubjectScrollIndex =: 0
@@ -1996,6 +2166,7 @@ selectedColumnIndex =. 0 >. (<: # columnGroups) <. <. ((({. VocMouseXY) - detail
 fullSizeColCount =. <. (width - subcatColWidth) % MinColWidth
 colWidth =. <. detailWidth % fullSizeColCount
 compressedColWidth =. <. (detailWidth - colWidth) % <: # columnGroups
+if. compressedColWidth <: 5 do. return. end.
 columnWidths =. (-selectedColumnIndex) |. colWidth <. colWidth , (<: # columnGroups) # compressedColWidth
 columnRects =. <"1 <. (detailX + }: +/\ 0 , columnWidths) ,. yy ,. columnWidths ,. height
 if. fullSizeColCount < # columnRects do.
@@ -2143,7 +2314,7 @@ log 'drawToc'
 DisplayListRect drawTocRail MaxTocDepth
 )
 
-NB. ======================= Table of Contents Data Management =====================
+NB. ======================= Table of Contents (TOC) Data Management =====================
 TocOutlineRailEntriesCache =: ,: a: , a:
 WikiDocsCache =: ,: a: , a:
 
@@ -2174,6 +2345,7 @@ NB. Return level ; parentid ; category ; parentseq ; count ; link
 NB. Take account of the parentseq number when ordering the entries.
 NB. Terminate cycles.
 log 'getTocOutlineRailEntries ' , (": x) , ', ' , ": y
+dbOpenDb ''
 key =. < (": x) , 'DDD' , ": y
 if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache) i. key do.
 	result =. > index { 1 {"1 TocOutlineRailEntriesCache
@@ -2260,6 +2432,7 @@ NB. y Category name (category names are guaranteed to be unique)
 NB. Return the categoryid of the category
 log 'getCategoryId ' , (": x) , ', ' , y
 if. x < 0 do. _1 return. end.
+dbOpenDb ''
 result =. > {: sqlreadm__db 'select categoryid from categories where category = "' , y , '" and parentid = ' , ": x
 if. 0 = # result do. 
 NB. 	smoutput 'getCategoryId _1 for' ; x ; y
@@ -2288,6 +2461,11 @@ loadVoc =: 3 : 0
 log 'loadVoc'
 try. VocTable =: > 1 { sqlreadm__db 'select * from vocabulary' catch. end.
 )
+
+getVoc =: {{
+if. 0 = # VocTable do. loadVoc '' end.
+VocTable
+}}
 
 calcCellDimensions =: 3 : 0
 NB. y A space-separated list of tokens inside a cell.
@@ -2385,7 +2563,7 @@ selectionPadding =. 0
 availableWidth =. +/ colWidths
 entryLineHeight =. 20
 if. 0 < +/ > selected do. 
-	entries =. VocTable #~ > VocSelectedGlyph&-: &. > 3 {"1 VocTable  NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
+	entries =. (getVoc '') #~ > VocSelectedGlyph&-: &. > 3 {"1 (getVoc '')  NB. Group POS Row Glyph MonadicRank Label DyadicRank Link
 	coords =. (xx + <. -: availableWidth) ,. yStart + height + 10 + entryLineHeight * i. # entries
 	entries drawVocEntry"1 1 coords
 	selectionPadding =. entryLineHeight * >: # entries
@@ -2397,7 +2575,7 @@ drawVocSections =: 4 : 0
 NB. x Origin
 NB. y Section numbers
 'xx runningY' =. x
-rows =. VocTable #~ (, > {."1 VocTable) e. y
+rows =. (getVoc '') #~ (, > {."1 (getVoc '')) e. y
 cells =. ~. 1 2 3 {"1 rows NB. POS Line Glyph
 dimensions =. > calcCellDimensions &. > (2 {"1 cells)
 lineNumbers =. 1 {"1 cells
@@ -2421,7 +2599,7 @@ selectVocGlyph =: 3 : 0
 NB. y A glyph
 log 'selectVocGlyph ' , y
 VocSelectedGlyph =: , y
-entry =. VocTable {~ (3 {"1 VocTable) i. < VocSelectedGlyph
+entry =. (getVoc '') {~ (3 {"1 (getVoc '')) i. < VocSelectedGlyph
 NB. queueUrl n =: (> 7 { entry) ; > 5 { entry
 )
 
@@ -2436,17 +2614,16 @@ glrect DisplayDetailRect
 NB. ============================= End Voc ===============================
 
 NB. ============================ Database Management ====================
-uploadAcct =: '12a1yBS'
+NB. uploadAcct =: '12a1yBS'
 
 dbExists =: 3 : 0
-NB. Return 1 if the target db exists.
-fexist targetDbPath
+NB. Return 1 if the target or stage db exists.
+(fexist targetDbPath) +. fexist stageDbPath
 )
 
 isOnTheNetwork =: 3 : 0
 NB. Return 1 if we can connect to the CDN.
 0 < # gethttp dateUrl
-NB. 0 < # gethttp 'https://upcdn.io/' , uploadAcct , '/raw/uploads/upload.test?cache=false'
 )
 
 checkForNewerDatabase =: 3 : 0
@@ -2454,6 +2631,7 @@ NB. Return _3 if a databases are staged and ready to be brought online.
 NB. Return 1 if a newer database is available.  
 NB. Return 2 if a newer database is required.
 NB. Return 3 if we're not on the network.
+NB. Return 4 if there was a problem opening/reading the database.
 NB. Return 0 if the local database is up to date.
 if. checkWhetherStageDatabasesHaveArrived '' do. _3 return. end.
 if. -. isOnTheNetwork '' do. 3 return. end.
@@ -2461,11 +2639,11 @@ try.
 	dbOpenDb ''
 	localHash =. , > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
 	if. 0 = # localHash do. 
-		2
+		1
 		return. 
 	end.
 catcht.
-	2
+	4
 	return.
 end.
 remoteHash =. getRemoteDatabaseHash ''
@@ -2473,9 +2651,8 @@ remoteHash =. getRemoteDatabaseHash ''
 )
 
 checkWhetherStageDatabasesHaveArrived =: {{
-NB. if. (fexist stageDbPath) *. (fexist stageFullTextDbPath) do.
-if. fexist stageDatePath do.
-	DatabaseDownloadStatus =: _3
+if. (fexist stageDatePath) *. fexist stageDbPath do.
+	DatabaseDownloadStatus =: _3  NB. The data is here; we're ready to bring it online.
 	1
 else.
 	0
@@ -2483,108 +2660,131 @@ end.
 }}
 
 downloadLatestData =: {{
+if. isDatabaseAvailable '' do. logFlag =. 2 else. logFlag =. 1 end.
+logFlag log 'Downloading latest data.'
 try.
-	(1!:55) :: 0: < stageFullTextPath
 	(1!:55) :: 0: < stageDbPath
 	(1!:55) :: 0: < stageDatePath
-	buildFullTextIndexDb ''
+	logFlag log 'Retrieving category data...'
 	(gethttp stageDbUrl) (1!:2) < stageDbPath
+	logFlag log '...retrieved and wrote category data.'
+	buildFullTextIndexDb ''
+	logFlag log 'Retrieving crawl date...'
 	(gethttp dateUrl) (1!:2) < stageDatePath
+	logFlag log '...wrote crawl date to jwikiviz.dat.'
 catch.
-	DatabaseDownloadMessage =: (13!:12) ''
+	1 log 'Problem in downloadLatestData: ', (13!:12) ''
+	return.
 end.
+logFlag log '*** Ready to move new data online ***'
+downloadPyx =: a:
 }}
 
 getRemoteDatabaseHash =: 3 : 0
 gethttp dateUrl
 )
 
+transferCleanup =: {{
+NB. Called on launch before any file handles can be acquired.
+NB. Cleans up from the last data download (or at least tries).
+2 log 'transferCleanup'
+if. fexist stageDbPath do.
+	try. (1!:55) < targetDbPath catch. end.
+	try. targetDbPath frename stageDbPath catch. end.
+	try. (1!:55) < stageDatePath catch. end. 
+end.
+}}
+
 transferDatabase =: 3 : 0
 NB. Open the target db (tdb) and read all of the user records.  
 NB. Write them to the staging db (db).
-NB. Delete the target db, then rename the staging db
+2 log 'transferDatabase'
 try.
 	if. fexist stageDbPath do.
+		sdb =. sqlopen_psqlite_ stageDbPath
 		if. fexist targetDbPath do.
-			sdb =. sqlopen_psqlite_ stageDbPath
 			tdb =. sqlopen_psqlite_ targetDbPath
 			cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
 			historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
 			wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
-			try. keyValues =. > {: sqlread__tdb 'select key, value from keyvalue' catch. catcht. keyValues =. '' end.
+			try. keyValues =. > {: sqlreadm__tdb 'select key, value from keyvalue' catch. catcht. keyValues =. '' end.
 			catCols =. ;: 'level parentid categoryid category parentseq count link'
 			wikiCols =. ;: 'title categoryid link'
 			keyValueCols =. ;: 'key value'
-			sqlinsert__sdb 'categories' ; catCols ; < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
+			sqlinsert__sdb 'categories' ; catCols ; cat_parms =. < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
 			sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
-			sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
 			if. 0 < # keyValues do.
-				sdb_parms =. 'keyvalue' ; keyValueCols ; < (> 0 {"1 keyValues) ; (1 {"1 keyValues)
+				sdb_parms =. 'keyvalue' ; keyValueCols ; < (0 {"1 keyValues) ; < (1 {"1 keyValues)
 				sqlinsert__sdb sdb_parms
 			end.
-			sqlclose__sdb ''
+			sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
 			sqlclose__tdb ''
-			(1!:22) < targetPath NB. Close the file.
- 			try. (1!:55) < targetDbPath catch. smoutput 'del targetDbPath: ' , (13!:12) '' end.
+			dbCloseDb ''
+		else.
+		2 log 'transferDatabase: no target db.'
 		end.
-		try. targetDbPath frename stageDbPath catch. smoutput 'rename targetDbPath: ' , (13!:12) '' end.
-		try. (1!:22) < targetDbPath catch. end.  NB. Close the file.
+		hash =. getRemoteDatabaseHash ''
+		sqlinsert__sdb 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
+		sqlclose__sdb ''
+	else.
+		1 log 'transferDatabase: no stage db found.'
 	end.
-	hash =. getRemoteDatabaseHash ''
-	try. (1!:22) < targetDbPath catch. end.
+	dbCloseDb ''
 	dbOpenDb ''
-	sqlclose__db ''
-	dbOpenDb ''
-	sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
-	clearCache ''
+	initializeWithDatabase ''
 catch. catcht.
-	smoutput 'db error (if any): ' , sqlerror__db ''
-	smoutput 'Problem: ' , (13!:12) ''
-	smoutput 'sdb error (if any): ' , sqlerror__sdb ''
-	smoutput 'tdb error (if any): ' , sqlerror__tdb ''
+	1 log 'Problem in transferDatabase: ' , (13!:12) ''
+	1 log 'sdb error (if any): ' , sqlerror__sdb ''
+	1 log 'tdb error (if any): ' , sqlerror__tdb ''
+	1 log 'db error (if any): ' , sqlerror__db ''
 end.
 )
+
+isDatabaseAvailable =: {{
+	-. db -: ''
+}}
 
 asyncCheckForNewerDatabase =: {{
 NB. Set DatabaseDownloadStatus
 NB. Note that this routine is meant to be called as a task.
-if. checkWhetherStageDatabasesHaveArrived '' do. 0 return. end.
-DatabaseDownloadStatus =: checkForNewerDatabase ''
+2 log 'asyncCheckForNewerDatabase'
+NB. if. checkWhetherStageDatabasesHaveArrived '' do. return. end.
+status =. checkForNewerDatabase ''
+if. status = 4 do.
+	1 log 'asyncCheckForNewDatabase: Could not open/read the db.' 
+	return. 
+	end.  NB. Couldn't open/read the database.
+DatabaseDownloadStatus =: status
+2 log 'asyncCheckForNewerDatabase: DatabaseDownloadStatus = ' , ": DatabaseDownloadStatus
 animate 5
 }}
 
-initialDbDownloadDialog =: 3 : 0
-if. isOnTheNetwork'' do.
-	result =. wd 'mb query mb_yes =mb_no "Local Database Status" "A new database is required.  Yes to download ~100 MB (which will decompress and index to ~1 GB in ~temp); THIS MAY TAKE OVER A MINUTE."'
-	if. result -: 'yes' do. 
-		downloadLatestData ''
-		transferDatabase ''
-NB. 		buildFullTextIndexDb ''
-		1
-	else.
-		0
-	end.
-else.
-	wdinfo '' ; 'Cannot connect to the CDN and a new database is required.  Please be sure you have an internet connection.  OK to exit.'
-	0
-end.
-)
-
 buildFullTextIndexDb =: 3 : 0
-try. (1!:55) < stageFullTextDbPath catch. end.
-localDb =. sqlcreate_psqlite_ stageFullTextDbPath
-sqlcmd__localDb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
-sqlcmd__localDb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
-sqlcmd__localDb 'CREATE INDEX year_index ON auxiliary (year)'
-sqlcmd__localDb 'CREATE INDEX source_index ON auxiliary (source)'
-sqlcmd__localDb 'CREATE TABLE github (content BLOB)'
+NB. try. (1!:55) < stageFullTextDbPath catch. end.
+NB. localDb =. sqlcreate_psqlite_ stageFullTextDbPath
+if. isDatabaseAvailable '' do. logFlag =. 2 else. logFlag =. 1 end.
+logFlag log 'Building full-text index database.'
 try.
-	dataString =. lz4_uncompressframe gethttp indexUrl
+	sdb =. sqlopen_psqlite_ stageDbPath
+	sqlcmd__sdb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
+	sqlcmd__sdb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
+	sqlcmd__sdb 'CREATE INDEX year_index ON auxiliary (year)'
+	sqlcmd__sdb 'CREATE INDEX source_index ON auxiliary (source)'
+	sqlcmd__sdb 'CREATE TABLE github (content BLOB)'
+	logFlag log 'Retrieving the compressed full-text blob...'
+	compressedDataString =. gethttp indexUrl
+	logFlag log '...retrieved the compressed full-text blob.  Byte count: ' , ": $ compressedDataString
+	logFlag log 'Decompressing the full-text blob...'
+	dataString =. lz4_uncompressframe compressedDataString
+	logFlag log '...decompressed the full-text blob.  Byte count: ' , ": $ dataString
 catch.
-	smoutput 'Problem in buildFullTextIndexDb (0)'
-	smoutput (13!:12) ''
+	1 log 'Problem in buildFullTextIndexDb (0): '
+	1 log (13!:12) ''
+	1 log sqlerror__sdb ''
+	sqlclose__sdb ''
 	return.
 end.
+logFlag log 'Cutting the blob into a table...'
 sep =. 2 3 4 { a.
 table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. dataString
 bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
@@ -2592,49 +2792,63 @@ titles =. 3 {"1 table
 years =. > ". &. > 2 {"1 table
 sources =. 1 {"1 table
 urls =. 0 {"1 table
+logFlag log '...succeeded.  Full-text index table shape: ' , ": $ table
+logFlag log 'Inserting full-text index records (time-consuming)...'
 try.
-	sqlinsert__localDb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
-	sqlinsert__localDb 'jindex' ; (;: 'body') ;  << bodies
+	sqlinsert__sdb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
+	sqlinsert__sdb 'jindex' ; (;: 'body') ;  << bodies
 catch. catcht.
-	smoutput 'Problem in buildFullTextIndexDb (1)'
-	smoutput (13!:12) ''
-	smoutput sqlerror__localDb ''
-end.
-gitHubStringCompressed =. gethttp githubContentUrl
-gitHubString =. lz4_uncompressframe gitHubStringCompressed
-try.
-	sqlinsert__localDb 'github' ; (;: 'content') ; < gitHubString
-	sqlclose__localDb ''
-	(1!:22) < stageFullTextDbPath
-	GitHubTable =: ''
-catch. catcht.
-	s =. 'Problem in buidFullTextIndexDb (2) ' , (13!:12) ''
-	s =. s , ' / ' , sqlerror__localDb ''
+	1 log 'Problem in buildFullTextIndexDb (1)'
+	1 log (13!:12) ''
+	1 log sqlerror__sdb ''
+	sqlclose__sdb ''
 	return.
 end.
+logFlag log '...inserted the full-text index records.'
+logFlag log 'Retrieving the GitHub blob...'
+gitHubStringCompressed =. gethttp githubContentUrl
+logFlag log '...retrieved the GitHub blob.  Byte count: ' , ": # gitHubStringCompressed
+logFlag log 'Decompressing the GitHub blob...'
+gitHubString =. lz4_uncompressframe gitHubStringCompressed
+logFlag log '...decompressed the GitHub blob.  Byte count: ' , ": # gitHubString
+logFlag log 'Inserting the GitHub blob...'
+try.
+	sqlinsert__sdb 'github' ; (;: 'content') ; < gitHubString
+	GitHubTable =: ''
+catch. catcht.
+	1 log 'Problem in buidFullTextIndexDb (2) '
+	1 log (13!:12) ''
+	1 log sqlerror__sdb ''
+	sqlclose__sdb ''
+	return.
+end.
+logFlag log '...inserted the GitHub blob.'
+sqlclose__sdb ''
+logFlag log 'Built the full-text index'
 ''
 )
 
 bringNewDataOnline =: {{
+if. isDatabaseAvailable '' do. logFlag =. 2 else. logFlag =. 1 end.
+logFlag log 'bringNewDataOnline'
 if. -. checkWhetherStageDatabasesHaveArrived '' do.
-	'Cannot bring new data online; not all data has arrived.'
+	1 log 'Cannot bring the new data online; not all data has arrived.'
 	return.
 end.
 try.
 	transferDatabase ''
-smoutput 'liveSearchDb' ; liveSearchDb ; 'liveSearchDbPath' ; liveSearchDbPath
-	try. sqlclose__liveSearchDb '' catch. smoutput 'sqlclose__liveSearchDb: ' , (13!:12) '' end.
-	liveSearchDb =: ''
-	try. (1!:22) < liveSearchDbPath catch. smoutput 'close liveSearchDbPath: ' , (13!:12) '' end.  NB. Close the file.
-	(1!:55) < liveSearchDbPath NB. catch. smoutput 'del liveSearchDbPath: ' , (13!:12) '' end. NB. Delete the full-text index file.
-	try. (1!:22) < stageDatePath catch. smoutput 'close stageDatePath: ' , (13!:12) '' end.  NB. Close the file.
-	(1!:55) < stageDatePath NB. catch.  smoutput 'del stageDatePath: ' , (13!:12) '' end. NB. Delete the date file.
-	try. liveSearchDbPath frename stageFullTextDbPath catch. smoutput 'rename fullTextDb ' , (13!:12) '' end.  NB. Rename the file.
-	asyncCheckForNewerDatabase '' NB. It's okay to call it synchronously.
+	dbCloseDb ''
+	transferCleanup ''
+	dbOpenDb ''
+	initializeWithDatabase ''
+	DatabaseDownloadStatus =: 0
 	setUpdateButtons ''
 catch. catcht.
-	'Problem in bringNewDataOnline: ' , (13!:12) ''
+	1 log 'Problem in bringNewDataOnline ' 
+	1 log (13!:12) ''
+	return.
 end.
+logFlag log '*** Moved the new data online ***'
 }}
 NB. ==================== End Database Management ======================
 
@@ -2651,36 +2865,54 @@ try. wd 'pclose' catch. end.
 
 manageLoad ''
 
-TimerFractionMsec =: 50 NB. Milliseconds per frame
+TimerFractionMsec =: 100 NB. Milliseconds per frame
+
+initializeWithDatabase =: {{
+2 log 'initializeWithDatabase'
+try.
+	logVersionInfo ''
+	clearCache ''
+NB.	initAdmin ''
+	buildLiveSearchWikiTitlesByCategory ''
+	loadHistoryMenu ''
+	fs =. '5' getKeyValue 'FontSlider'
+	try. wd 'set fontSlider ' , fs catch. end.
+	setFontSize ". fs
+	dbPyx =: asyncCheckForNewerDatabase t. 'worker' ''
+	datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
+	version =. manifest_version (1!:1) < jpath addonPath
+	caption =. 'J Viewer ' , version , ' (Crawl: ' , datetime , ')'
+	wd 'pn *' , caption
+catch.
+	1 log 'initializeWithDatabase Problem: ' , (13!:12) ''
+	1 log 'initializeWithDatabase Database error (if any): ' , dbError ''
+end.
+}}
 
 go =: 3 : 0
 try.
-	if. -. checkGethttpVersion '' do. return. end.
-	if. -. dbExists '' do. 
-		if. -. initialDbDownloadDialog '' do. return. end.
-	end.
-	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
-	dbPyx =: asyncCheckForNewerDatabase t. 'worker' ''
-	appPyx =: asyncCheckAppUpToDate t. 'worker' ''
-	dbOpenDb ''
-	initAdmin ''
-	buildLiveSearchWikiTitlesByCategory ''
-	loadVoc ''
 	clearLog ''
+	logVersionInfo ''
+	transferCleanup ''
+	if. -. checkGethttpVersion '' do. return. end.
+	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
+	appPyx =: asyncCheckAppUpToDate t. 'worker' ''
+	if. dbExists '' do. 
+		dbOpenDb ''
+	else.
+		1 log '*** Database download required. ***'
+		DatabaseDownloadStatus =: 2 
+	end.
 	buildForm ''
 	layoutForm ''
-	loadHistoryMenu ''
-	version =. ". '.' -.~ 9 10 11 12 13 { JVERSION
 	wd 'pshow fullscreen'
 	wd 'msgs'
+	if. isDatabaseAvailable '' do. initializeWithDatabase '' end.
 	animate 10
-	fs =. '5' getKeyValue 'FontSlider'
-	wd 'set fontSlider ' , fs
-	setFontSize ". fs
 	wd 'timer ' , ": TimerFractionMsec
 catch. catcht.
-	smoutput 'Problem: ' , (13!:12) ''
-	smoutput 'Database error (if any): ' , sqlerror__db ''
+	1 log 'go: Problem: ' , (13!:12) ''
+	1 log 'go: Database error (if any): ' , sqlerror__db ''
 end.
 )
 

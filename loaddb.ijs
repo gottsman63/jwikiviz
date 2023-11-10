@@ -3,8 +3,6 @@ NB. The posts for jwikiviz.db need not be crawled.
 NB. The posts for master.db need to be crawled, and may be crawled incrementally.
 NB. The posts for jwikiviz.db could be taken from the post rows in master.db.
 
-
-
 clear ''
 
 load 'data/sqlite'
