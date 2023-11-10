@@ -1505,7 +1505,7 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery searchBox
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 500'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , , ' limit 500' NB. ' order by rank limit 500'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
