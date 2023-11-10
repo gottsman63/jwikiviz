@@ -16,40 +16,41 @@ Months =: ;:'January February March April May June July August September October
 wikiUrlPrefix =: 'https://code.jsoftware.com'
 
 appDir =: jpath '~temp/loaddb'
-stageDbFile =: appDir , '/jwikiviz.stage.db'
+stageDbPath =: appDir , '/jviewer.db'
 wikiDir =: appDir , '/code.jsoftware.com/wiki'
 codeSearchFile =: appDir , '/codesearch.html'
 forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 masterDbFile =: appDir , '/master.db'
-indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
-dateFile =: appDir , '/jwikiviz.dat'
+NB.indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
+dateFile =: appDir , '/jviewer.dat'
 tokenFile =: appDir , '/token.txt'
-gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
+compressedDbPath =: appDir , '/jviewer.lz4'
+NB. gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
 
-jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jEnglishEquivalents =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jEnglishDict =: (0 {"1 jEnglishEquivalents) ,. 'J'&, &. > <@":"0 i. # jEnglishEquivalents
 jMnemonics =: , &. > 0 {"1 jEnglishDict
-jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
-jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
+jEnglishWords =: 1 {"1 jEnglishDict
 htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' '
-
+searchJMnemonics =: jMnemonics&i.
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
 try.
 	raw =. ('''' ; ' ') rxrplc y 
+	translatedHtml =. translateHtmlEncodings raw
+	rawTokens =. ;: translatedHtml
+NB.	hits =. jMnemonics i."1 0 rawTokens
+	hits =. searchJMnemonics"0 1 rawTokens
+	result =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
+	if. 0 = # result do. ' ' else. result end.
 catch.  
 	smoutput 'JEnglish Failure'
 	'JEnglish Failure'
-	return.
 end.
-translatedHtml =. translateHtmlEncodings raw
-rawTokens =. ;: translatedHtml
-hits =. jMnemonics i."1 0 rawTokens
-result =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
-if. 0 = # result do. ' ' else. result end.
 )
 
 translateHtmlEncodings =: 3 : 0
@@ -155,6 +156,7 @@ try. (2!:0) 'rm ' , zipFilename catch. end.
 
 updateMasterDbWithGitHubProjects =: 3 : 0
 NB. Update master.db with the jsoftware projects from GitHub.
+smoutput 'updateMasterDbWithGitHubProjects'
 gitHubContent =: ''
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "G"'
@@ -168,8 +170,8 @@ whilst. 0 < # ol do.
 	page =. >: page
 	smoutput 'page' ; page
 end.
-(s =. lz4_compressframe gitHubContent) (1!:2) < gitHubContentFile
-smoutput 'updateMasterDbWithGitHubProjects size: ' ; ": # s
+sqlinsert__db 'github' ; (;: 'content') ; < gitHubContent
+smoutput 'updateMasterDbWithGitHubProjects size: ' ; ": # gitHubContent
 )
 NB. ========================== End Crawling GitHiub ====================================
 
@@ -187,6 +189,7 @@ end.
 )
 
 moveForumRecordsFromMasterToStage =: 3 : 0
+smoutput 'moveForumRecordsFromMasterToStage'
 createOrOpenMasterDb ''
 dbOpenDb ''
 sqlcmd__db 'delete from forums'
@@ -247,6 +250,7 @@ end.
 updateMasterDbWithPosts =: 3 : 0
 NB. Determine the most recent year-month for which we have posts.  
 NB. Grab all of those posts as well as all posts since and upsert them into masterDb.
+smoutput 'updateMasterDbWithPosts'
 createOrOpenMasterDb ''
 dbOpenDb ''
 'currentYear currentMonthIndex' =. 0 _1 + 2 {. (6!:0) ''
@@ -328,14 +332,28 @@ end.
 NB. ================================= End Master DB ===========================================
 
 NB. ===================== Full-Text Search ================================
-generateFullTextContentFile =: 3 : 0
-NB. Create a string of (id sourceType year subject author body) separated by 2 3 4 { a.
+NB. generateFullTextContentFile =: 3 : 0
+NB. NB. Create a string of (id sourceType year subject author body) separated by 2 3 4 { a.
+NB. createOrOpenMasterDb ''
+NB. table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
+NB. formattedTable =. (0 1 {"1 table) ,. (": &. > 2 {"1 table) ,. 3 4 5 {"1 table
+NB. s =. lz4_compressframe ; ,&(2 3 4 { a.) &. > , formattedTable 
+NB. s (1!:2) < indexFile
+NB. )
+
+moveFullTextIndexIntoStage =: {{
+smoutput 'moveFullTextIndexIntoStage'
 createOrOpenMasterDb ''
 table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
-formattedTable =. (0 1 {"1 table) ,. (": &. > 2 {"1 table) ,. 3 4 5 {"1 table
-s =. lz4_compressframe ; ,&(2 3 4 { a.) &. > , formattedTable 
-s (1!:2) < indexFile
-)
+titles =. 3 {"1 table
+years =: > 2 {"1 table
+sources =. 1 {"1 table
+urls =. 0 {"1 table
+bodies =. 5 {"1 table
+sqlinsert__db 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
+sqlinsert__db 'jindex' ; (;: 'body') ;  << bodies
+
+}}
 NB. ================== End Full-Text Search ================================
 
 generateDatabaseReport =: 3 : 0
@@ -840,6 +858,7 @@ sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count paren
 )
 
 finishLoadingForums =: 3 : 0
+smoutput 'finishLoadingForums'
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
 forumId =. 1 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
@@ -908,7 +927,7 @@ ids
 )
 
 dbOpenDb =: 3 : 0
-db =: sqlopen_psqlite_ stageDbFile
+db =: sqlopen_psqlite_ stageDbPath
 )
 
 getCurlDate =: 3 : 0
@@ -919,16 +938,21 @@ length {. offset }. json
 )
 
 setupDb =: 3 : 0
-try. (1!:55) < stageDbFile catch. end.
-db =: sqlcreate_psqlite_ stageDbFile
+try. (1!:55) < stageDbPath catch. end.
+db =: sqlcreate_psqlite_ stageDbPath
 sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, day INTEGER, subject TEXT, author TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid INTEGER, category TEXT, parentseq INTEGER, count INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
-sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
+NB.sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE TABLE keyvalue (key TEXT primary key, value TEXT)'
+sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
+sqlcmd__db 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
+sqlcmd__db 'CREATE INDEX year_index ON auxiliary (year)'
+sqlcmd__db 'CREATE INDEX source_index ON auxiliary (source)'
+sqlcmd__db 'CREATE TABLE github (content BLOB)'
 )
 
 writeStartTime =: 3 : 0
@@ -940,13 +964,14 @@ sqlinsert__db 'admin' ; (;: 'key value') ; < 'CrawlEnd' ; getCurlDate ''
 )
 
 writeDateFile =: 3 : 0
+smoutput 'writeDateFile'
 (": (6!:0) '') (1!:2) < dateFile
 )
 
-NB. uploadDb =: 3 : 0
-NB. auth =. (1!:1) < jpath '~temp/upload.auth'
-NB. (' -H "Authorization: Bearer ' , auth , '" -H "Content-Type: application/octet-stream" --data-binary @' , stageDbFile) gethttp 'https://api.upload.io/v2/accounts/12a1yBS/uploads/binary?filePath=/uploads/jwikiviz.stage.db'
-NB. )
+compressDatabaseFile =: {{
+dbString =. (1!:1) < stageDbPath
+(lz4_compressframe dbString) (1!:2) < compressedDbPath
+}}
 
 setup =: 3 : 0
 setupTempDirectory ''
@@ -965,6 +990,7 @@ updateMasterDbWithPosts ''
 moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
 finishLoadingForums ''
-generateFullTextContentFile ''
+moveFullTextIndexIntoStage ''
+compressDatabaseFile ''
 writeDateFile ''
 )

@@ -28,25 +28,11 @@ NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are 
 NB. ===================== Version Updates =====================
 addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
 githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
-NB. awsPrefix =: 'https://jwikiviz.s3.eu-north-1.amazonaws.com'
 awsPrefix =: 'https://jviewer.s3.us-east-2.amazonaws.com'
-indexUrl =: awsPrefix , '/jwikiviz.fulltext.txt.lz4'
-githubContentUrl =: awsPrefix , '/jwikiviz.gitHub.dat.lz4'
-dateUrl =: awsPrefix , '/jwikiviz.dat'
-stageDbUrl =: awsPrefix , '/jwikiviz.stage.db'
+dbUrl =: awsPrefix , '/jviewer.lz4'
 
-stageDbFile =: 'jwikiviz.stage.db'
-stageFullTextDbFile =: 'jwikiviz.fulltext.stage.db'
-stageDateFile =: 'jwikiviz.dat'
-NB. stageGitHubFile =: 'jwikiviz.github.stage.dat'
-stageDatePath =: jpath '~temp/' , stageDateFile
-stageDbPath =: jpath '~temp/' , stageDbFile
-NB. stageFullTextDbPath =: jpath '~temp/' , stageFullTextDbFile
-NB. stageGitHubPath =: jpath '~temp/' , stageGitHubFile
-targetDbPath =: jpath '~temp/jwikiviz.db'
-NB. curlTracePath =: jpath '~temp/jwikiviz.trace'
-NB. liveSearchDbPath =: jpath '~temp/jwikiviz.fulltext.db'
-logPath =: jpath '~temp/jwikiviz.log'
+dbPath =: jpath '~temp/jviewer.db'
+logPath =: jpath '~temp/jviewer.log'
 AppUpToDate =: _1
 DatabaseDownloadStatus =: _1
 DatabaseDownloadMessage =: ''
@@ -123,15 +109,14 @@ if. '' ~: db do. sqlerror__db '' else. 'Error?  Database is closed!' end.
 )
 
 dbOpenDb =: 3 : 0
-if. fexist stageDbPath do. path =. stageDbPath else. path =. targetDbPath end.
 try.
 NB.	if. -. db -: '' do. dbCloseDb '' end.
 	if. db -: '' do. 
-		db =: sqlopen_psqlite_ path
+		db =: sqlopen_psqlite_ dbPath
 NB.		initializeWithDatabase ''
 	end.
 catch. catcht.
-	1 log 'dbOpenDb: Error opening database: ' , path
+	1 log 'dbOpenDb: Error opening database: ' , dbPath
 	1 log (13!:12) ''
 end.
 )
@@ -241,7 +226,7 @@ if. LogMutex -: '' do. LogMutex =: 10 T. 0 end.
 logVersionInfo =: {{
 version =. manifest_version (1!:1) < jpath addonPath
 2 log 'J Viewer Version ' , version
-if. isDatabaseAvailable '' do.
+if. isDatabaseOpen '' do.
 	datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
 	2 log 'Crawl: ' , datetime
 else.
@@ -332,7 +317,7 @@ if. downloadFlag do.
 	DatabaseDownloadStatus =: _2
 	downloadPyx =: downloadLatestData t. 'worker' ''
 	setUpdateButtons ''
-	if. -. isDatabaseAvailable '' do. snapshotLogToBrowser 0 end.
+	if. -. isDatabaseOpen '' do. snapshotLogToBrowser 0 end.
 end.
 }}
 
@@ -443,7 +428,7 @@ wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
 setUpdateButtons ''
-setControlVisibility isDatabaseAvailable ''
+setControlVisibility isDatabaseOpen ''
 )
 
 setControlVisibility =: {{
@@ -513,7 +498,7 @@ VocValenceFont =: 'arial ' , ": 12 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
 LiveSearchFont =: 'arial ' , ": 16 + FontAdjustment
 SectionFont =: 'arial bold ' , ": 16 + FontAdjustment
-CellLineHeight =: TocLineHeight
+CellLineHeight =: <. TocLineHeight * 0.8
 'FontSlider' setKeyValue ": y
 invalidateDisplay ''
 )
@@ -649,7 +634,7 @@ VocMouseXY =: _1 _1
 
 vizform_browser_curl =: 3 : 0
 log 'vizform_browser_curl'
-if. -. isDatabaseAvailable '' do. return. end.
+if. -. isDatabaseOpen '' do. return. end.
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 if. -. 'http' -: 4 {. url do. return. end.  NB. Probably loading html, not a url.
 LastUrlLoaded =: url
@@ -737,7 +722,7 @@ if. LogNewEventsWrittenFlag_jwikiviz_ do.
 end.
 try.
 if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
-	checkWhetherStageDatabasesHaveArrived_jwikiviz_ ''
+	checkWhetherNewDatabaseHasArrived_jwikiviz_ ''
 	setUpdateButtons_jwikiviz_ ''
 end.  
 catch.
@@ -775,7 +760,7 @@ trigger_paint =: 3 : 0
 log 'trigger_paint ' , (wd 'getp wh') , '   ' , (": getFrameRate '') , ' fps'
 try.
 	glfill BackgroundColor , 255
-	if. -. isDatabaseAvailable '' do. return. end.
+	if. -. isDatabaseOpen '' do. return. end.
 	'w h' =. ". wd 'getp wh'
 	if. (w < 200) +. h < 200 do.
 		1 log 'trigger_paint--dimensions too small.  Aborting.'
@@ -1373,10 +1358,17 @@ LastLiveSearchQuery =: ''
 LiveSearchCountdown =: 0
 LiveSearchRawResult =: ''
 
-jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+NB. jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+NB. jMnemonics =: , &. > 0 {"1 jEnglishDict
+NB. jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
+NB. jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
+
+jEnglishEquivalents =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
+jEnglishDict =: (0 {"1 jEnglishEquivalents) ,. 'J'&, &. > <@":"0 i. # jEnglishEquivalents
 jMnemonics =: , &. > 0 {"1 jEnglishDict
-jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
-jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
+jEnglishWords =: 1 {"1 jEnglishDict
+htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' '
+searchJMnemonics =: jMnemonics&i.
 
 checkLiveSearchCountdown =: {{
 if. LiveSearchCountdown > 0 do.
@@ -1489,7 +1481,7 @@ LiveSearchRawResult
 
 submitLiveSearch =: 3 : 0
 NB. y Empty
-NB. Set and return a table of title ; Snippet ; Url
+NB. Create a table of title ; Snippet ; Url
 log 'submitLiveSearch: ' , searchBox
 try.
 	LiveSearchRawResult =: ''
@@ -1513,8 +1505,8 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery searchBox
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 100' NB., ' order by rank limit 100'
-	log 'About to make a pyx for search: ' , fullSearch
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 500'
+NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
 	LiveSearchIsDirty =: 0
@@ -2614,16 +2606,16 @@ glrect DisplayDetailRect
 NB. ============================= End Voc ===============================
 
 NB. ============================ Database Management ====================
-NB. uploadAcct =: '12a1yBS'
+NewDatabaseContents =: ''
 
-dbExists =: 3 : 0
+dbPathExists =: 3 : 0
 NB. Return 1 if the target or stage db exists.
-(fexist targetDbPath) +. fexist stageDbPath
+fexist dbPath
 )
 
 isOnTheNetwork =: 3 : 0
 NB. Return 1 if we can connect to the CDN.
-0 < # gethttp dateUrl
+0 < # getRemoteDatabaseHash ''
 )
 
 checkForNewerDatabase =: 3 : 0
@@ -2633,11 +2625,10 @@ NB. Return 2 if a newer database is required.
 NB. Return 3 if we're not on the network.
 NB. Return 4 if there was a problem opening/reading the database.
 NB. Return 0 if the local database is up to date.
-if. checkWhetherStageDatabasesHaveArrived '' do. _3 return. end.
 if. -. isOnTheNetwork '' do. 3 return. end.
 try. 
 	dbOpenDb ''
-	localHash =. , > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
+	localHash =. getLocalDatabaseHash ''
 	if. 0 = # localHash do. 
 		1
 		return. 
@@ -2650,196 +2641,110 @@ remoteHash =. getRemoteDatabaseHash ''
 -. localHash -: remoteHash
 )
 
-checkWhetherStageDatabasesHaveArrived =: {{
-if. (fexist stageDatePath) *. fexist stageDbPath do.
+checkWhetherNewDatabaseHasArrived =: {{
+if. NewDatabaseContents -: '' do.
+	0
+else.
 	DatabaseDownloadStatus =: _3  NB. The data is here; we're ready to bring it online.
 	1
-else.
-	0
 end.
 }}
 
 downloadLatestData =: {{
-if. isDatabaseAvailable '' do. logFlag =. 2 else. logFlag =. 1 end.
-logFlag log 'Downloading latest data.'
 try.
-	(1!:55) :: 0: < stageDbPath
-	(1!:55) :: 0: < stageDatePath
-	logFlag log 'Retrieving category data...'
-	(gethttp stageDbUrl) (1!:2) < stageDbPath
-	logFlag log '...retrieved and wrote category data.'
-	buildFullTextIndexDb ''
-	logFlag log 'Retrieving crawl date...'
-	(gethttp dateUrl) (1!:2) < stageDatePath
-	logFlag log '...wrote crawl date to jwikiviz.dat.'
+	1 log 'Downloading latest data...'
+	compressedDbContents =. gethttp dbUrl
+	1 log '...got it.  Decompressing ' , (": # compressedDbContents) , ' bytes...'
+	NewDatabaseContents =: lz4_uncompressframe compressedDbContents
+	1 log '...decompressed to ' , (": # NewDatabaseContents) , ' bytes.'
+	1 log '*** Ready to move new data online ***'
 catch.
 	1 log 'Problem in downloadLatestData: ', (13!:12) ''
-	return.
 end.
-logFlag log '*** Ready to move new data online ***'
 downloadPyx =: a:
 }}
 
 getRemoteDatabaseHash =: 3 : 0
-gethttp dateUrl
+if. IFWGET_wgethttp_ do.
+	header =. (2!:0) 'wget --server-response --spider ' , dbUrl
+else.
+	header =. (2!:0) 'curl -sI ' , dbUrl
+end.
+> 4 { < ;. _2 header , LF
 )
 
-transferCleanup =: {{
-NB. Called on launch before any file handles can be acquired.
-NB. Cleans up from the last data download (or at least tries).
-2 log 'transferCleanup'
-if. fexist stageDbPath do.
-	try. (1!:55) < targetDbPath catch. end.
-	try. targetDbPath frename stageDbPath catch. end.
-	try. (1!:55) < stageDatePath catch. end. 
+getLocalDatabaseHash =: {{
+if. isDatabaseOpen '' do.
+	, > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
+else.
+	''
 end.
 }}
 
 transferDatabase =: 3 : 0
-NB. Open the target db (tdb) and read all of the user records.  
-NB. Write them to the staging db (db).
-2 log 'transferDatabase'
+NB. Read the user records from the database.
+NB. Write the new database.
+NB. Insert the user records.
+1 log 'transferDatabase'
 try.
-	if. fexist stageDbPath do.
-		sdb =. sqlopen_psqlite_ stageDbPath
-		if. fexist targetDbPath do.
-			tdb =. sqlopen_psqlite_ targetDbPath
-			cats =. > {: sqlreadm__tdb 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
-			historyMenu =. > {: sqlreadm__tdb 'select label, link from history'
-			wiki =. > {: sqlreadm__tdb 'select title, categoryid, link from wiki where categoryid >= 1000000'
-			try. keyValues =. > {: sqlreadm__tdb 'select key, value from keyvalue' catch. catcht. keyValues =. '' end.
-			catCols =. ;: 'level parentid categoryid category parentseq count link'
-			wikiCols =. ;: 'title categoryid link'
-			keyValueCols =. ;: 'key value'
-			sqlinsert__sdb 'categories' ; catCols ; cat_parms =. < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
-			sqlinsert__sdb 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
-			if. 0 < # keyValues do.
-				sdb_parms =. 'keyvalue' ; keyValueCols ; < (0 {"1 keyValues) ; < (1 {"1 keyValues)
-				sqlinsert__sdb sdb_parms
-			end.
-			sqlinsert__sdb 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
-			sqlclose__tdb ''
-			dbCloseDb ''
-		else.
-		2 log 'transferDatabase: no target db.'
-		end.
-		hash =. getRemoteDatabaseHash ''
-		sqlinsert__sdb 'admin' ; (;: 'key value') ; < 'Hash' ;  hash
-		sqlclose__sdb ''
-	else.
-		1 log 'transferDatabase: no stage db found.'
+	dbOpenDb ''
+	writeUserData =. 0
+	if. isDatabaseOpen '' do.
+		cats =. > {: sqlreadm__db 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
+		historyMenu =. > {: sqlreadm__db 'select label, link from history'
+		wiki =. > {: sqlreadm__db 'select title, categoryid, link from wiki where categoryid >= 1000000'
+		try. keyValues =. > {: sqlreadm__db 'select key, value from keyvalue' catch. catcht. keyValues =. '' end.
+		writeUserData =. 1
 	end.
 	dbCloseDb ''
+	NewDatabaseContents (1!:2) < dbPath
+	NewDatabaseContents =: ''
 	dbOpenDb ''
-	initializeWithDatabase ''
-catch. catcht.
+	if. writeUserData do.
+		catCols =. ;: 'level parentid categoryid category parentseq count link'
+		wikiCols =. ;: 'title categoryid link'
+		keyValueCols =. ;: 'key value'
+		sqlinsert__db 'categories' ; catCols ; cat_parms =. < (> 0 {"1 cats) ; (> 1 {"1 cats) ; (> 2 {"1 cats) ; (3 {"1 cats) ; (> 4 {"1 cats) ; (> 5 {"1 cats) ; < (6 {"1 cats)
+		sqlinsert__db 'wiki' ; wikiCols ; < (0 {"1 wiki) ; (> 1 {"1 wiki) ; < (2 {"1 wiki)
+		sqlinsert__db 'history' ; ('label' ; 'link') ; < (0 {"1 historyMenu) ; < (1 {"1 historyMenu)
+		if. 0 < # keyValues do.
+			db_parms =. 'keyvalue' ; keyValueCols ; < (0 {"1 keyValues) ; < (1 {"1 keyValues)
+			sqlinsert__db db_parms
+		end.
+	end.
+	sqlinsert__db 'admin' ; (;: 'key value') ; < 'Hash' ; getRemoteDatabaseHash''
+catch.
 	1 log 'Problem in transferDatabase: ' , (13!:12) ''
-	1 log 'sdb error (if any): ' , sqlerror__sdb ''
-	1 log 'tdb error (if any): ' , sqlerror__tdb ''
-	1 log 'db error (if any): ' , sqlerror__db ''
+	1 log 'DB error (if any): ' , dbError ''
 end.
 )
 
-isDatabaseAvailable =: {{
+isDatabaseOpen =: {{
 	-. db -: ''
 }}
 
 asyncCheckForNewerDatabase =: {{
 NB. Set DatabaseDownloadStatus
 NB. Note that this routine is meant to be called as a task.
-2 log 'asyncCheckForNewerDatabase'
+1 log 'asyncCheckForNewerDatabase'
 NB. if. checkWhetherStageDatabasesHaveArrived '' do. return. end.
 status =. checkForNewerDatabase ''
 if. status = 4 do.
 	1 log 'asyncCheckForNewDatabase: Could not open/read the db.' 
-	return. 
 	end.  NB. Couldn't open/read the database.
 DatabaseDownloadStatus =: status
-2 log 'asyncCheckForNewerDatabase: DatabaseDownloadStatus = ' , ": DatabaseDownloadStatus
-animate 5
+1 log 'asyncCheckForNewerDatabase: DatabaseDownloadStatus = ' , ": DatabaseDownloadStatus
+NB. animate 5
 }}
 
-buildFullTextIndexDb =: 3 : 0
-NB. try. (1!:55) < stageFullTextDbPath catch. end.
-NB. localDb =. sqlcreate_psqlite_ stageFullTextDbPath
-if. isDatabaseAvailable '' do. logFlag =. 2 else. logFlag =. 1 end.
-logFlag log 'Building full-text index database.'
-try.
-	sdb =. sqlopen_psqlite_ stageDbPath
-	sqlcmd__sdb 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
-	sqlcmd__sdb 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
-	sqlcmd__sdb 'CREATE INDEX year_index ON auxiliary (year)'
-	sqlcmd__sdb 'CREATE INDEX source_index ON auxiliary (source)'
-	sqlcmd__sdb 'CREATE TABLE github (content BLOB)'
-	logFlag log 'Retrieving the compressed full-text blob...'
-	compressedDataString =. gethttp indexUrl
-	logFlag log '...retrieved the compressed full-text blob.  Byte count: ' , ": $ compressedDataString
-	logFlag log 'Decompressing the full-text blob...'
-	dataString =. lz4_uncompressframe compressedDataString
-	logFlag log '...decompressed the full-text blob.  Byte count: ' , ": $ dataString
-catch.
-	1 log 'Problem in buildFullTextIndexDb (0): '
-	1 log (13!:12) ''
-	1 log sqlerror__sdb ''
-	sqlclose__sdb ''
-	return.
-end.
-logFlag log 'Cutting the blob into a table...'
-sep =. 2 3 4 { a.
-table =. _6 ]\ (<: # sep)&}. &. > (sep E. s) <;._2 s =. dataString
-bodies =. <@;"1 ,&' ' &. > 3 4 5 {"1 table
-titles =. 3 {"1 table
-years =. > ". &. > 2 {"1 table
-sources =. 1 {"1 table
-urls =. 0 {"1 table
-logFlag log '...succeeded.  Full-text index table shape: ' , ": $ table
-logFlag log 'Inserting full-text index records (time-consuming)...'
-try.
-	sqlinsert__sdb 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
-	sqlinsert__sdb 'jindex' ; (;: 'body') ;  << bodies
-catch. catcht.
-	1 log 'Problem in buildFullTextIndexDb (1)'
-	1 log (13!:12) ''
-	1 log sqlerror__sdb ''
-	sqlclose__sdb ''
-	return.
-end.
-logFlag log '...inserted the full-text index records.'
-logFlag log 'Retrieving the GitHub blob...'
-gitHubStringCompressed =. gethttp githubContentUrl
-logFlag log '...retrieved the GitHub blob.  Byte count: ' , ": # gitHubStringCompressed
-logFlag log 'Decompressing the GitHub blob...'
-gitHubString =. lz4_uncompressframe gitHubStringCompressed
-logFlag log '...decompressed the GitHub blob.  Byte count: ' , ": # gitHubString
-logFlag log 'Inserting the GitHub blob...'
-try.
-	sqlinsert__sdb 'github' ; (;: 'content') ; < gitHubString
-	GitHubTable =: ''
-catch. catcht.
-	1 log 'Problem in buidFullTextIndexDb (2) '
-	1 log (13!:12) ''
-	1 log sqlerror__sdb ''
-	sqlclose__sdb ''
-	return.
-end.
-logFlag log '...inserted the GitHub blob.'
-sqlclose__sdb ''
-logFlag log 'Built the full-text index'
-''
-)
-
 bringNewDataOnline =: {{
-if. isDatabaseAvailable '' do. logFlag =. 2 else. logFlag =. 1 end.
-logFlag log 'bringNewDataOnline'
-if. -. checkWhetherStageDatabasesHaveArrived '' do.
+1 log 'bringNewDataOnline'
+if. -. checkWhetherNewDatabaseHasArrived '' do.
 	1 log 'Cannot bring the new data online; not all data has arrived.'
 	return.
 end.
 try.
 	transferDatabase ''
-	dbCloseDb ''
-	transferCleanup ''
-	dbOpenDb ''
 	initializeWithDatabase ''
 	DatabaseDownloadStatus =: 0
 	setUpdateButtons ''
@@ -2848,7 +2753,7 @@ catch. catcht.
 	1 log (13!:12) ''
 	return.
 end.
-logFlag log '*** Moved the new data online ***'
+1 log '*** Moved the new data online ***'
 }}
 NB. ==================== End Database Management ======================
 
@@ -2865,7 +2770,7 @@ try. wd 'pclose' catch. end.
 
 manageLoad ''
 
-TimerFractionMsec =: 100 NB. Milliseconds per frame
+TimerFractionMsec =: 50 NB. Milliseconds per frame
 
 initializeWithDatabase =: {{
 2 log 'initializeWithDatabase'
@@ -2893,11 +2798,10 @@ go =: 3 : 0
 try.
 	clearLog ''
 	logVersionInfo ''
-	transferCleanup ''
 	if. -. checkGethttpVersion '' do. return. end.
 	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
 	appPyx =: asyncCheckAppUpToDate t. 'worker' ''
-	if. dbExists '' do. 
+	if. dbPathExists '' do. 
 		dbOpenDb ''
 	else.
 		1 log '*** Database download required. ***'
@@ -2907,7 +2811,7 @@ try.
 	layoutForm ''
 	wd 'pshow fullscreen'
 	wd 'msgs'
-	if. isDatabaseAvailable '' do. initializeWithDatabase '' end.
+	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	animate 10
 	wd 'timer ' , ": TimerFractionMsec
 catch. catcht.
@@ -2920,13 +2824,8 @@ go_z_ =: 3 : 0
 go_jwikiviz_ ''
 )
 
-test_z_ =: 3 : 0
-NB. 	head =. (2!:0) 'wget -S --save-headers -O - https://upcdn.io/' , uploadAcct , '/raw/uploads/' , stageDbFile , '?cache=false'
-smoutput 'head' ; '-S --save-headers -O -' gethttp 'https://www.google.com?cache=false'
-k =. (2!:0) 'wget -S --save-headers -O - "https://www.google.com"'
-smoutput 'k' ; k
-)
-
 cocurrent 'base'
+
+LogFlag =: 1
 
 go ''
