@@ -210,7 +210,6 @@ else.
 	writeBackgroundEvents ''
 	event (1!:3) < logPath
 end.
-if. x = 1 do. LogBrowserUpdateRequired =: 1 end.
 )
 
 clearLog =: 3 : 0
@@ -637,6 +636,7 @@ log 'vizform_browser_curl'
 if. -. isDatabaseOpen '' do. return. end.
 url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 if. -. 'http' -: 4 {. url do. return. end.  NB. Probably loading html, not a url.
+LogLoadBrowserFlag =: 0
 LastUrlLoaded =: url
 historyMenu =. getHistoryMenu ''
 if. 0 = # historyMenu do.
@@ -718,8 +718,8 @@ if. LogNewEventsWrittenFlag_jwikiviz_ do.
 	setSnapshotLogButtonState_jwikiviz_ ''
 	writeBackgroundEvents_jwikiviz_ ''
 	LogNewEventsWrittenFlag_jwikiviz_ =: 0
-	if. LogLoadBrowserFlag_jwikiviz_ *. LogBrowserUpdateRequired_jwikiviz_ do. snapshotLogToBrowser_jwikiviz_ 300 end.
 end.
+if. LogLoadBrowserFlag_jwikiviz_ *. LogBrowserUpdateRequired_jwikiviz_ do. snapshotLogToBrowser_jwikiviz_ 300 end.
 try.
 if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
 	checkWhetherNewDatabaseHasArrived_jwikiviz_ ''
@@ -1056,7 +1056,6 @@ LastUrlLoaded =: ''
 loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
 try.
-LogLoadBrowserFlag =: 0
 if. 0 = # y do. return. end.
 'url title' =. y
 NB. url =. > {. y
