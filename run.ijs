@@ -158,7 +158,7 @@ LogBrowserUpdateRequired =: 0
 
 setSnapshotLogButtonState =: 3 : 0
 count =. +/ LF = (1!:1) < logPath
-wd 'set snapshotLog caption *Show Log (' , , (": count) , ')'
+wd 'set snapshotLog caption *Log (' , , (": count) , ')'
 )
 
 snapshotLogToBrowser =: 3 : 0
@@ -308,9 +308,9 @@ select. DatabaseDownloadStatus
 case. _3 do. bringNewDataOnline ''
 case. _2 do. wdinfo 'Downloading data in the background'
 case. _1 do. wdinfo 'Checking for new data in the background'
-case. 0 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
-case. 1 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
-case. 2 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~100 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
+case. 0 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
+case. 1 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
+case. 2 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
 case. 3 do. setUpdateButtons ''  NB. We were offline; check whether we're connected again.
 end.
 if. downloadFlag do. 
@@ -1369,7 +1369,7 @@ jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 1 {"1 jEnglishDict
 htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' '
 searchJMnemonics =: jMnemonics&i.
-
+searchJEnglishWords =: jEnglishWords&i.
 checkLiveSearchCountdown =: {{
 if. LiveSearchCountdown > 0 do.
 	LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
@@ -1453,7 +1453,7 @@ NB. Drop most of the spaces between the J tokens.
 NB. log 'translateToJ ' NB. , y
 try.
 	tokens =. ;: y -. ''''
-	hits =. jEnglishWords i."1 0 tokens
+	hits =. searchJEnglishWords"1 0 tokens
 	jTokens =. (hits {"0 1 jMnemonics ,"1 0 tokens)
 	spaces =. (-. jTokens e. dropSpacesSnippetTokens) { '' ; ' '
 	squished =. ('  ' ; ' ') rxrplc ('   ' ; ' ') rxrplc ; spaces ,. jTokens ,. spaces
@@ -1485,13 +1485,13 @@ NB. Create a table of title ; Snippet ; Url
 log 'submitLiveSearch: ' , searchBox
 try.
 	LiveSearchRawResult =: ''
-	if. 0 = # searchBox do. return. end.
+	if. 1 >: (# searchBox) + # searchBoxWords do. return. end.
 NB.	rattleResult =. 4 T. LiveSearchPNB.yx
 NB.	if.  rattleResult > 0 do. NB. Make sure we don't step on a running search. 
 NB.		1 log 'submitLiveSearch: search in progress already.  Returning.'
 NB.		return.
 NB.	end.
-	LastLiveSearchQuery =: searchBox
+	LastLiveSearchQuery =: searchBox , ' ' , searchBoxWords
 	setLiveSearchPageIndex 0
 	forumFlag =. liveForum = '1'
 	wikiFlag =. liveWiki = '1'
@@ -1504,8 +1504,8 @@ NB.	end.
 	else.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
-	query =. createQuery searchBox
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 20) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , , ' limit 500' NB. ' order by rank limit 500'
+	query =. createQuery ''
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 15) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , , ' limit 500' NB. ' order by rank limit 500'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -2780,13 +2780,13 @@ try.
 NB.	initAdmin ''
 	buildLiveSearchWikiTitlesByCategory ''
 	loadHistoryMenu ''
-	fs =. '5' getKeyValue 'FontSlider'
+	fs =. '4' getKeyValue 'FontSlider'
 	try. wd 'set fontSlider ' , fs catch. end.
 	setFontSize ". fs
 	dbPyx =: asyncCheckForNewerDatabase t. 'worker' ''
 	datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
 	version =. manifest_version (1!:1) < jpath addonPath
-	caption =. 'J Viewer ' , version , ' (Crawl: ' , datetime , ')'
+	caption =. 'J Viewer ' , version , ' (Crawl Datetime: ' , datetime , ')'
 	wd 'pn *' , caption
 catch.
 	1 log 'initializeWithDatabase Problem: ' , (13!:12) ''
