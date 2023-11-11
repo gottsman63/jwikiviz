@@ -2687,7 +2687,7 @@ NB. Write the new database.
 NB. Insert the user records.
 1 log 'transferDatabase'
 try.
-	dbOpenDb ''
+	if. dbPathExists'' do. dbOpenDb '' end.
 	writeUserData =. 0
 	if. isDatabaseOpen '' do.
 		cats =. > {: sqlreadm__db 'select level, parentid, categoryid, category, parentseq, count, link from categories where categoryid > 1000000'
@@ -2720,7 +2720,7 @@ end.
 )
 
 isDatabaseOpen =: {{
-	-. db -: ''
+-. db -: ''
 }}
 
 asyncCheckForNewerDatabase =: {{

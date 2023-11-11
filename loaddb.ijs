@@ -963,10 +963,9 @@ writeEndTime =: 3 : 0
 sqlinsert__db 'admin' ; (;: 'key value') ; < 'CrawlEnd' ; getCurlDate ''
 )
 
-writeDateFile =: 3 : 0
-smoutput 'writeDateFile'
-(": (6!:0) '') (1!:2) < dateFile
-)
+turnOnOptimization =: {{
+sqlcmd__db 'PRAGMA optimize'
+}}
 
 compressDatabaseFile =: {{
 dbString =. (1!:1) < stageDbPath
@@ -991,6 +990,7 @@ moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
 finishLoadingForums ''
 moveFullTextIndexIntoStage ''
+turnOnOptimization ''
+sqlclose__db ''
 compressDatabaseFile ''
-writeDateFile ''
 )
