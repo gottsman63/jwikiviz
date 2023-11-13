@@ -33,22 +33,23 @@ jEnglishEquivalents =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ;
 jEnglishDict =: (0 {"1 jEnglishEquivalents) ,. 'J'&, &. > <@":"0 i. # jEnglishEquivalents
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 1 {"1 jEnglishDict
-htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' '
+htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' ' ; '&nbsp;' ; ' '
 searchJMnemonics =: jMnemonics&i.
+
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
 try.
-	raw =. ('''' ; ' ') rxrplc y 
-	translatedHtml =. translateHtmlEncodings raw
-	rawTokens =. ;: translatedHtml
-NB.	hits =. jMnemonics i."1 0 rawTokens
+NB.	singleLine =. (LF ; ' ') rxrplc y
+NB.	if. 1 = 2 | +/ '''' = y do. quoted =. singleLine , '''' else. quoted =. singleLine end.
+	translatedHtml =. ('''' ; ' ') rxrplc translateHtmlEncodings , y
+	rawTokens =. , ;: translatedHtml
 	hits =. searchJMnemonics"0 1 rawTokens
 	result =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
-	if. 0 = # result do. ' ' else. result end.
+	if. 0 = # result do. 'No Code' else. result end.
 catch.  
-	smoutput 'JEnglish Failure'
+	smoutput 'JEnglish Failure ' , (13!:12) ''
 	'JEnglish Failure'
 end.
 )
@@ -109,7 +110,72 @@ NB. smoutput 'extractTextFromWikiArticle Failure! ' , 200 {. result
 result
 )
 
-NB. ============================ Crawling GitHiub ======================================
+NB. ========================== Crawling Rosettacode ====================================
+updateMasterDbWithRosettaCodeChallenge =: {{
+NB. x The url of a challenge.
+NB. y The name of a challenge.
+NB. Get the challenge, extract the J portion, translate.
+NB. Return url ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; author ; content
+url =. x
+title =. '[Rosetta] ' , y
+try.
+	smoutput 'RosettaCode: ' , title
+	wd 'msgs'
+	html =. gethttp url , '?action=edit'
+	problemPlus =. html {.~ {. I. '=={{header|' E. html
+	problem =. problemPlus }.~ {. I. '<textarea' E. problemPlus
+	jSolution =. > jList #~ (< '=={{header|J}}==') = 16&{. &. > jList =. ('=={{header|' E. html) <  ;. 1 html
+	if. jSolution -: '' do. 
+		smoutput 'No J code found for ' , title
+		a:
+		return.
+	end.
+	content =. y , ' ' , (translateHtmlEncodings problem) , ' ' , translateToJEnglish translateHtmlEncodings jSolution
+	filename =. ' '
+	url ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; ' ' ; content
+catch. catchd.
+	smoutput (13!:12) ''
+	a:
+	return.
+end.
+}}
+NB. masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body'
+
+updateMasterDbWithRosettaCode =: {{
+createOrOpenMasterDb ''
+sqlcmd__masterDb 'delete from content where sourcetype = "R"'
+pat =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
+nextPagePat =. '<a href="(/wiki/Category:Programming_Tasks\?pagefrom[^"]+)"[^>]+>next page</a>'
+html =. gethttp 'https://rosettacode.org/wiki/Category:Programming_Tasks'
+while. 0 < # html do.
+	c =. 1 2 {"2 pat rxmatches html
+	urlTitles =. ({:"1 c) <@{."0 1 ({."1 c) }."0 1 html
+	titles =. 1 {"1 urlTitles
+	smoutput titles
+	wd 'msgs'
+	fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
+	table =: _10 ]\ , > (<a:) -.~ fullUrls updateMasterDbWithRosettaCodeChallenge &. > titles
+	data =: (0 {"1 table) ; (1 {"1 table) ; (2 {"1 table) ; (3 {"1 table) ; (> 4 {"1 table) ; (> 5 {"1 table) ; (> 6 {"1 table) ; (7 {"1 table) ; (8 {"1 table) ; < (9 {"1 table)
+	try.
+	 	sqlinsert__masterDb 'content' ; masterCols ; < data
+	catch. catcht. catchd.
+		smoutput 'Problem ' , (13!:12) ''
+		smoutput sqlerror__masterDb ''
+	end.
+	if. 0 < {. c =. {: nextPagePat rxmatch html do.
+		nextUrl =. 'https://rosettacode.org' , ({: c) {. ({. c) }. html
+		html =. gethttp nextUrl
+	else.
+		html =. ''
+	end.
+end.
+''
+}}
+
+
+NB. ======================= End Crawling Rosettacode ===================================
+
+NB. ============================ Crawling GitHub ======================================
 indexSuffixes =:  '.ijs' ; '.ijt'
 sep =: 0 { a.
 gitHubContent =: ''
@@ -139,7 +205,7 @@ try.
 		rawContent =. i { rawContents
 		url =. i { urls
 		filename =. i { filenames
-		subject =. project , ': ' , (('^.*/' , project, '/[^/]+/') ; '') rxrplc > filename
+		subject =. '[GitHub] ' , project , ': ' , (('^.*/' , project, '/[^/]+/') ; '') rxrplc > filename
 		data =. url ; filename ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
 		sqlinsert__masterDb 'content' ; masterCols ; < data
 		gitHubContent =: gitHubContent , ; ((< project) , url , rawContent) ,. < sep
@@ -184,7 +250,7 @@ if. fexist < masterDbFile do.
 else.
 	masterDb =: sqlcreate_psqlite_ masterDbFile
 	NB. The id can be used with other columns to reconstruct the link, which may not be sent down to the client (since it's fairly long).
-	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, jsubject TEXT, author TEXT, body TEXT)'
+	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, author TEXT, body TEXT)'
 end.
 )
 
@@ -988,6 +1054,7 @@ if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMa
 updateMasterDbWithPosts ''
 moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
+updateMasterDbWithRosettaCode ''
 finishLoadingForums ''
 moveFullTextIndexIntoStage ''
 turnOnOptimization ''

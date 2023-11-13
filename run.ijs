@@ -347,9 +347,10 @@ wd       'cc dbUpdate button; cn Haha!;'
 wd       'cc appUpdate button; cn Wocka!;'
 wd     'bin z;'
 wd     'bin h;'
-wd       'cc liveForum checkbox; cn *Forum Posts'
+wd       'cc liveForum checkbox; cn *Forum'
 wd       'cc liveGitHub checkbox; cn *GitHub'
 wd       'cc liveWiki checkbox; cn *Wiki'
+wd       'cc liveRosetta checkbox; cn *Rosetta'
 wd       'cc wikiSearchMenu combolist;'
 wd       'cc liveAgeLabel static'
 wd       'cc liveAge slider 2 1 1 1 10 3'
@@ -409,10 +410,11 @@ wd 'set snapshotLog maxwh ' ,  (": (<. vocContextWidth * 0.1) , controlHeight) ,
 wd 'set dbUpdate maxwh ' , (": (<. vocContextWidth * 0.4) , controlHeight) , ';'
 wd 'set appUpdate maxwh ' , (": (<. vocContextWidth * 0.30) , controlHeight) , ';'
 
-wd 'set liveForum maxwh ' , (": 110 , controlHeight) , ';'
-wd 'set liveGitHub maxwh ' , (": 90 , controlHeight) , ';'
-wd 'set liveWiki maxwh ' , (": 60 , controlHeight) , ';'
-wd 'set wikiSearchMenu maxwh ' , (": (-: vocContextWidth - 340) , controlHeight) , ';'
+wd 'set liveForum maxwh ' , (": 60 , controlHeight) , ';'
+wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
+wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
+wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
+wd 'set wikiSearchMenu maxwh ' , (": (-: vocContextWidth - 350) , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
 wd 'set liveAge maxwh ' , (": (-: vocContextWidth - 340) , controlHeight) , ';'
 
@@ -443,6 +445,7 @@ try.
 	wd 'set liveForum enable ' , flag
 	wd 'set liveGitHub enable ' , flag
 	wd 'set liveWiki enable ' , flag
+	wd 'set liveRosetta enable ' , flag
 	wd 'set wikiSearchMenu enable ' , flag
 	wd 'set liveAgeLabel enable ' , flag
 	wd 'set liveAge enable ' , flag
@@ -554,6 +557,12 @@ markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
+
+vizform_liveRosetta_button =: {{
+markLiveSearchDirty ''
+invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+}}
 
 vizform_liveAge_changed =: 3 : 0
 markLiveSearchDirty ''
@@ -810,6 +819,7 @@ CountFont =: 'arial 15'
 WikiColor =: 0 127 127
 ForumColor =: 110 38 14
 GitHubColor =: 136 6 206
+RosettaColor =: 11 0 128
 
 TimerCount =: 0
 
@@ -1414,6 +1424,12 @@ groups =. (categories < /. y) /: categoryKeys
 (/:~ categoryKeys) ,: groups
 }}
 
+categorizeLiveSearchRosettaFiles =: {{
+NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
+NB. Just categorize everything under RosettaCode.
+(< 'RosettaCode') ,: < y
+}}
+
 setLiveAgeLabel =: 3 : 0
 try.
 if. (". liveAge) = 10 do.
@@ -1470,7 +1486,7 @@ try.
 	dbOpenDb ''
 	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
 NB.	LiveSearchRawResult =: > {: sqlreadm__db y
-	1 log '...performLiveSearch sqlreadm returned; count: ' , (": # LiveSearchRawResult) , '...execution time: ' , ": time
+	1 log '...performLiveSearch sqlreadm: ' , (": # LiveSearchRawResult) , '...time: ' , ": time
 catch.
 1 log 'Live Search problem: ' , (13!:12) ''
 1 log 'DB Error (if any): ' , dbError ''
@@ -1495,8 +1511,9 @@ NB.	end.
 	forumFlag =. liveForum = '1'
 	wikiFlag =. liveWiki = '1'
 	gitHubFlag =. liveGitHub = '1'
-	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag do. forumFlag =. wikiFlag =. gitHubFlag =. 1 end.
-	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag) # '"F"' ; '"W"' ; '"G"')) , ') '
+	rosettaFlag =. liveRosetta = '1'
+	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. 1 end.
+	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"')) , ') '
 	currentYear =. {. (6!:0) ''
 	if. 10 = ". liveAge do.
 		cutoffYear =. 0
@@ -1504,7 +1521,7 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 15) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , , ' limit 500' NB. ' order by rank limit 500'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 15) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 100'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -1527,6 +1544,7 @@ try.
 	result =. LiveSearchRawResult
 	if. 0 = # result do. 
 		LiveSearchResults =: ''
+ 		wd 'set wikiSearchMenu items *'
 		log 'processLiveSearchResults: no results found'
 		1 NB. Fake rattleResult indicating that we're done with the query.
 		return.
@@ -1539,7 +1557,8 @@ try.
 	categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
 	categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
 	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
-	categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults
+	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
+	categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults
 	categories =. {. categorizedResults
 	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
 	categoryMenuList =. categories , &. > categoryCounts
@@ -1560,83 +1579,6 @@ catch.
 end.
 1 NB. Fake rattleResult indicating that we're done with the query.
 }}
-
-processLiveSearchResultsBackground =: 3 : 0
-rattleResult =. _9999
-try.
-NB.	log 'processLiveSearchResults: ' , ": rattleResult =. 4 T. LiveSearchPyx
-	
-	if. rattleResult = _1001 do. NB. Not a pyx.
-		if. LiveSearchIsDirty do. 
-			NB. The goal below is to delay executing one-character searches (which are slow) to give the user a chance to enter another character.
-			if. LiveSearchCountdown > 0 do. animate 1 end.
-			LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
-			if. (0 = LiveSearchCountdown) +. 1 < # searchBox do.
-				submitLiveSearch ''
-				animate 1
-			end.
-		end.
-		rattleResult
-		return.
-	end.
-	if. 0 <: rattleResult do. 
-		log '...(processLiveSearchResults) no results yet.' 
-		animate 1
-		rattleResult
-		return. 
-	end.
-	result =. ''
-	try.
-		result =. > LiveSearchPyx
-	catch. catcht. catchd.
-		1 log 'Error opening pyx: ' , (13!:12) ''
-		1 log 'DB error (if any): ' , sqlerror__liveSearchDb ''
-		rattleResult
-		return.
-	end.
-	if. 0 = # result do. 
-		LiveSearchResults =: ''
-		categoryMenuList =. ''
-		wd 'set wikiSearchMenu items *'
-		log '...(processLiveSearchResults) zero results'
-	else.
-	NB.	snippets =. translateToJ &. > 4 {"1 result
-		snippets =. 4 {"1 result
-		sources =. {. &. > 3 {"1 result
-		results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
-		log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
-		LiveSearchResults =: results
-		categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
-		categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
-		categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
-		categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults
-		categories =. {. categorizedResults
-		categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
-		categoryMenuList =. categories , &. > categoryCounts
-		wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoryMenuList
-		setLiveSearchPageIndex 0
-		if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
-		index =. categories i. < LiveSearchWikiCategory
-		if. index = # categories do. index =. 0 end.
-		wd 'set wikiSearchMenu select ' , ": index
-		if. index > 0 do.
-		LiveSearchResults =: > index { (1 { categorizedResults)
-			else.
-		LiveSearchResults =: results
-		end.
-	end.
-	LiveSearchPyx =: a:
-	if. LiveSearchIsDirty do.
-		submitLiveSearch '' 
-		animate 1
-	end.
-catch.
-	1 log 'Problem in processLiveSearchResults: ' , (13!:12) ''
-	1 log '...rattleResult: ' , ": rattleResult
-	1 log '...db error (if any): ' , dbError ''
-end.
-rattleResult
-)
 
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
@@ -1668,17 +1610,9 @@ try.
 	if. (0 = # LiveSearchResults) do.
 		glfont 'arial 30'
 		startY =. <. yy + -: height
-		if. (rattleResult > 0) *. 0 < # searchBox do.
-			n =.  192 * | 1 o. 2 * (6!:1) ''
-			glrgb n , n , n
-			gltextcolor ''
-			startX =. <. (xx + -: width) - -: {. glqextent searchBox
-			(startX , startY) drawStringAt searchBox
-		elseif. rattleResult < 0 do.
-			noResults =. 'No Results'
-			startX =. <. (xx + -: width) - -: {. glqextent noResults
-			(startX , startY) drawStringAt noResults
-		end.
+		noResults =. 'No Results'
+		startX =. <. (xx + -: width) - -: {. glqextent noResults
+		(startX , startY) drawStringAt noResults
 		return. 
 	end.
 	pageLabelHeight =. 30
@@ -1703,8 +1637,6 @@ try.
 	snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
 	titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
-	NB. glrgb WikiColor
-	gltextcolor ''
 	sieve =. sources = <'W'
 	glclip xx , yy , colWidth , height
 	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
@@ -1712,8 +1644,6 @@ try.
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-	NB. glrgb ForumColor
-	gltextcolor ''
 	sieve =. sources = <'F'
 	glclip xx , yy , colWidth , height
 	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
@@ -1721,8 +1651,6 @@ try.
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
-	NB. glrgb GitHubColor
-	gltextcolor ''
 	sieve =. sources = <'G'
 	glclip xx , yy , colWidth , height
 	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
@@ -1730,21 +1658,28 @@ try.
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
+	sieve =. sources = <'R'
+	glclip xx , yy , colWidth , height
+	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
+	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < RosettaColor
+	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+
 	glclip 0 0 10000 100000
 	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
 	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
 	
-	textColors =. WikiColor , ForumColor ,: GitHubColor
+	textColors =. WikiColor , ForumColor  , RosettaColor ,: GitHubColor
 	if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
 		title =. > titleIndex { titles
-		colorIndex =. ('W' ; 'F' ; 'G') i. titleIndex { sources
+		colorIndex =. ('W' ; 'F' ; 'R' ; 'G') i. titleIndex { sources
 		textColor =. colorIndex { textColors
 		floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
 		floatRect registerFloatingString title ; LiveSearchFont ; textColor
 	end.
 	if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
 		snippet =. > snippetIndex { snippets
-		colorIndex =. ('W' ; 'F' ; 'G') i. snippetIndex { sources
+		colorIndex =. ('W' ; 'F' ; 'R' ; 'G') i. snippetIndex { sources
 		textColor =. colorIndex { textColors
 		floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
 		floatRect registerFloatingString snippet ; LiveSearchFont ; textColor
