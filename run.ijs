@@ -2599,7 +2599,9 @@ end.
 
 downloadLatestData =: {{
 try.
+	LogLoadBrowserFlag =: 1
 	1 log 'Downloading latest data...'
+	1 log '...which may take quite a while...'
 	compressedDbContents =. gethttp dbUrl
 	1 log '...got it.  Decompressing ' , (": # compressedDbContents) , ' bytes...'
 	NewDatabaseContents =: lz4_uncompressframe compressedDbContents
@@ -2613,13 +2615,13 @@ downloadPyx =: a:
 
 getRemoteDatabaseHash =: 3 : 0
 if. IFWGET_wgethttp_ do.
-	header =. (2!:0) 'wget --server-response --spider ' , dbUrl
+	header =. '--server-response --spider ' gethttp dbUrl_jwikiviz_
 else.
-	header =. (2!:0) 'curl -sI ' , dbUrl
+	header =. '-sI ' gethttp dbUrl_jwikiviz_
 end.
 > 4 { < ;. _2 header , LF
 )
-
+ 
 getLocalDatabaseHash =: {{
 if. isDatabaseOpen '' do.
 	, > > {: sqlreadm__db 'select value from admin where key = "Hash"' 
