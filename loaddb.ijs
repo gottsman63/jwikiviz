@@ -132,7 +132,7 @@ try.
 	end.
 	content =. y , ' ' , (translateHtmlEncodings problem) , ' ' , translateToJEnglish translateHtmlEncodings jSolution
 	filename =. ' '
-	url ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; ' ' ; content
+	(url , '#J') ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; ' ' ; content
 catch. catchd.
 	smoutput (13!:12) ''
 	a:

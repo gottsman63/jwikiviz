@@ -719,7 +719,20 @@ TimerCount =: TimerCount + y
 
 FrameCounter =: 0
 
+FrameTimeQueue =: (6!:1) ''
+
+frame =: {{
+now =. (6!:1) ''
+if. 0 < +/ 1 < now - FrameTimeQueue do.
+	1 log 'fps ' , ": # FrameTimeQueue
+	FrameTimeQueue =: now
+else.
+	FrameTimeQueue =: FrameTimeQueue , now
+end.
+}}
+
 sys_timer_z_ =: {{
+NB. frame_jwikiviz_ ''
 wd 'psel vizform'
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
 fps =. <. 1000 % TimerFractionMsec_jwikiviz_
@@ -2743,8 +2756,11 @@ try.
 	end.
 	buildForm ''
 	layoutForm ''
-	wd 'pshow fullscreen'
+	'w h' =. 2 3 { ". wd 'qscreen'
+NB.	wd 'pshow fullscreen'
+	wd 'pshow'
 	wd 'msgs'
+	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	animate 10
 	wd 'timer ' , ": TimerFractionMsec
