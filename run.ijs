@@ -1238,7 +1238,8 @@ heights =. (# strings) {. (windowStartIndex # squishedLineHeight) , (window # To
 ys =. <. }: +/\ 0 , heights
 heights =. <. heights
 origins =. <. (margin + xx) ,. 5 + yy + ys
-glrgb LabelColor
+NB. glrgb LabelColor
+glrgb BackgroundColor
 gltextcolor ''
 glpen 1
 glrgb BackgroundColor
@@ -1954,20 +1955,21 @@ monthIndexes =. > ~. 1 {"1 ForumCacheTable #~ TocEntryForumYear = yyyy =. > {."1
 ForumMonthStrings =: monthIndexes { ShortMonths
 if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEntryForumMonth =: > {: ForumMonthStrings end.
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
-timeLineHeight =. 20
+timeLineSeparation =. TocLineHeight
+timeLineHeight =. <. TocLineHeight * 0.8
 yearWidth =. 30
 yearOrigins =. (xx + margin + yearWidth * i. # years) ,. yy + margin
-monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + 45 * i.12) ,. yy + margin + timeLineHeight
+monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + 45 * i.12) ,. yy + margin + timeLineSeparation
 yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
 gltextcolor ''
 glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthOrigins drawStringAt &. > ForumMonthStrings
-rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) yearWidth , TocLineHeight) 
+rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) yearWidth , timeLineHeight) 
 yearCommands =: '*setTocEntryForumYear '&, &. > ": &. > <"0 years
 rects1 registerRectLink &. > <"1 yearCommands ,"0 1 ' ' ; 1
-rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , TocLineHeight) 
+rects2 =. (<"1 monthRects =. (_2 + > monthOrigins) ,"(1 1) 40 , timeLineHeight) 
 monthCommands =. '*setTocEntryForumMonth '''&, &. > ": &. > ,&'''' &. > ForumMonthStrings
 rects2 registerRectLink &. > <"1 monthCommands ,"0 1 ' ' ; 1
 ((years i. TocEntryForumYear) { yearRects) drawHighlight SelectionColor
