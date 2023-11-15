@@ -355,7 +355,10 @@ wd       'cc wikiSearchMenu combolist;'
 wd       'cc liveAgeLabel static'
 wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
-wd     'cc vocContext isidraw'
+wd     'bin h;'
+wd       'cc tocList listbox;'
+wd       'cc vocContext isidraw'
+wd     'bin z'
 wd   'bin z;'
 wd   'bin v;'
 wd     'bin h;'
@@ -389,14 +392,15 @@ winW =. w NB. - 40
 winH =. h - 45
 controlHeight =. 30
 vocContextHeight =. winH >. 760
+tocListWidth =. 175
 if. 0.1 < | LayoutRatioTarget - LayoutRatio do.
 	sgn =. * LayoutRatioTarget - LayoutRatio
 	LayoutRatio =: LayoutRatio + sgn * 0.1 <. | LayoutRatioTarget - LayoutRatio
 else.
 	LayoutRatio =: LayoutRatioTarget
 end.
-vocContextWidth =. <. winW * LayoutRatio
-browserWidth =. winW - vocContextWidth
+vocContextWidth =. <. (winW - tocListWidth) * LayoutRatio
+browserWidth =. winW - vocContextWidth + tocListWidth
 wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
 wd 'set fontSlider maxwh ' , (": (<. vocContextWidth * 0.15) , controlHeight) , ';'
 wd 'set searchStatic maxwh ' , (": (<. vocContextWidth * 0.06) , controlHeight) , ';'
@@ -419,6 +423,7 @@ wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
 wd 'set liveAge maxwh ' , (": (-: vocContextWidth - 340) , controlHeight) , ';'
 
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
+wd 'set tocList maxwh ' , (": tocListWidth , vocContextHeight) , ';'
 
 wd 'set bookmark maxwh ' , (": 100, controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
@@ -449,6 +454,7 @@ try.
 	wd 'set wikiSearchMenu enable ' , flag
 	wd 'set liveAgeLabel enable ' , flag
 	wd 'set liveAge enable ' , flag
+	wd 'set tocList enable ' , flag
 NB.	wd 'set vocContext enable ' , flag
 	wd 'set bookmark enable ' , flag
 	wd 'set history enable ' , flag
@@ -634,6 +640,12 @@ vizform_vocContext_paint =: 3 : 0
 trigger_paint ''
 )
 
+vizform_tocList_select =: {{
+items =. < ;. _2 (wd 'get tocList allitems') , LF
+index =. items i. < tocList
+setTocOutlineRailSelectedIndex index
+}}
+
 vizform_browser_mmove =: 3 : 0
 clearQueuedUrl ''
 setLayoutRatioBrowser ''
@@ -767,15 +779,12 @@ TimerCount =: 0
 
 wd 'timer 0'
 
-DisplayListRectTargetWidth =: 175
-DisplayListRectSourceWidth =: 20
-DisplayListRectAnimationStartTime =: 0
-
 setDisplayRects =: 3 : 0
 'w h' =. ". wd 'get vocContext wh'
 log 'setDisplayRects vocContext wh: ' , ": w , h
 DisplayListRect =: 0 0 175 , h
-DisplayDetailRect =: 175 0 , (w - 175) , h
+NB. DisplayDetailRect =: 175 0 , (w - 175) , h
+DisplayDetailRect =: 0 0 , w , h
 )
 
 trigger_paint =: 3 : 0
@@ -2193,6 +2202,7 @@ NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 queueUrl (> 6 { entry) ; > 3 { entry
+animate 1
 )
 
 setTocRailHoverIndex =: 3 : 0
@@ -2229,25 +2239,14 @@ NB. (x y width height) drawScrollerField strings ; links ; ratios ; headingFlags
 log 'drawTocRail ' , (": x) , ', ' , ": y
 'xx yy width height' =. x
 entries =. 1 getTocOutlineRailEntries y NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
-levels =. (] - <./) > 0 {"1 entries
-maxCount =. >./ > 4 {"1 entries
-indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
-linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
-NB. parms =. indentStrings ; linkCommands ; (maxCount %~ > 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 0
-parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1 ; 'setTocRailHoverIndex'
-TocOutlineRailScrollIndex =: x drawScrollerField parms
+NB. levels =. (] - <./) > 0 {"1 entries
+NB. maxCount =. >./ > 4 {"1 entries
+NB. indentStrings =. (#&'  ' &. > <: &. > 0 {"1 entries) , &. > 3 {"1 entries
+NB. linkCommands =. '*setTocOutlineRailSelectedIndex '&, &. > ": &. > <"0 i. # entries
+NB. parms =. indentStrings ; linkCommands ; (> 5 {"1 entries) ; levels ; TocOutlineRailSelectedIndex ; TocOutlineRailScrollIndex ; 1 ; 'setTocRailHoverIndex'
+NB. TocOutlineRailScrollIndex =: x drawScrollerField parms
 if. 200 > 2 { DisplayDetailRect do. return. end.
 (TocOutlineRailSelectedIndex { entries) drawTocRailChildren DisplayDetailRect
-return.
-if. (VocMouseXY pointInRect x) *. TocOutlineRailHoverIndex ~: TocOutlineRailSelectedIndex do.
-	delta =. 0 0 0 0 NB. 30 30 _60 _60
-	glrgba 0 0 0 64
-	glbrush ''
-	glpen 0
-	glrect DisplayDetailRect + delta + 10 10 0 0
-	(TocOutlineRailHoverIndex { entries) drawTocRailChildren DisplayDetailRect + delta
-	if. 0 ~: TocOutlineRailHoverIndex do. (DisplayDetailRect + delta) drawHighlight HoverColor end.
-end.
 )
 
 drawToc =: 3 : 0
@@ -2263,6 +2262,15 @@ TocWikiDocsCategory =: ''
 TocWikiDocsEntries =: ''
 
 visitedRailEntries =: '' NB. Boxed IDs.
+
+initializeTocList =: {{
+NB. y A level of the Toc hierarchy to which to display
+entries =. 1 getTocOutlineRailEntries y NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
+indentStrings =. (#&'  ' &. > 0 {"1 entries) , &. > 3 {"1 entries
+tocCounts =. _3&{. &. > '000'&, &. > ": &. > 0&>. &. > 5 {"1 entries
+tocListItems =. ,&'"' &. > '"'&, &. > tocCounts , &. > indentStrings
+wd 'set tocList items ' , ; tocListItems
+}}
 
 recurseGetTocOutlineRailEntries =: 4 : 0
 NB. x A parent id
@@ -2766,6 +2774,7 @@ NB.	wd 'pshow fullscreen'
 	wd 'msgs'
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
+	initializeTocList MaxTocDepth
 	animate 10
 	wd 'timer ' , ": TimerFractionMsec
 catch. catcht.
