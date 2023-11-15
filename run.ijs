@@ -2200,6 +2200,7 @@ setTocOutlineRailSelectedIndex index
 setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
+wd 'set tocList select ' , ": y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 queueUrl (> 6 { entry) ; > 3 { entry
 animate 1
