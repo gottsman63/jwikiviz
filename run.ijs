@@ -332,7 +332,7 @@ wd 'pn *' , caption
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
-wd       'cc closeButton button; cn *X'
+NB. wd       'cc closeButton button; cn *X'
 wd       'cc fontSlider slider 2 1 1 1 9 3'
 wd       'cc searchStatic static; cn *Phrase:'
 wd       'cc searchBox edit;'
@@ -399,20 +399,21 @@ if. 0.1 < | LayoutRatioTarget - LayoutRatio do.
 else.
 	LayoutRatio =: LayoutRatioTarget
 end.
-vocContextWidth =. <. (winW - tocListWidth) * LayoutRatio
-browserWidth =. winW - vocContextWidth + tocListWidth
-wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
-wd 'set fontSlider maxwh ' , (": (<. vocContextWidth * 0.15) , controlHeight) , ';'
-wd 'set searchStatic maxwh ' , (": (<. vocContextWidth * 0.06) , controlHeight) , ';'
-wd 'set searchBox maxwh ' , (": (<. vocContextWidth * 0.35) , controlHeight) , ';'
-wd 'set searchWordsStatic maxwh ' , (": (<. vocContextWidth * 0.05) , controlHeight) , ';'
-wd 'set searchBoxWords maxwh ' , (": (<. vocContextWidth * 0.35) , controlHeight) , ';'
+leftWidth =. winW * LayoutRatio
+vocContextWidth =. <. leftWidth - tocListWidth
+browserWidth =. winW - leftWidth
+NB. wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
+wd 'set fontSlider maxwh ' , (": (<. leftWidth * 0.18) , controlHeight) , ';'
+wd 'set searchStatic maxwh ' , (": (<. leftWidth * 0.06) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (<. leftWidth * 0.35) , controlHeight) , ';'
+wd 'set searchWordsStatic maxwh ' , (": (<. leftWidth * 0.05) , controlHeight) , ';'
+wd 'set searchBoxWords maxwh ' , (": (<. leftWidth * 0.35) , controlHeight) , ';'
 
-wd 'set shortcut maxwh ' ,  , (": (<. vocContextWidth * 0.12) , controlHeight) , ';'
-wd 'set logcheck maxwh ' , (": (<. vocContextWidth * 0.12) , controlHeight) , ';'
-wd 'set snapshotLog maxwh ' ,  (": (<. vocContextWidth * 0.1) , controlHeight) , ';'
-wd 'set dbUpdate maxwh ' , (": (<. vocContextWidth * 0.4) , controlHeight) , ';'
-wd 'set appUpdate maxwh ' , (": (<. vocContextWidth * 0.30) , controlHeight) , ';'
+wd 'set shortcut maxwh ' ,  , (": (<. leftWidth * 0.12) , controlHeight) , ';'
+wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
+wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.1) , controlHeight) , ';'
+wd 'set dbUpdate maxwh ' , (": (<. leftWidth * 0.4) , controlHeight) , ';'
+wd 'set appUpdate maxwh ' , (": (<. leftWidth * 0.30) , controlHeight) , ';'
 
 wd 'set liveForum maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
@@ -420,7 +421,7 @@ wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
 wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set wikiSearchMenu maxwh ' , (": (-: vocContextWidth - 350) , controlHeight) , ';'
 wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (-: vocContextWidth - 340) , controlHeight) , ';'
+wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
 
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 wd 'set tocList maxwh ' , (": tocListWidth , vocContextHeight) , ';'
