@@ -1506,11 +1506,11 @@ end.
 performLiveSearch =: 3 : 0
 NB. y A SQL statement
 try.
+	1 log 'performLiveSearch: ' , y
 	LiveSearchRawResult =: ''
 	dbOpenDb ''
 	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
-NB.	LiveSearchRawResult =: > {: sqlreadm__db y
-	1 log '...performLiveSearch sqlreadm: ' , (": # LiveSearchRawResult) , '...time: ' , ": time
+	1 log '...' , (": # LiveSearchRawResult) , 'result(s) in ' , (": time) , ' sec.'
 catch.
 1 log 'Live Search problem: ' , (13!:12) ''
 1 log 'DB Error (if any): ' , dbError ''
