@@ -76,7 +76,7 @@ animate 5
 updateAppVersion =: 3 : 0
 log 'updateAppVersion'
 dbCloseDb ''
-wd 'set appUpdate caption *Updating the add-on...'
+wd 'set appUpdate caption *Updating the J Viewer...'
 wd 'msgs'
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
@@ -392,7 +392,7 @@ winW =. w NB. - 40
 winH =. h - 45
 controlHeight =. 30
 vocContextHeight =. winH >. 760
-tocListWidth =. 175
+tocListWidth =. 200
 if. 0.1 < | LayoutRatioTarget - LayoutRatio do.
 	sgn =. * LayoutRatioTarget - LayoutRatio
 	LayoutRatio =: LayoutRatio + sgn * 0.1 <. | LayoutRatioTarget - LayoutRatio
@@ -863,7 +863,7 @@ TocFont =: 'arial 13'
 LiveSearchFont =: 'courier 16'
 TocLineHeight =: 25
 TocScrollIndex =: 0
-MaxTocDepth =: 3
+MaxTocDepth =: 8
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
 DisplayDirtyFlag =: 1
@@ -1948,13 +1948,14 @@ if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 if. -. ForumCurrentName -: x do. resetForumCache x end.
 margin =. 5
 glclip 0 0 10000 100000
+glfont SectionFont
 glrgb 0 0 0
 glpen 1
 glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 colWidth =. <. -: width - +: margin
-dateHeight =. 50
+dateHeight =. 2 * TocLineHeight
 colHeight =. height - dateHeight
 subjRect =. (xx + margin) , (yy + dateHeight) , colWidth, colHeight
 authRect =. subjRect + (colWidth + margin) , 0 0 0
@@ -1967,13 +1968,13 @@ if. (# ForumMonthStrings) = ForumMonthStrings i. < TocEntryForumMonth do. TocEnt
 monthIndex =. ForumMonthStrings i. < TocEntryForumMonth
 timeLineSeparation =. TocLineHeight
 timeLineHeight =. <. TocLineHeight * 0.8
-yearWidth =. 30
+yearWidth =. 5 + {. glqextent '"23'
+monthWidth =. 5 + {. glqextent 'MMM'
 yearOrigins =. (xx + margin + yearWidth * i. # years) ,. yy + margin
-monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + 45 * i.12) ,. yy + margin + timeLineSeparation
+monthOrigins =. (# ForumMonthStrings) {. <"1 (xx + margin + monthWidth * i.12) ,. yy + margin + timeLineSeparation
 yearStrings =: '`',. _2 {."1 ": ,.years
 glrgb SectionColor
 gltextcolor ''
-glfont SectionFont
 yearOrigins drawStringAt"1 1 > ": &. > <"0 yearStrings
 monthOrigins drawStringAt &. > ForumMonthStrings
 rects1 =. (<"1 yearRects =. (yearOrigins -"(1 1) _2 2) ,"(1 1) yearWidth , timeLineHeight) 
