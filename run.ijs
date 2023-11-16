@@ -15,7 +15,6 @@ NB. Try 1280 for the minimum monitor width.
 NB. *** A Items ***
 NB. Test initial installation.  
 NB. Suppress <pre>
-NB. Wiki documentation page.
 
 NB. *** B Items ***
 NB. Better reporting from the jwikiviz.db creation task.  How many retrieved, how many in the tables, etc.
@@ -377,6 +376,7 @@ wd   'bin z;'
 wd 'bin z;'
 wd 'set snapshotLog visible 1'
 wd 'set loadPost font arial 14 bold'
+wd 'set tocList font Arial 14'
 )
 
 LayoutForumPostLoadButtonEnable =: 0
@@ -2269,8 +2269,8 @@ visitedRailEntries =: '' NB. Boxed IDs.
 initializeTocList =: {{
 NB. y A level of the Toc hierarchy to which to display
 entries =. 1 getTocOutlineRailEntries y NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
-indentStrings =. (#&'  ' &. > 0 {"1 entries) , &. > 3 {"1 entries
-tocCounts =. _3&{. &. > '000'&, &. > ": &. > 0&>. &. > 5 {"1 entries
+indentStrings =. (#&'  ' &. > 0 {"1 entries) , &. > 3 {"1 entries NB. Indents for level
+tocCounts =. _3&{. &. > '___'&, &. > ":`(''"_) @. (=&0) &. > 0&>. &. > 5 {"1 entries
 tocListItems =. ,&'"' &. > '"'&, &. > tocCounts , &. > indentStrings
 wd 'set tocList items ' , ; tocListItems
 }}
