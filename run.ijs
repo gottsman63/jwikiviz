@@ -1545,7 +1545,7 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 25) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 100'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 100'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -1630,13 +1630,13 @@ if. 0 = # code do. '' return. end.
 if. 0 = +/ map =. term E. code do. '' return. end.
 fragments =. (1 , }. map) < ;. 1 code
 firstFragment =. > {. fragments
-ol =. {: lineNumberPat rxmatch firstFragment  NB. Grab the last match offset/length.
+ol =. , {: lineNumberPat rxmatches firstFragment  NB. Grab the last match offset/length.
 if. _1 < {. ol do.
 	'#L' ,  }: }. ({: ol) {. ({. ol) }. > firstFragment
 	return.
 end.
 secondFragment =. > 1 { fragments
-ol =. {. lineNumberPat rxmatch secondFragment
+ol =. , {. lineNumberPat rxmatch secondFragment
 if. _1 < {. ol do.
 	'#L' ,  ": <: ". }: }. ({: ol) {. ({. ol) }. > secondFragment
 	return.
