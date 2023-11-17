@@ -139,7 +139,6 @@ catch. catchd.
 	return.
 end.
 }}
-NB. masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body'
 
 updateMasterDbWithRosettaCode =: {{
 createOrOpenMasterDb ''
@@ -201,17 +200,15 @@ try.
 	contents =. translateToJEnglish &. > rawContents =. <@(1!:1)"0 filenames
 	urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
 	for_i. i. # urls do.
-		content =. i { contents
-		rawContent =. i { rawContents
+		lines =. < ;. 2 (> i { contents) , LF
+		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
+		content =. ; lineNumbers ,. lines
 		url =. i { urls
 		filename =. i { filenames
 		subject =. '[GitHub] ' , project , ': ' , (('^.*/' , project, '/[^/]+/') ; '') rxrplc > filename
 		data =. url ; filename ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
 		sqlinsert__masterDb 'content' ; masterCols ; < data
-		gitHubContent =: gitHubContent , ; ((< project) , url , rawContent) ,. < sep
 	end.
-NB.	data =. urls ; filenames ; ((<project) #~ # urls) ; ((< 'G') #~ # urls) ; (9999 #~ # urls) ; (0 #~ # urls) ; (0 #~ # urls) ; filenames ; filenames ; < contents
-NB.	sqlinsert__masterDb 'content' ; masterCols ; < data
 catch.
 	smoutput (13!:12) ''
 	smoutput sqlerror__masterDb ''
@@ -236,8 +233,6 @@ whilst. 0 < # ol do.
 	page =. >: page
 	smoutput 'page' ; page
 end.
-sqlinsert__db 'github' ; (;: 'content') ; < gitHubContent
-smoutput 'updateMasterDbWithGitHubProjects size: ' ; ": # gitHubContent
 )
 NB. ========================== End Crawling GitHiub ====================================
 

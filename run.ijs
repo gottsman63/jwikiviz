@@ -1510,7 +1510,7 @@ try.
 	LiveSearchRawResult =: ''
 	dbOpenDb ''
 	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
-	1 log '...' , (": # LiveSearchRawResult) , 'result(s) in ' , (": time) , ' sec.'
+	1 log '...' , (": # LiveSearchRawResult) , ' result(s) in ' , (": time) , ' sec.'
 catch.
 1 log 'Live Search problem: ' , (13!:12) ''
 1 log 'DB Error (if any): ' , dbError ''
@@ -1545,7 +1545,7 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 15) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 100'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 25) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 100'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -1575,7 +1575,11 @@ try.
 	end.
 	snippets =. 4 {"1 result
 	sources =. {. &. > 3 {"1 result
-	results =. (titles =. 0 {"1 result) ,. snippets ,. (links =. 1 {"1 result) ,. (years =. 2 {"1 result) ,. sources
+	if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
+
+	lineLabels =. highlightString&extractLineLabel &. > translateToJ &. > snippets
+	links =. (1 {"1 result) , &. > lineLabels
+	results =. (titles =. 0 {"1 result) ,. snippets ,. links ,. (years =. 2 {"1 result) ,. sources
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
 	LiveSearchResults =: results
 	categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
@@ -1613,6 +1617,32 @@ hits =. jMnemonics i."1 0 rawTokens
 string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 string
 )
+
+lineNumberPat =: rxcomp '_\d+_'
+
+extractLineLabel =: {{
+NB. x A search term from Live Search.
+NB. y A code fragment from Live Search possibly including embedded line numbers.
+NB. Return the line number # label on which the code fragment appears or '' if there is no line number.
+term =. x -. ' '
+code =. y -. ' '
+if. 0 = # code do. '' return. end.
+if. 0 = +/ map =. term E. code do. '' return. end.
+fragments =. (1 , }. map) < ;. 1 code
+firstFragment =. > {. fragments
+ol =. {: lineNumberPat rxmatch firstFragment  NB. Grab the last match offset/length.
+if. _1 < {. ol do.
+	'#L' ,  }: }. ({: ol) {. ({. ol) }. > firstFragment
+	return.
+end.
+secondFragment =. > 1 { fragments
+ol =. {. lineNumberPat rxmatch secondFragment
+if. _1 < {. ol do.
+	'#L' ,  ": <: ". }: }. ({: ol) {. ({. ol) }. > secondFragment
+	return.
+end.
+''
+}}
 
 drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
@@ -1661,31 +1691,29 @@ try.
 	snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
 	titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
 
+	if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
+
 	sieve =. sources = <'W'
 	glclip xx , yy , colWidth , height
-	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < WikiColor
+	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < WikiColor
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	sieve =. sources = <'F'
 	glclip xx , yy , colWidth , height
-	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < ForumColor
+	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < ForumColor
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	sieve =. sources = <'G'
 	glclip xx , yy , colWidth , height
-	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < GitHubColor
+	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < GitHubColor
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	sieve =. sources = <'R'
 	glclip xx , yy , colWidth , height
-	NB. (<"1 sieve # snippetOrigins) drawStringAt &. > sieve # snippets
-	(<"1 (sieve # snippetOrigins) ,"(1 1) 10 , TocLineHeight) drawCodeWithHighlights"0 1 (< searchBox) ,. (sieve # snippets) ,. < RosettaColor
+	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < RosettaColor
 	glclip (xx + 5 + colWidth) , yy , colWidth , height
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
@@ -1785,17 +1813,23 @@ drawCodeWithHighlights =: {{
 NB. x xx yy width height
 NB. y term ; code ; code color
 NB. "Term" is the search term, which may have spaces.  The code may have spaces
-NB. Matched tokens should be rendered in reverse video
+NB. Matched tokens should be rendered with an underscore
+NB. Remove any embedded line numbers, e.g., _987_
+NB. Insofar as possible, center the matched term.
 if. y -: a: do. '' return. end.
 'xx yy width height' =. > x
 'term code color' =. y
 if. 0 = # code -. ' ' do. '' return. end.
+code =. ('_\d+_' ; '') rxrplc code
 term =. term -. ' '
 codeWithSpaces =. (code ~: ' ') < ;.1 code
 highlightIndices =. , (i. # term) +"1 0 I. term E. code -. ' '
 highlightFlags =. (1) highlightIndices } (# codeWithSpaces) # 0
 lengths =. > {.@glqextent &. > codeWithSpaces
-offsets =. xx + }: 0 , +/\ lengths
+rawOffsets =. }: 0 , +/\ lengths
+maxLeftSlide =. 0 >. (+/ lengths) - width
+leftSlide =. (({. highlightIndices) { rawOffsets) - -: width
+offsets =. <. (xx - leftSlide) + rawOffsets
 for_i. i. # codeWithSpaces do.
 	fragment =. > i { codeWithSpaces
 	offset =. i { offsets
@@ -2750,6 +2784,7 @@ NB.	initAdmin ''
 	version =. manifest_version (1!:1) < jpath addonPath
 	caption =. 'J Viewer ' , version , ' (Crawl Datetime: ' , datetime , ')'
 	wd 'pn *' , caption
+	initializeTocList MaxTocDepth
 catch.
 	1 log 'initializeWithDatabase Problem: ' , (13!:12) ''
 	1 log 'initializeWithDatabase Database error (if any): ' , dbError ''
@@ -2777,7 +2812,7 @@ NB.	wd 'pshow fullscreen'
 	wd 'msgs'
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
-	initializeTocList MaxTocDepth
+NB.	initializeTocList MaxTocDepth
 	animate 10
 	wd 'timer ' , ": TimerFractionMsec
 catch. catcht.
