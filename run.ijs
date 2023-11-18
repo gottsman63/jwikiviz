@@ -1630,7 +1630,7 @@ if. 0 = # code do. '' return. end.
 if. 0 = +/ map =. term E. code do. '' return. end.
 termIndex =. {. term I.@E. code
 pageOLs =. ,/ (rxcomp '_\d+_') rxmatches code
-if. '' -: pageOLs do. '' return. end.
+if. 0 = # pageOLs do. '' return. end.
 pageOffsets =. {."1 pageOLs
 pageIndex =. {. /: | pageOffsets - termIndex
 ol =. , pageIndex { pageOLs
