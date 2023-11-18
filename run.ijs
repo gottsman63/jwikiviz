@@ -1129,6 +1129,7 @@ try.
 	'windowWidth windowHeight' =. y
 	if. 0 = # FloatingString do. return. end.
 	'string font textColor' =. FloatingString
+	string =. ('_\d+_' ; '') rxrplc string  NB. Remove any stray embedded line numbers (used in GitHub Live Search).
 	glfont font
 	glrgb BackgroundColor
 	glbrush ''
@@ -1545,7 +1546,7 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 100'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -1573,6 +1574,7 @@ try.
 		1 NB. Fake rattleResult indicating that we're done with the query.
 		return.
 	end.
+	result =. result /: 'test'&E. &. > (1 {"1 result) NB. Sort 'test' files last
 	snippets =. 4 {"1 result
 	sources =. {. &. > 3 {"1 result
 	if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
@@ -1618,8 +1620,6 @@ string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 string
 )
 
-lineNumberPat =: rxcomp '_\d+_'
-
 extractLineLabel =: {{
 NB. x A search term from Live Search.
 NB. y A code fragment from Live Search possibly including embedded line numbers.
@@ -1628,20 +1628,15 @@ term =. x -. ' '
 code =. y -. ' '
 if. 0 = # code do. '' return. end.
 if. 0 = +/ map =. term E. code do. '' return. end.
-fragments =. (1 , }. map) < ;. 1 code
-firstFragment =. > {. fragments
-ol =. , {: lineNumberPat rxmatches firstFragment  NB. Grab the last match offset/length.
-if. _1 < {. ol do.
-	'#L' ,  }: }. ({: ol) {. ({. ol) }. > firstFragment
-	return.
-end.
-secondFragment =. > 1 { fragments
-ol =. , {. lineNumberPat rxmatch secondFragment
-if. _1 < {. ol do.
-	'#L' ,  ": <: ". }: }. ({: ol) {. ({. ol) }. > secondFragment
-	return.
-end.
-''
+termIndex =. {. term I.@E. code
+pageOLs =. ,/ (rxcomp '_\d+_') rxmatches code
+if. '' -: pageOLs do. '' return. end.
+pageOffsets =. {."1 pageOLs
+pageIndex =. {. /: | pageOffsets - termIndex
+ol =. , pageIndex { pageOLs
+pageNumber =. ". }. }: ({: ol) {. ({. ol) }. code
+if. termIndex < {. ol do. pageNumber =. <: pageNumber end.
+'#L' , ": pageNumber
 }}
 
 drawTocEntryLiveSearch =: 3 : 0
@@ -1720,7 +1715,7 @@ try.
 	glclip 0 0 10000 100000
 	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
 	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
-	
+	return.
 	textColors =. WikiColor , ForumColor  , RosettaColor ,: GitHubColor
 	if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
 		title =. > titleIndex { titles
