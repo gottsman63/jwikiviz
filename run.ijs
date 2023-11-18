@@ -51,7 +51,7 @@ NB. _1 if we're checking for a new version.
 NB. 0 if the app is out of date.
 NB. 1 if the app is up to date.
 NB. 2 if we failed to get a remote version number.
-0 log 'asyncCheckAppUpToDate'
+1 log 'asyncCheckAppUpToDate'
 AppUpToDate =: _1
 try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
@@ -68,7 +68,7 @@ NB.		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-reva
 catch.
 	AppUpToDate =: 0
 end.
-0 log '...AppUpToDate = ' , ": AppUpToDate
+1 log '...AppUpToDate = ' , ": AppUpToDate
 animate 5
 )
 
@@ -759,7 +759,11 @@ try.
 if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
 	checkWhetherNewDatabaseHasArrived_jwikiviz_ ''
 	setUpdateButtons_jwikiviz_ ''
-end.  
+end.
+if. 0 = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
+	asyncCheckAppUpToDate_jwikiviz_ t. 'worker' ''
+	asyncCheckForNewerDatabase_jwikiviz_ t. 'worker' ''
+end.
 catch.
 end.
 if. 0 = TimerCount_jwikiviz_ do. return. end.
