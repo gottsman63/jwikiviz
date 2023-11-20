@@ -507,6 +507,7 @@ VocValenceFont =: 'arial ' , ": 12 + FontAdjustment
 CountFont =: 'arial ' , ": 15 + FontAdjustment
 LiveSearchFont =: 'arial ' , ": 16 + FontAdjustment
 SectionFont =: 'arial bold ' , ": 16 + FontAdjustment
+wd 'set tocList font Arial ' , ": 14 + FontAdjustment
 CellLineHeight =: <. TocLineHeight * 0.8
 'FontSlider' setKeyValue ": y
 invalidateDisplay ''
