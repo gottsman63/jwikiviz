@@ -434,7 +434,7 @@ wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
-setUpdateButtons ''
+NB. setUpdateButtons ''  NB. This turns out to be a significant drag on frame rate.  Do not do it.
 setControlVisibility isDatabaseOpen ''
 )
 
