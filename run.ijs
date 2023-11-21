@@ -2805,6 +2805,7 @@ try.
 	end.
 	buildForm ''
 	layoutForm ''
+	setUpdateButtons ''
 	'w h' =. 2 3 { ". wd 'qscreen'
 NB.	wd 'pshow fullscreen'
 	wd 'pshow'
