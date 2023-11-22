@@ -1826,23 +1826,19 @@ highlightIndices =. , (i. # term) +"1 0 I. term E. code -. ' '
 highlightFlags =. (1) highlightIndices } (# codeWithSpaces) # 0
 lengths =. > {.@glqextent &. > codeWithSpaces
 rawOffsets =. }: 0 , +/\ lengths
-maxLeftSlide =. 0 >. (+/ lengths) - width
-leftSlide =. (({. highlightIndices) { rawOffsets) - -: width
+NB. maxLeftSlide =. 0 >. (+/ lengths) - width
+if. 0 < # highlightIndices do. leftSlide =. (({. highlightIndices) { rawOffsets) - -: width else. leftSlide =. 0 end.
 offsets =. <. (xx - leftSlide) + rawOffsets
-for_i. i. # codeWithSpaces do.
-	fragment =. > i { codeWithSpaces
-	offset =. i { offsets
-	if. i { highlightFlags do.
-		glrgb 0 0 0
-		glbrush ''
-		glpen ''
-		glrect offset, (yy + height - <. TocLineHeight * 0.3), (i { lengths) , 4
-	else.
-		glrgb color
-		gltextcolor ''
-	end.
-	(offset, yy) drawStringAt fragment
-end.
+glrgb color
+gltextcolor ''
+((0 { offsets) , yy) drawStringAt ; codeWithSpaces
+highlightOffsets =. highlightFlags # offsets
+highlightLengths =. highlightFlags # lengths
+highlightRects =. highlightOffsets ,"0 1 (yy + height - <. TocLineHeight * 0.3) ,"0 1 highlightLengths ,. 4
+glrgb 0 0 0
+glbrush ''
+glpen ''
+glrect"1 highlightRects
 ''
 }}
 
