@@ -553,6 +553,7 @@ vizform_showBookmarks_button =: {{
 ShowBookmarksFlag =: showBookmarks = '1'
 clearCache ''
 initializeTocList MaxTocDepth
+'ShowBookmarks' setKeyValue showBookmarks
 }}
 
 vizform_closeButton_button =: {{
@@ -804,6 +805,7 @@ try.
 	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
 	layoutForm_jwikiviz_ ''
 	trigger_paint_jwikiviz_ ''
+	setShowBookmarks_jwikiviz_ ''
 catch.
 	smoutput (13!:12) ''
 	smoutput dbError_jwikiviz_ ''
@@ -2793,6 +2795,19 @@ FrameTimeStamps =: (t =. (6!:1) '' ) , FrameTimeStamps
 fps =. # FrameTimeStamps =: FrameTimeStamps #~ (t - 1) < FrameTimeStamps
 )
 
+setShowBookmarks =: {{
+NB. Pull the ShowBookmarks value from the key-value table and set the ShowBookmarksFlag.
+NB. Note that this only needs to be called once but if you call it too early, the world ends.
+NB. Therefore, it gets called (repeatedly) from the timer handler, which happens late enough to be safe.
+flag =. ". '0' getKeyValue 'ShowBookmarks'
+if. flag ~: ShowBookmarksFlag do.
+	wd 'set showBookmarks value ' , flag { '01'
+	ShowBookmarksFlag =: flag
+	clearCache ''
+	initializeTocList MaxTocDepth
+end.
+}}
+
 manageLoad =: 3 : 0
 try. wd 'pclose' catch. end.
 )
@@ -2845,6 +2860,7 @@ try.
 	wd 'pshow'
 	wd 'msgs'
 	setLiveSearchSourceFlagButtons ''
+NB.	vizform_showBookmarks_button ''
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	animate 10
