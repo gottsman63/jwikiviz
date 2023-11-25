@@ -484,6 +484,13 @@ catch.
 end.
 }}
 
+setLiveSearchSourceFlagButtons =: {{
+wd 'set liveForum value 1'
+wd 'set liveGitHub value 1'
+wd 'set liveWiki value 1'
+wd 'set liveRosetta value 1'
+}}
+
 MinScreenWidth =: 1500
 
 setLayoutRatioBrowser =: 3 : 0
@@ -2838,6 +2845,7 @@ try.
 NB.	wd 'pshow fullscreen'
 	wd 'pshow'
 	wd 'msgs'
+	setLiveSearchSourceFlagButtons ''
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 NB.	initializeTocList MaxTocDepth
