@@ -355,7 +355,10 @@ wd       'cc liveAgeLabel static'
 wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
 wd     'bin h;'
-wd       'cc tocList listbox;'
+wd       'bin v;'
+wd         'cc showBookmarks checkbox; cn *Show Bookmarks'
+wd         'cc tocList listbox;'
+wd       'bin z'
 wd       'cc vocContext isidraw'
 wd     'bin z'
 wd   'bin z;'
@@ -523,6 +526,12 @@ dbCloseDb ''
 wd 'timer 0'
 wd 'pclose'
 )
+
+vizform_showBookmarks_button =: {{
+ShowBookmarksFlag =: showBookmarks = '1'
+clearCache ''
+initializeTocList MaxTocDepth
+}}
 
 vizform_closeButton_button =: {{
 vizform_close ''
@@ -810,7 +819,6 @@ try.
 	VocMouseClickXY =: 0 0
 	glclip 0 0 10000 10000
 	glpaint ''
-	DisplayDirtyFlag =: 0
 catcht. catch. 
 	1 log (13!:12) ''
 	1 log dbError ''
@@ -871,7 +879,6 @@ TocScrollIndex =: 0
 MaxTocDepth =: 8
 DisplayListRect =: 10 10 100 100
 DisplayDetailRect =: 100 10 100 100
-DisplayDirtyFlag =: 1
 Months =: ;:'January February March April May June July August September October November December'
 ShortMonths =: ;: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'
 ForumsCatString =: '*Forums'
@@ -891,6 +898,7 @@ PageLoadFreezeRect =: ''
 PageLoadFreezeDuration =: 3
 MWheelOffset =: 0
 LogFlag =: 0
+ShowBookmarksFlag =: 0
 NB. XFileHashLabel =: > IFWGET_wgethttp_ { 'x-file-hash: ' ; 'X-File-Hash: '
 
 getTocFontForLevel =: 3 : 0
@@ -973,6 +981,7 @@ else.
 	sqlinsert__db 'wiki' ; (;: 'title categoryid link') ; < title ; id ; url
 end.
 clearCache ''
+initializeTocList MaxTocDepth
 invalidateDisplay ''
 resetBookmarkButton ''
 )
@@ -2172,9 +2181,9 @@ NB. Use multiple columns if necessary.  If there are too many columns, invoke dr
 NB. getTocOutlineRailEntries returns table of level ; parentid ; categoryid ; category ; parentseq ; count ; link
 log 'drawTocEntryChildren ' , (": x) , ' ' , ": y
 'xx yy width height' =. y
-if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
+NB. if. VocMouseXY pointInRect y do. glcursor IDC_ARROW end.
 margin =. 5
-glrgb 0 0 0
+glrgb 0 32 0
 glpen 1
 glrgb BackgroundColor
 glbrush ''
@@ -2233,7 +2242,7 @@ NB. y The new value of the index
 TocOutlineRailSelectedIndex =: y
 wd 'set tocList select ' , ": y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
-queueUrl (> 6 { entry) ; > 3 { entry
+queueUrl (> 6 { entry) ; > 3 { entry NB. url ; title
 animate 1
 )
 
@@ -2244,7 +2253,9 @@ TocOutlineRailHoverIndex =: y
 
 drawTocRailChildren =: 4 : 0
 NB. x Toc outline rail entry whose children need to be drawn.
+NB. x: level ; parent ; categoryid ; category ; parentseq ; count ; link
 NB. y The rectangle in which to draw.
+log 'drawTocRailChildren'
 entry =. x
 if.  +./ '*NuVoc' E. > 3 { entry do.
 	drawVoc ''
@@ -2322,27 +2333,32 @@ NB. entries =. ({."1 entries) ,. parents ,. 2 3 4 5 {"1 entries
 getTocOutlineRailEntries =: 4 : 0
 NB. x A parent category id
 NB. y Depth to which to go in the TOC hierarchy
-NB. Return level ; parentid ; category ; parentseq ; count ; link
+NB. Return level ; parentid ; categoryId ; category ; parentseq ; count ; link
 NB. Take account of the parentseq number when ordering the entries.
 NB. Terminate cycles.
 log 'getTocOutlineRailEntries ' , (": x) , ', ' , ": y
 dbOpenDb ''
-key =. < (": x) , 'DDD' , ": y
+key =. < (": x) , 'D' , (": ShowBookmarksFlag) , 'D' , ": y
 if. (# TocOutlineRailEntriesCache) > index =. (0 {"1 TocOutlineRailEntriesCache) i. key do.
-	result =. > index { 1 {"1 TocOutlineRailEntriesCache
+	combinedResult =. > index { 1 {"1 TocOutlineRailEntriesCache
 else.
 	visitedRailEntries =: ''
 	result =. > x recurseGetTocOutlineRailEntries y
-NB. 	if. x = 0 do. result =. }. result end.
-	if. 0 = # result do.
-		result =. ''
-	else.
-NB. 		result =. (> tagCatId&~: &. > 1 {"1 rawResult) # rawResult  NB. Drop the child categories of *Tags.
-		TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < result
+	bookmarkResult =. ''
+	if. ShowBookmarksFlag *. x = 1 do.
+		bookmarks =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": getTopCategoryId BookmarkCatString
+		titles =. > {: &. > < ;. _2 &. > ,&'/' &. > 0 {"1 bookmarks
+		if. 0 < # bookmarks do. bookmarkResult =. (< 0) ,. (< 1) ,. (< 10000 + i. # bookmarks) ,. titles ,. (<"0 - i. # bookmarks) ,. (< 0) ,. 1 {"1 bookmarks end.
 	end.
+	if. 0 < # bookmarkResult do. 
+		combinedResult =. bookmarkResult , result
+	else.
+		combinedResult =. result
+	end.
+	TocOutlineRailEntriesCache =: TocOutlineRailEntriesCache , key , < combinedResult
 end.
-log '...(getTocOutlineRailEntries) returning ' , (": # result) , ' results.'
-result
+log '...(getTocOutlineRailEntries) returning ' , (": # combinedResult) , ' results.'
+combinedResult
 )
 
 getTocWikiDocs =: 3 : 0
