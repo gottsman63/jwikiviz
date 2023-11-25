@@ -2369,7 +2369,7 @@ else.
 	bookmarkResult =. ''
 	if. ShowBookmarksFlag *. x = 1 do.
 		bookmarks =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": getTopCategoryId BookmarkCatString
-		titles =. > {: &. > < ;. _2 &. > ,&'/' &. > 0 {"1 bookmarks
+		titles =. ' >'&, &. > > {: &. > < ;. _2 &. > ,&'/' &. > 0 {"1 bookmarks
 		if. 0 < # bookmarks do. bookmarkResult =. (< 0) ,. (< 1) ,. (< 10000 + i. # bookmarks) ,. titles ,. (<"0 - i. # bookmarks) ,. (< 0) ,. 1 {"1 bookmarks end.
 	end.
 	if. 0 < # bookmarkResult do. 
@@ -2842,15 +2842,14 @@ try.
 	layoutForm ''
 	setUpdateButtons ''
 	'w h' =. 2 3 { ". wd 'qscreen'
-NB.	wd 'pshow fullscreen'
 	wd 'pshow'
 	wd 'msgs'
 	setLiveSearchSourceFlagButtons ''
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
-NB.	initializeTocList MaxTocDepth
 	animate 10
 	wd 'timer ' , ": TimerFractionMsec
+	if. -. dbPathExists '' do. vizform_dbUpdate_button '' end.
 catch. catcht.
 	1 log 'go: Problem: ' , (13!:12) ''
 	1 log 'go: Database error (if any): ' , sqlerror__db ''
