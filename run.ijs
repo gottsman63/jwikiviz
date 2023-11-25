@@ -255,11 +255,19 @@ end.
 )
 NB. =================================================================
 
+NB. =============== Shortcut ==================
+ShortcutFlag =: 0
+
+setShortcutFlag =: {{
+userkeys =. (1!:1) < jpath '~config/userkeys.cfg'
+ShortcutFlag =: +./ 'jwikiviz' E. userkeys
+}}
+
 shortcutInfo =: 3 : 0
 smoutput ' '
-smoutput 'NB. Create a shortcut for JWikiViz:'
+smoutput 'NB. Create a shortcut for J Viewer:'
 smoutput 'open ''~config/userkeys.cfg'''
-smoutput 'NB. Append the line: Ctrl+Shift+H;0;JWikiViz;load ''~addons/gottsman63/jwikiviz/run.ijs'''
+smoutput 'NB. Append the line: Ctrl+Shift+H;0;J Viewer;load ''~addons/gottsman63/jwikiviz/run.ijs'''
 smoutput ' '
 smoutput 'browse_j_ ''https://code.jsoftware.com/wiki/Guides/Qt_IDE/Configure/User_Keys'' NB. More information.'
 NB.    load '~addons/gottsman63/jwikiviz/run.ijs'
@@ -411,13 +419,20 @@ wd 'set searchStatic maxwh ' , (": (<. leftWidth * 0.06) , controlHeight) , ';'
 wd 'set searchBox maxwh ' , (": (<. leftWidth * 0.35) , controlHeight) , ';'
 wd 'set searchWordsStatic maxwh ' , (": (<. leftWidth * 0.05) , controlHeight) , ';'
 wd 'set searchBoxWords maxwh ' , (": (<. leftWidth * 0.35) , controlHeight) , ';'
-
+if. ShortcutFlag = 0 do.
+wd 'set shortcut visible 1'
 wd 'set shortcut maxwh ' ,  , (": (<. leftWidth * 0.12) , controlHeight) , ';'
 wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
 wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.1) , controlHeight) , ';'
+wd 'set dbUpdate maxwh ' , (": (<. leftWidth * 0.38) , controlHeight) , ';'
+wd 'set appUpdate maxwh ' , (": (<. leftWidth * 0.28) , controlHeight) , ';'
+else.
+wd 'set shortcut visible 0'
+wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
+wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.16) , controlHeight) , ';'
 wd 'set dbUpdate maxwh ' , (": (<. leftWidth * 0.4) , controlHeight) , ';'
-wd 'set appUpdate maxwh ' , (": (<. leftWidth * 0.30) , controlHeight) , ';'
-
+wd 'set appUpdate maxwh ' , (": (<. leftWidth * 0.3) , controlHeight) , ';'
+end.
 wd 'set liveForum maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
@@ -2815,6 +2830,7 @@ try.
 		1 log '*** Database download required. ***'
 		DatabaseDownloadStatus =: 2 
 	end.
+	setShortcutFlag ''
 	buildForm ''
 	layoutForm ''
 	setUpdateButtons ''
