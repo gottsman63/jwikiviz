@@ -2542,7 +2542,7 @@ if. selected do.
 	(xStart, yStart, width, height) drawHighlight SelectionColor
 end.
 coords drawStringAt &. > ; &. > lineTokens
-(xStart , yStart , width , height) registerRectLink ('*selectVocGlyph ''' , glyph , '''') ; glyph ; 0
+(xStart , yStart , width , height) registerRectLink ('*selectVocGlyph ''' , glyph , '''') ; glyph ; 1
 ''
 )
 
