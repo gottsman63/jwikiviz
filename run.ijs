@@ -2847,7 +2847,6 @@ end.
 go =: 3 : 0
 try.
 	clearLog ''
-LogFlag =: 1
 	logVersionInfo ''
 	if. -. checkGethttpVersion '' do. return. end.
 	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
