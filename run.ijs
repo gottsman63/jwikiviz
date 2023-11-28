@@ -912,6 +912,7 @@ SearchHiddenCatId =: 200000
 LiveSearchCatString =: '*Live Search'
 GitHubCatString =: '*GitHub'
 TagCatString =: '*Tags'
+NuVocString =: '*NuVoc'
 TagHiddenCatId =: 500000
 QueuedUrl =: ''
 QueuedUrlTime =: 0
@@ -1008,6 +1009,7 @@ clearCache ''
 initializeTocList MaxTocDepth
 invalidateDisplay ''
 resetBookmarkButton ''
+setTocOutlineRailTopLevelEntry NuVocString
 )
 
 NB. --------- Managing URLs from the Forum ---------
@@ -2257,12 +2259,14 @@ setTocOutlineRailTopLevelEntry =: 3 : 0
 NB. The string name of a top-level category
 NB. Select the current top-level category by string (entry)
 NB. Table of level ; parentId ; categoryid ; category ; parentseq ; count ; link
+log 'setTocOutlineRailTopLevelEntry ' , y
 index =. (3 {"(1) 1 getTocOutlineRailEntries MaxTocDepth) i. < y
 setTocOutlineRailSelectedIndex index
 )
 
 setTocOutlineRailSelectedIndex =: 3 : 0
 NB. y The new value of the index
+log 'setTocOutlineRailSelectedIndex ' , ": y
 TocOutlineRailSelectedIndex =: y
 wd 'set tocList select ' , ": y
 entry =. y { 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
@@ -2281,7 +2285,7 @@ NB. x: level ; parent ; categoryid ; category ; parentseq ; count ; link
 NB. y The rectangle in which to draw.
 log 'drawTocRailChildren'
 entry =. x
-if.  +./ '*NuVoc' E. > 3 { entry do.
+if.  +./ NuVocString E. > 3 { entry do.
 	drawVoc ''
 elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
 	(> 3 { entry) drawTocEntryForum y
@@ -2805,6 +2809,7 @@ if. flag ~: ShowBookmarksFlag do.
 	ShowBookmarksFlag =: flag
 	clearCache ''
 	initializeTocList MaxTocDepth
+	setTocOutlineRailTopLevelEntry NuVocString
 end.
 }}
 
@@ -2842,6 +2847,7 @@ end.
 go =: 3 : 0
 try.
 	clearLog ''
+LogFlag =: 1
 	logVersionInfo ''
 	if. -. checkGethttpVersion '' do. return. end.
 	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
