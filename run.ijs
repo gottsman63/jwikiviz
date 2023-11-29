@@ -286,6 +286,8 @@ case. 1 do. appCap =. 'J Viewer is up to date'
 case. 2 do. appCap =. 'Offline (apparently)'
 end.
 wd 'set appUpdate caption *' , appCap
+if. AppUpToDate = 0 do. wd 'set appUpdate stylesheet *color:#007f00' else. wd 'set appUpdate stylesheet *color:#000000' end.
+
 select. DatabaseDownloadStatus
 case. _3 do. dbCap =. 'Click to move new data online'
 case. _2 do. dbCap =. 'Downloading data (background)...'
@@ -294,6 +296,11 @@ case. 0 do. dbCap =. 'Local database is up to date'
 case. 1 do. dbCap =. 'Click to download the latest data (background)...'
 case. 2 do. dbCap =. 'Database download required...'
 case. 3 do. dbCap =. 'Offline (apparently)'
+end.
+if. (DatabaseDownloadStatus = 1) +. (DatabaseDownloadStatus = 2) +. DatabaseDownloadStatus = _3 do. 
+	wd 'set dbUpdate stylesheet *color:#007f00' 
+else. 
+	wd 'set dbUpdate stylesheet *color:#000000' 
 end.
 wd 'set dbUpdate caption *' , dbCap
 if. DatabaseDownloadStatus >: 0 do. wd 'set appUpdate enable 1' else. wd 'set appUpdate enable 0' end.
@@ -2838,6 +2845,7 @@ NB.	initAdmin ''
 	caption =. 'J Viewer ' , version , ' (Crawl Datetime: ' , datetime , ')'
 	wd 'pn *' , caption
 	initializeTocList MaxTocDepth
+	markLiveSearchDirty ''
 catch.
 	1 log 'initializeWithDatabase Problem: ' , (13!:12) ''
 	1 log 'initializeWithDatabase Database error (if any): ' , dbError ''
