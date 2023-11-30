@@ -273,6 +273,28 @@ smoutput 'browse_j_ ''https://code.jsoftware.com/wiki/Guides/Qt_IDE/Configure/Us
 NB.    load '~addons/gottsman63/jwikiviz/run.ijs'
 )
 
+NB. --------------------------- RosettaCode Navigation ----------------------------
+jumpToRosettaSolution =: 3 : 0
+url =. (LastUrlLoaded i. '#')   {. LastUrlLoaded
+loadPage (LastUrlLoaded , '#J') ; ''
+)
+
+jumpToRosettaProblem =: 3 : 0
+url =. (LastUrlLoaded i. '#') {. LastUrlLoaded
+loadPage url ; ''
+)
+
+setRosettaJumpButtons =: 3 : 0
+if. +./ 'rosettacode' E. LastUrlLoaded do.
+	wd 'set jumpToProblem visible 1'
+	wd 'set jumpToSolution visible 1'
+else.
+	wd 'set jumpToProblem visible 0'
+	wd 'set jumpToSolution visible 0'
+end.
+)
+NB. ------------------------- End RosettaCode Navigation --------------------------
+
 NB. ==================== Form =====================
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
@@ -348,9 +370,9 @@ wd   'bin v;'
 wd     'bin h;'
 NB. wd       'cc closeButton button; cn *X'
 wd       'cc fontSlider slider 2 1 1 1 9 3'
-wd       'cc searchStatic static; cn *Phrase:'
+wd       'cc searchStatic static; cn *Exactly:'
 wd       'cc searchBox edit;'
-wd       'cc searchWordsStatic static; cn *Words:'
+wd       'cc searchWordsStatic static; cn *Dispersed:'
 wd       'cc searchBoxWords edit;'
 wd     'bin z;'
 wd     'bin h;'
@@ -388,7 +410,11 @@ wd     'bin h;'
 wd       'cc shrinkBrowser button ; cn *> Shrink Browser <'
 wd       'cc expandBrowser button ; cn *< Expand Browser >'
 wd     'bin z;'
-wd     'cc loadPost button; cn *Show Post in Thread'
+wd     'bin h;'	
+wd       'cc loadPost button; cn *Show Post in Thread'
+wd       'cc jumpToProblem button; cn *Jump to RosettaCode Problem'
+wd       'cc jumpToSolution button; cn *Jump to RosettaCode Solution'
+wd     'bin z'
 wd     'cc browser webview;'
 wd   'bin z;'
 wd 'bin z;'
@@ -423,9 +449,9 @@ browserWidth =. winW - leftWidth
 NB. wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
 wd 'set fontSlider maxwh ' , (": (<. leftWidth * 0.18) , controlHeight) , ';'
 wd 'set searchStatic maxwh ' , (": (<. leftWidth * 0.06) , controlHeight) , ';'
-wd 'set searchBox maxwh ' , (": (<. leftWidth * 0.35) , controlHeight) , ';'
-wd 'set searchWordsStatic maxwh ' , (": (<. leftWidth * 0.05) , controlHeight) , ';'
-wd 'set searchBoxWords maxwh ' , (": (<. leftWidth * 0.35) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (<. leftWidth * 0.31) , controlHeight) , ';'
+wd 'set searchWordsStatic maxwh ' , (": (<. leftWidth * 0.08) , controlHeight) , ';'
+wd 'set searchBoxWords maxwh ' , (": (<. leftWidth * 0.32) , controlHeight) , ';'
 if. ShortcutFlag = 0 do.
 wd 'set shortcut visible 1'
 wd 'set shortcut maxwh ' ,  , (": (<. leftWidth * 0.12) , controlHeight) , ';'
@@ -459,6 +485,7 @@ wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
+setRosettaJumpButtons ''
 NB. setUpdateButtons ''  NB. This turns out to be a significant drag on frame rate.  Do not do it.
 setControlVisibility isDatabaseOpen ''
 )
@@ -486,17 +513,19 @@ NB.	wd 'set vocContext enable ' , flag
 	wd 'set history enable ' , flag
 	wd 'set launch enable ' , flag
 	wd 'set loadPost enable ' , flag
+	wd 'set jumpToProblem enable ' , flag
+	wd 'set jumpToSolution enable ' , flag
 catch.
 	1 log 'Problem in setControlVisibility: ' , (13!:12) ''
 end.
 }}
 
-setLiveSearchSourceFlagButtons =: {{
-wd 'set liveForum value 1'
-wd 'set liveGitHub value 1'
-wd 'set liveWiki value 1'
-wd 'set liveRosetta value 1'
-}}
+NB. setLiveSearchSourceFlagButtons =: {{
+NB. wd 'set liveForum value 1'
+NB. wd 'set liveGitHub value 1'
+NB. wd 'set liveWiki value 1'
+NB. wd 'set liveRosetta value 1'
+NB. }}
 
 MinScreenWidth =: 1500
 
@@ -581,6 +610,14 @@ vizform_close ''
 
 vizform_fontSlider_changed =: 3 : 0
 setFontSize ". fontSlider
+)
+
+vizform_jumpToProblem_button =: 3 : 0
+jumpToRosettaProblem ''
+)
+
+vizform_jumpToSolution_button =: 3 : 0
+jumpToRosettaSolution ''
 )
 
 vizform_snapshotLog_button =: 3 : 0
@@ -1136,6 +1173,7 @@ LastUrlLoaded =: ''
 loadPage =: 3 : 0
 NB. y A url, possibly unqualified ; A title
 try.
+log 'loadPage ' , (> 0 { y) , ' ' , > 1 { y
 if. 0 = # y do. return. end.
 'url title' =. y
 NB. url =. > {. y
@@ -1592,7 +1630,7 @@ NB.	end.
 		cutoffYear =. 1 + currentYear - ". liveAge
 	end.
 	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' order by rank limit 200'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 200'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -2872,7 +2910,7 @@ try.
 	'w h' =. 2 3 { ". wd 'qscreen'
 	wd 'pshow'
 	wd 'msgs'
-	setLiveSearchSourceFlagButtons ''
+NB.	setLiveSearchSourceFlagButtons ''
 NB.	vizform_showBookmarks_button ''
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
