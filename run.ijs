@@ -520,12 +520,12 @@ catch.
 end.
 }}
 
-NB. setLiveSearchSourceFlagButtons =: {{
-NB. wd 'set liveForum value 1'
-NB. wd 'set liveGitHub value 1'
-NB. wd 'set liveWiki value 1'
-NB. wd 'set liveRosetta value 1'
-NB. }}
+setLiveSearchSourceFlagButtons =: {{
+wd 'set liveForum value 1'
+wd 'set liveGitHub value 1'
+wd 'set liveWiki value 1'
+wd 'set liveRosetta value 1'
+}}
 
 MinScreenWidth =: 1500
 
@@ -2910,7 +2910,7 @@ try.
 	'w h' =. 2 3 { ". wd 'qscreen'
 	wd 'pshow'
 	wd 'msgs'
-NB.	setLiveSearchSourceFlagButtons ''
+	setLiveSearchSourceFlagButtons ''
 NB.	vizform_showBookmarks_button ''
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
