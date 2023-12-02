@@ -307,8 +307,11 @@ case. 0 do. appCap =. 'New J Viewer version available'
 case. 1 do. appCap =. 'J Viewer is up to date' 
 case. 2 do. appCap =. 'Offline (apparently)'
 end.
+
+NB. wd 'set loadPost font arial 14 bold'
+
 wd 'set appUpdate caption *' , appCap
-if. AppUpToDate = 0 do. wd 'set appUpdate stylesheet *color:#007f00' else. wd 'set appUpdate stylesheet *color:#000000' end.
+if. AppUpToDate = 0 do. wd 'set appUpdate font arial 14 bold italic' else. wd 'set appUpdate font arial 14' end.
 
 select. DatabaseDownloadStatus
 case. _3 do. dbCap =. 'Click to move new data online'
@@ -320,9 +323,9 @@ case. 2 do. dbCap =. 'Database download required...'
 case. 3 do. dbCap =. 'Offline (apparently)'
 end.
 if. (DatabaseDownloadStatus = 1) +. (DatabaseDownloadStatus = 2) +. DatabaseDownloadStatus = _3 do. 
-	wd 'set dbUpdate stylesheet *color:#007f00' 
+	wd 'set dbUpdate font arial 14 bold italic' 
 else. 
-	wd 'set dbUpdate stylesheet *color:#000000' 
+	wd 'set dbUpdate font arial 14' 
 end.
 wd 'set dbUpdate caption *' , dbCap
 if. DatabaseDownloadStatus >: 0 do. wd 'set appUpdate enable 1' else. wd 'set appUpdate enable 0' end.
