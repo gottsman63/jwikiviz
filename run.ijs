@@ -1003,6 +1003,7 @@ LiveSearchCatString =: '*Live Search'
 GitHubCatString =: '*GitHub'
 TagCatString =: '*Tags'
 NuVocString =: '*NuVoc'
+VocString =: '*Vocabulary'
 TagHiddenCatId =: 500000
 QueuedUrl =: ''
 QueuedUrlTime =: 0
@@ -1461,7 +1462,7 @@ adjRect registerRectLink command ; name ; 1
 
 drawTocEntryChildrenColumn =: 4 : 0
 NB. x xx yy width height
-NB. y Table of Name ; Link/Command ; Level
+NB. y Table of Highlight Flag ; Name ; Link/Command ; Level
 NB. Render the column
 'xx yy width height' =. x
 glclip xx , yy , (width - 10) , height
@@ -1961,6 +1962,39 @@ glrect"1 highlightRects
 ''
 }}
 
+drawTocEntryVocabulary =: 3 : 0
+NB. y xx yy width height
+NB. Render the Vocabulary display.
+log 'drawTocEntryVocabulary ' , ": y
+'xx yy width height' =. y
+glclip 0 0 10000 100000
+glrgb 0 0 0
+gltextcolor ''
+glpen 1
+glrgb BackgroundColor
+glbrush ''
+glrect xx , yy , width , height
+glfont SectionFont
+s =. 'J''s original Vocabulary, though largely superseded by NuVoc, is still valued by many experienced J developers. '
+lineHeight =. {: glqextent s
+words =. < ;. 2 s
+wordWidths =. > {.@glqextent &. > words
+runningY =. 10
+leftMargin =. 10 
+while. 0 < # wordWidths do.
+	wordsOnLine =. (width > +/\ wordWidths) # words
+	(leftMargin, runningY) drawStringAt ; wordsOnLine
+	runningY =. runningY + lineHeight
+	words =. (# wordsOnLine) }. words
+	wordWidths =. ($ wordsOnLine) }. wordWidths
+end.
+runningY =. runningY + lineHeight
+entries =. getTocWikiDocs getCategoryIdNoParent VocString NB. (level parentid categoryid category parentSeq count link) ; table of title ; link
+titleLinks =. > {: {: entries 
+k =: (<"0 (# titleLinks) # 0) ,"0 1 titleLinks ,. <"0 (# titleLinks) # _1
+(xx , runningY, width , height - runningY - yy) drawTocEntryChildrenColumn k
+)
+
 drawTocEntryGitHubSearch =: {{
 NB. y xx yy width height
 NB. Render the GitHub search display.
@@ -2381,6 +2415,8 @@ elseif. GitHubCatString -: > 3 { entry do.
 	drawTocEntryGitHubSearch y
 elseif. (< SearchCatString) = 3 { entry do.
 	(SearchHiddenCatId getCategoryId SearchCatString) drawTocEntryChildrenWithTree y
+elseif. (< VocString) = 3 { entry do.
+	drawTocEntryVocabulary y
 else.
 	categoryId =. (> 1 { entry) getCategoryId > 3 { entry
 	categoryId drawTocEntryChildren y

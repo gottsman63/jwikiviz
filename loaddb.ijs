@@ -910,12 +910,21 @@ sqlinsert__db 'categories' ; (;: 'level parentid categoryid category parentseq c
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Live Search' ; _1 ; 7 ; ''
 NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 25 ; '*GitHub' ; _1 ; 7 ; ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 10 ; '*NuVoc' ; _1 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
-NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Search' ; _1 ; 2 ; 'https://code.jsoftware.com/wiki/Special:JwikiSearch'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 15 ; '*Vocabulary' ; _1 ; 2 ; 'https://www.jsoftware.com/help/dictionary/vocabul.htm'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 30 ; '*Forums' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
 NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 40 ; '*Search' ; _1 ; 4 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 50 ; '*JSaurus' ; _1 ; 5 ; 'https://jsaurus.info/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 60 ; '*JPlayground' ; _1 ; 6 ; 'https://jsoftware.github.io/j-playground/bin/html2/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1e6 ; '*Bookmarks' ; _1 ; 8 ; 'https://www.jsoftware.com/'
+)
+
+finishLoadingVocabulary =: 3 : 0
+smoutput 'finishLoadingVocabulary'
+cols =. ;: 'title categoryid link'
+titles =. 'Vocabulary' ; 'Dictionary Contents'
+links =. 'https://www.jsoftware.com/help/dictionary/vocabul.htm' ; 'https://www.jsoftware.com/help/dictionary/contents.htm'
+data =. titles ; 15 15 ; < links
+sqlinsert__db 'wiki' ; cols ; < data
 )
 
 finishLoadingForums =: 3 : 0
@@ -1051,6 +1060,7 @@ moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
 updateMasterDbWithRosettaCode ''
 finishLoadingForums ''
+finishLoadingVocabulary ''
 moveFullTextIndexIntoStage ''
 turnOnOptimization ''
 sqlclose__db ''
