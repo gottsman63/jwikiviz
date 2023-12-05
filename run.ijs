@@ -154,6 +154,7 @@ LogMutex =: ''
 LogLoadBrowserFlag =: 0
 LogNewEventsWrittenFlag =: 0
 LogBrowserUpdateRequired =: 0
+LogLastEventSeconds =: 0
 
 setSnapshotLogButtonState =: 3 : 0
 count =. +/ LF = (1!:1) < logPath
@@ -199,7 +200,11 @@ baseLog =: 4 : 0
 if. (x = 0) *. -. LogFlag do. return. end.
 LogNewEventsWrittenFlag =: 1
 LogBrowserUpdateRequired =: 1
-event =. ((6!:0) 'YYYY MM DD hh mm sssss') , '      ' , y , LF
+seconds =. +/ 60 0.001 *  _2 {.  ".  t =. (6!:0) 'YYYY MM DD hh mm sssss'
+duration =. seconds - LogLastEventSeconds
+durationString =. 8 {. ": duration
+event =. t , ' ' , durationString , '      ' , y , LF
+LogLastEventSeconds =: seconds
 if. 0 ~: 3 T. '' do. NB. If we're not on the main thread...
 	try. 13 T. LogMutex catch. end. NB. Release, just in case...
 	11 T. LogMutex NB. Take a lock.
@@ -272,6 +277,47 @@ smoutput ' '
 smoutput 'browse_j_ ''https://code.jsoftware.com/wiki/Guides/Qt_IDE/Configure/User_Keys'' NB. More information.'
 NB.    load '~addons/gottsman63/jwikiviz/run.ijs'
 )
+NB. ============================================
+
+NB. =================== Scroll Management =====================
+ScrollOffset =: 0 NB. Negative numbers indicate scrolling down.  This value is always <: 0.
+ScrollWindowHeight =: 10
+ScrollContentHeight =: 100
+
+setScrollWindowHeight =: 3 : 0
+NB. The height of the window (viewport) onto the content, in the same units as the content height.
+ScrollWindowHeight =: y
+)
+
+setScrollContentHeight =: 3 : 0
+NB. The height of the content, in the same units as the window height.
+ScrollContentHeight =: y
+)
+
+scrollChange =: 3 : 0
+NB. Negative y indicates scrolling downward--that is, pulling the content upward.
+originalScrollOffset =. ScrollOffset
+ScrollOffset =: ScrollOffset + y
+normalizeScroll ''
+if. originalScrollOffset ~: ScrollOffset do. animate 1 end.
+)
+
+scrollSetAbsolute =: 3 : 0
+ScrollOffset =: y
+normalizeScroll ''
+animate 1
+)
+
+normalizeScroll =: 3 : 0
+NB. Ensure that the scroll offset is within bounds.
+ScrollOffset =: 0 <. (- ScrollContentHeight - ScrollWindowHeight) >. ScrollOffset
+)
+
+resetScroll =: 3 : 0
+ScrollOffset =: 0
+TargetScrollOffset =: 0
+)
+NB. ===========================================================
 
 NB. --------------------------- RosettaCode Navigation ----------------------------
 jumpToRosettaSolution =: 3 : 0
@@ -579,6 +625,10 @@ invalidateDisplay ''
 
 vizform_resize =: 3 : 0
 layoutForm ''
+)
+
+vizform_vocContext_mwheel =: 3 : 0
+scrollChange 5 * {: ". > {: 13 { wdq
 )
 
 vizform_close =: 3 : 0
@@ -1477,7 +1527,7 @@ LiveSearchWikiTitlesByCategory =: '' NB. Category ; Title
 LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
 LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
 LastLiveSearchQuery =: ''
-LiveSearchCountdown =: 0
+NB. LiveSearchCountdown =: 0
 LiveSearchRawResult =: ''
 
 NB. jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
@@ -1491,12 +1541,6 @@ jEnglishWords =: 1 {"1 jEnglishDict
 htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' '
 searchJMnemonics =: jMnemonics&i.
 searchJEnglishWords =: jEnglishWords&i.
-checkLiveSearchCountdown =: {{
-if. LiveSearchCountdown > 0 do.
-	LiveSearchCountdown =: 0 >. <: LiveSearchCountdown
-	if. 0 = LiveSearchCountdown do. markLiveSearchDirty '' end.
-end.
-}}
 
 buildLiveSearchWikiTitlesByCategory =: {{
 LiveSearchWikiTitlesByCategory =: > {: sqlreadm__db 'select category, title from categories, wiki where categories.categoryid = wiki.categoryid'
@@ -1555,8 +1599,9 @@ end.
 )
 
 setLiveSearchPageIndex =: 3 : 0
-liveSearchPageIndex =: y
-invalidateDisplay ''
+scrollSetAbsolute - y * ScrollWindowHeight
+NB. liveSearchPageIndex =: y
+NB. invalidateDisplay ''
 )
 
 NB. openLiveSearchDb =: 3 : 0
@@ -1593,8 +1638,8 @@ end.
 
 performLiveSearch =: 3 : 0
 NB. y A SQL statement
+1 log 'performLiveSearch: ' , y
 try.
-	1 log 'performLiveSearch: ' , y
 	LiveSearchRawResult =: ''
 	dbOpenDb ''
 	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
@@ -1609,7 +1654,7 @@ LiveSearchRawResult
 submitLiveSearch =: 3 : 0
 NB. y Empty
 NB. Create a table of title ; Snippet ; Url
-log 'submitLiveSearch: ' , searchBox
+log 'submitLiveSearch: ' , searchBox , ' AND ' , searchBoxWords
 try.
 	LiveSearchRawResult =: ''
 	if. 1 >: (# searchBox) + # searchBoxWords do. return. end.
@@ -1645,6 +1690,7 @@ end.
 )
 
 markLiveSearchDirty =: 3 : 0
+log 'markLiveSearchDirty'
 LiveSearchIsDirty =: 1
 )
 
@@ -1729,6 +1775,7 @@ if. termIndex < {. ol do. pageNumber =. <: pageNumber end.
 drawTocEntryLiveSearch =: 3 : 0
 NB. y xx yy width height
 NB. Display the results of the current search against the local database.
+log 'drawTocEntryLiveSearch ' , ": y
 try.
 	'xx yy width height' =. y
 	setLiveAgeLabel ''
@@ -1741,7 +1788,6 @@ try.
 	glrect xx , yy , width , height
 	glfont LiveSearchFont
 	colSep =: 20
-	NB. if. -. searchBox -: LastLiveSearchQuery do. submitLiveSearch '' end.
 	rattleResult =. processLiveSearchResults ''
 	if. (0 = # LiveSearchResults) do.
 		glfont 'arial 30'
@@ -1753,71 +1799,68 @@ try.
 	end.
 	pageLabelHeight =. 30
 	pageLabelWidth =. 30
-	contentHeight =. height - pageLabelHeight
-	contentLineCount =. <. contentHeight % TocLineHeight
-	pageLabelCount =. >. (# LiveSearchResults) % contentLineCount
+	topMargin =. 5
+	windowY =. yy + pageLabelHeight + topMargin
+	windowHeight =. height - pageLabelHeight + topMargin
+
+	liveSearchPageIndex =: +/ (| ScrollOffset) > +/\ 100 # windowHeight
+
+	windowLineCount =. <. windowHeight % TocLineHeight
+	pageLabelCount =. >. (# LiveSearchResults) % windowLineCount
 	pageLabels =. <@":"0 >: i. pageLabelCount
-	pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. pageLabelCount) ,. 5
+	pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. pageLabelCount) ,. topMargin
 	pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
 	(pageLabelRects -"(1 1) 4 4 0 0) registerRectLink"1 1 ('*setLiveSearchPageIndex '&, &. > <@":"0 i. pageLabelCount) ,"0 1 (< ' ') , <1
 	((liveSearchPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
 
-	results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
+	setScrollWindowHeight height - pageLabelHeight
+	setScrollContentHeight TocLineHeight * windowLineCount * >: pageLabelCount
+
+	rawLineRenderIndexes =. (<. (| ScrollOffset) % TocLineHeight) + i. 2 + windowLineCount
+	lineRenderIndexes =. (rawLineRenderIndexes < # LiveSearchResults) # rawLineRenderIndexes
+	NB. results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
+	results =. LiveSearchResults
 	(<"1 pageLabelOrigins) drawStringAt &. > pageLabels
 	((5 + xx) , 5) drawStringAt 'Page:'
-	titles =. 0 {"1 results
-	snippets =. translateToJ &. > 1 {"1 results
-	links =. 2 {"1 results
-	sources =. 4 {"1 results
+
+	titles =. lineRenderIndexes { 0 {"1 results
+	snippets =. lineRenderIndexes { translateToJ &. > 1 {"1 results
+	links =. lineRenderIndexes { 2 {"1 results
+	sources =. lineRenderIndexes { 4 {"1 results
 	colWidth =. <. -: width - colSep
-	snippetOrigins =. (xx + 5) ,. pageLabelHeight + TocLineHeight * i. # results
-	titleOrigins =. (xx + colSep + colWidth) ,. pageLabelHeight + TocLineHeight * i. # results
+	snippetOrigins =. lineRenderIndexes { (xx + 5) ,. ScrollOffset + pageLabelHeight + topMargin + TocLineHeight * i. # results
+	titleOrigins =. lineRenderIndexes { (xx + colSep + colWidth) ,. ScrollOffset + pageLabelHeight + topMargin + TocLineHeight * i. # results
 
 	if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
 
 	sieve =. sources = <'W'
-	glclip xx , yy , colWidth , height
+	glclip xx , windowY , colWidth , windowHeight
 	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < WikiColor
-	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	sieve =. sources = <'F'
-	glclip xx , yy , colWidth , height
+	glclip xx , windowY , colWidth , windowHeight
 	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < ForumColor
-	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	sieve =. sources = <'G'
-	glclip xx , yy , colWidth , height
+	glclip xx , windowY , colWidth , windowHeight
 	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < GitHubColor
-	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	sieve =. sources = <'R'
-	glclip xx , yy , colWidth , height
+	glclip xx , windowY , colWidth , windowHeight
 	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < RosettaColor
-	glclip (xx + 5 + colWidth) , yy , colWidth , height
+	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
 
 	glclip 0 0 10000 100000
 	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
 	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
-	return.
-	textColors =. WikiColor , ForumColor  , RosettaColor ,: GitHubColor
-	if. _1 < titleIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > titleRects do.
-		title =. > titleIndex { titles
-		colorIndex =. ('W' ; 'F' ; 'R' ; 'G') i. titleIndex { sources
-		textColor =. colorIndex { textColors
-		floatRect =. (2 {. > titleIndex { titleRects) , (colWidth >. {. glqextent title) , TocLineHeight
-		floatRect registerFloatingString title ; LiveSearchFont ; textColor
-	end.
-	if. _1 < snippetIndex =. {. _1 ,~ I. > VocMouseXY&pointInRect &. > snippetRects do.
-		snippet =. > snippetIndex { snippets
-		colorIndex =. ('W' ; 'F' ; 'R' ; 'G') i. snippetIndex { sources
-		textColor =. colorIndex { textColors
-		floatRect =. (2 {. > snippetIndex { snippetRects) , (colWidth >. {. glqextent snippet) , TocLineHeight
-		floatRect registerFloatingString snippet ; LiveSearchFont ; textColor
-	end.
+	log '...finished drawTocEntryLiveSearch'
 catch.
 	1 log 'Problem in drawTocEntryLiveSearch: ' , (13!:12) ''
 	1 log '...db error (if any): ' , dbError ''
