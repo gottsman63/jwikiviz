@@ -1231,7 +1231,7 @@ if. 'Category:' -: 9 {. url do.
 elseif. -. 'http' -: 4 {. url do.
 	url =. ('.html' ; '') rxrplc 'https://code.jsoftware.com/' , url
 end.
-if. url -: LastUrlLoaded do. return. end.
+NB. if. url -: LastUrlLoaded do. return. end.
 LastUrlLoaded =: url
 log 'Loading url ' , url
 wd 'set browser url *' , url
