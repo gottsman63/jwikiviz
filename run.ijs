@@ -1810,7 +1810,7 @@ try.
 	setScrollWindowHeight height - pageLabelHeight
 	setScrollContentHeight TocLineHeight * windowLineCount * >: pageLabelCount
 
-	rawLineRenderIndexes =. (<. (| ScrollOffset) % TocLineHeight) + i. 2 + windowLineCount
+	rawLineRenderIndexes =. (>. (| ScrollOffset) % TocLineHeight) + i. 2 + windowLineCount
 	lineRenderIndexes =. (rawLineRenderIndexes < # LiveSearchResults) # rawLineRenderIndexes
 	NB. results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
 	results =. LiveSearchResults
