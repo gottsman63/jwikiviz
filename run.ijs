@@ -1638,7 +1638,7 @@ try.
 	dbOpenDb ''
 	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
 	1 log '...' , (": # LiveSearchRawResult) , ' result(s) in ' , (": time) , ' sec.'
-catch.
+catch. catcht.
 1 log 'Live Search problem: ' , (13!:12) ''
 1 log 'DB Error (if any): ' , dbError ''
 end.
