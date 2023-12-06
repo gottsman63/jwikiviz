@@ -2988,6 +2988,7 @@ try.
 	setLiveSearchSourceFlagButtons ''
 NB.	vizform_showBookmarks_button ''
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
+	wd 'set searchBox focus'
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	animate 10
 	wd 'timer ' , ": TimerFractionMsec
