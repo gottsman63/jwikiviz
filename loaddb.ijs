@@ -24,7 +24,7 @@ forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 masterDbFile =: appDir , '/master.db'
 NB.indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
-dateFile =: appDir , '/jviewer.dat'
+quoraDbPath =: appDir , '/quora.db'
 tokenFile =: appDir , '/token.txt'
 compressedDbPath =: appDir , '/jviewer.lz4'
 NB. gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
@@ -141,38 +141,60 @@ end.
 }}
 
 updateMasterDbWithRosettaCode =: {{
+smoutput 'updateMasterDbWithRosettaCode'
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "R"'
 pat =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
 nextPagePat =. '<a href="(/wiki/Category:Programming_Tasks\?pagefrom[^"]+)"[^>]+>next page</a>'
 html =. gethttp 'https://rosettacode.org/wiki/Category:Programming_Tasks'
 while. 0 < # html do.
-	c =. 1 2 {"2 pat rxmatches html
-	urlTitles =. ({:"1 c) <@{."0 1 ({."1 c) }."0 1 html
-	titles =. 1 {"1 urlTitles
-	smoutput titles
-	wd 'msgs'
-	fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
-	table =: _10 ]\ , > (<a:) -.~ fullUrls updateMasterDbWithRosettaCodeChallenge &. > titles
-	data =: (0 {"1 table) ; (1 {"1 table) ; (2 {"1 table) ; (3 {"1 table) ; (> 4 {"1 table) ; (> 5 {"1 table) ; (> 6 {"1 table) ; (7 {"1 table) ; (8 {"1 table) ; < (9 {"1 table)
 	try.
-	 	sqlinsert__masterDb 'content' ; masterCols ; < data
-	catch. catcht. catchd.
+		c =. 1 2 {"2 pat rxmatches html
+		urlTitles =. ({:"1 c) <@{."0 1 ({."1 c) }."0 1 html
+		titles =. 1 {"1 urlTitles
+		smoutput titles
+		wd 'msgs'
+		fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
+		table =: _10 ]\ , > (<a:) -.~ fullUrls updateMasterDbWithRosettaCodeChallenge &. > titles
+		data =: (0 {"1 table) ; (1 {"1 table) ; (2 {"1 table) ; (3 {"1 table) ; (> 4 {"1 table) ; (> 5 {"1 table) ; (> 6 {"1 table) ; (7 {"1 table) ; (8 {"1 table) ; < (9 {"1 table)
+		try.
+		 	sqlinsert__masterDb 'content' ; masterCols ; < data
+		catch. catcht. catchd.
+			smoutput 'Problem ' , (13!:12) ''
+			smoutput sqlerror__masterDb ''
+		end.
+		if. 0 < {. c =. {: nextPagePat rxmatch html do.
+			nextUrl =. 'https://rosettacode.org' , ({: c) {. ({. c) }. html
+			html =. gethttp nextUrl
+		else.
+			html =. ''
+		end.
+	catch.
 		smoutput 'Problem ' , (13!:12) ''
 		smoutput sqlerror__masterDb ''
-	end.
-	if. 0 < {. c =. {: nextPagePat rxmatch html do.
-		nextUrl =. 'https://rosettacode.org' , ({: c) {. ({. c) }. html
-		html =. gethttp nextUrl
-	else.
-		html =. ''
+		smoutput 400 {. html
+		break.
 	end.
 end.
 ''
 }}
-
-
 NB. ======================= End Crawling Rosettacode ===================================
+
+NB. ========================== Crawling Quora ==========================================
+updateMasterDbWithQuora =: 3 : 0
+smoutput 'updateMasterDbWithQuora'
+createOrOpenMasterDb ''
+quoraDb =. sqlopen_psqlite_ quoraDbPath
+sqlcmd__masterDb 'delete from content where sourcetype = "Q"'
+table =. > {: sqlreadm__quoraDb 'select link, title, body from posts'
+links =. 0 {"1 table
+titles =. 1 {"1 table
+bodies =. 2 {"1 table
+augmentedBodies =. translateToJEnglish@translateHtmlEncodings &. > titles , &. > ' '&, &. > bodies
+data =. links ; links ; ((# links) # <'Quora') ; ((# links) # < 'Q') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # < 'Skip Cave') ; < augmentedBodies
+sqlinsert__masterDb 'content' ; masterCols ; < data
+)
+NB. ======================== End Crawling Quora ========================================
 
 NB. ============================ Crawling GitHub ======================================
 indexSuffixes =:  '.ijs' ; '.ijt'
@@ -234,7 +256,7 @@ whilst. 0 < # ol do.
 	smoutput 'page' ; page
 end.
 )
-NB. ========================== End Crawling GitHiub ====================================
+NB. ========================== End Crawling GitHub ====================================
 
 NB. =================================== Master DB =============================================
 masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body'
@@ -1020,7 +1042,7 @@ sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE TABLE keyvalue (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
 sqlcmd__db 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
-sqlcmd__db 'CREATE INDEX year_index ON auxiliary (year)'
+NB. sqlcmd__db 'CREATE INDEX year_index ON auxiliary (year)'
 sqlcmd__db 'CREATE INDEX source_index ON auxiliary (source)'
 sqlcmd__db 'CREATE TABLE github (content BLOB)'
 )
@@ -1059,6 +1081,7 @@ updateMasterDbWithPosts ''
 moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
 updateMasterDbWithRosettaCode ''
+updateMasterDbWithQuora ''
 finishLoadingForums ''
 finishLoadingVocabulary ''
 moveFullTextIndexIntoStage ''

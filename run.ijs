@@ -429,9 +429,10 @@ wd       'cc liveForum checkbox; cn *Forum'
 wd       'cc liveGitHub checkbox; cn *GitHub'
 wd       'cc liveWiki checkbox; cn *Wiki'
 wd       'cc liveRosetta checkbox; cn *Rosetta'
+wd       'cc liveQuora checkbox; cn *Quora'
 wd       'cc wikiSearchMenu combolist;'
-wd       'cc liveAgeLabel static'
-wd       'cc liveAge slider 2 1 1 1 10 3'
+NB. wd       'cc liveAgeLabel static'
+NB. wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
 wd     'bin h;'
 wd       'bin v;'
@@ -512,9 +513,10 @@ wd 'set liveForum maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
 wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
+wd 'set liveQuora maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set wikiSearchMenu maxwh ' , (": (-: vocContextWidth - 350) , controlHeight) , ';'
-wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
-wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
+NB. wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
+NB. wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
 
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 wd 'set tocList maxwh ' , (": tocListWidth , vocContextHeight) , ';'
@@ -546,9 +548,10 @@ try.
 	wd 'set liveGitHub enable ' , flag
 	wd 'set liveWiki enable ' , flag
 	wd 'set liveRosetta enable ' , flag
+	wd 'set liveQuora enable ' , flag
 	wd 'set wikiSearchMenu enable ' , flag
-	wd 'set liveAgeLabel enable ' , flag
-	wd 'set liveAge enable ' , flag
+NB.  	wd 'set liveAgeLabel enable ' , flag
+NB. 	wd 'set liveAge enable ' , flag
 	wd 'set tocList enable ' , flag
 NB.	wd 'set vocContext enable ' , flag
 	wd 'set bookmark enable ' , flag
@@ -567,6 +570,7 @@ wd 'set liveForum value 1'
 wd 'set liveGitHub value 1'
 wd 'set liveWiki value 1'
 wd 'set liveRosetta value 1'
+wd 'set liveQuora value 1'
 }}
 
 MinScreenWidth =: 1500
@@ -693,6 +697,12 @@ markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 }}
+
+vizform_liveQuora_button =: 3 : 0
+markLiveSearchDirty ''
+invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+)
 
 vizform_liveAge_changed =: 3 : 0
 markLiveSearchDirty ''
@@ -970,6 +980,7 @@ WikiColor =: 0 127 127
 ForumColor =: 110 38 14
 GitHubColor =: 136 6 206
 RosettaColor =: 11 0 128
+QuoraColor =: 4 151 242
 
 TimerCount =: 0
 
@@ -1663,16 +1674,19 @@ NB.	end.
 	wikiFlag =. liveWiki = '1'
 	gitHubFlag =. liveGitHub = '1'
 	rosettaFlag =. liveRosetta = '1'
-	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. 1 end.
-	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"')) , ') '
-	currentYear =. {. (6!:0) ''
-	if. 10 = ". liveAge do.
-		cutoffYear =. 0
-	else.
-		cutoffYear =. 1 + currentYear - ". liveAge
-	end.
+	quoraFlag =. liveQuora = '1'
+	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. quoraFlag =. 1 end.
+	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag, quoraFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"' ; '"Q"')) , ') '
+NB.	currentYear =. {. (6!:0) ''
+NB.	if. 10 = ". liveAge do.
+NB.		cutoffYear =. 0
+NB.	else.
+NB.		cutoffYear =. 1 + currentYear - ". liveAge
+NB. 	end.	
+	cutoffYear =. 0
 	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 200'
+NB. 	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 200'
+	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND ' , whereClause , ' limit 200'
 NB.	log 'About to make a pyx for search: ' , fullSearch
 NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
@@ -1850,6 +1864,12 @@ try.
 	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < RosettaColor
 	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles
+
+	sieve =. sources = <'Q'
+	glclip xx , windowY , colWidth , windowHeight
+	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < QuoraColor
+	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
+	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles	
 
 	glclip 0 0 10000 100000
 	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
