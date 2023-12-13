@@ -1591,6 +1591,12 @@ NB. Just categorize everything under RosettaCode.
 (< 'RosettaCode') ,: < y
 }}
 
+categorizeLiveSearchQuoraFiles =: 3 : 0
+NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
+NB. Just categorize everything under Quora.
+(< 'Quora') ,: < y
+)
+
 setLiveAgeLabel =: 3 : 0
 try.
 if. (". liveAge) = 10 do.
@@ -1729,7 +1735,8 @@ try.
 	categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
 	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
 	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
-	categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults
+	categorizedQuoraResults =. categorizeLiveSearchQuoraFiles results #~ sources = < 'Q'
+	categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults
 	categories =. {. categorizedResults
 	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
 	categoryMenuList =. categories , &. > categoryCounts
