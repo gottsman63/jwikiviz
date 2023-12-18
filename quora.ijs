@@ -91,6 +91,8 @@ NB. html (1!:2) < jpath '~temp/quoraOutput.html'
 
 processLink =: 3 : 0
 NB. y A link to a Skip Cave Quora answer.
+smoutput y
+wd 'msgs'
 title=. (- # '/answer/Ellis Cave') }. (# 'https://www.quora.com/') }. ('-';' ') rxrplc y
 html =. getHtml y
 NB. content =. parseHtml html
@@ -101,21 +103,25 @@ sqlinsert__db 'posts' ; (;: 'link title html') ; < y ; title ; html
 acquirePosts =: {{
 openOrCreateDatabase ''
 linksWeHave =. > {: sqlreadm__db 'select link from posts'
-report =. (1!:1) < jpath '~temp/quora.html'
+htmlFilenames =. jpath &. > '~temp/loaddb/quorahtml/'&, &. > {."1 (1!:0) < jpath '~temp/loaddb/quorahtml/*'
+smoutput ,. htmlFilenames
+report =. ; (1!:1)"0 htmlFilenames
 pat =. rxcomp '"(https://[^"]+)"'
 ol =. 1 {"2 pat rxmatches report
 links =. linksWeHave -.~ ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 report
 sieve =: > +./@:('Ellis-Cave'&E.) &. > links
 goodLinks =. sieve # links
-smoutput ,. 10 {. goodLinks
+smoutput '$ goodLinks' ; ($ goodLinks) ; 'size' ; (# report)
 processLink &. > goodLinks
 }}
 
-run =: {{
+extractBodies =: {{
 openOrCreateDatabase ''
 records =. > {: sqlreadm__db 'select link, html from posts'
 bodies =. extractBody &. > 1 {"1 records
+sqlcmd__db 'begin transaction'
 ({."1 records) updateBody &. > bodies
+sqlcmd__db 'commit transaction'
 smoutput (# bodies) , +/ a: = bodies
 }}
 

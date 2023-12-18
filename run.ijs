@@ -371,6 +371,10 @@ if. DatabaseDownloadStatus >: 0 do. wd 'set appUpdate enable 1' else. wd 'set ap
 wd 'msgs'
 )
 
+quoraPageCheck =: 3 : 0
++./ 'www.quora.com' E. LastUrlLoaded
+)
+
 vizform_appUpdate_button =: 3 : 0
 log 'vizform_appUpdate_button'
 updateAppVersion ''
@@ -457,8 +461,11 @@ wd     'bin h;'
 wd       'cc loadPost button; cn *Show Post in Thread'
 wd       'cc jumpToProblem button; cn *Jump to RosettaCode Problem'
 wd       'cc jumpToSolution button; cn *Jump to RosettaCode Solution'
-wd     'bin z'
-wd     'cc browser webview;'
+wd     'bin z;'
+wd     'bin v;'
+wd       'cc quoraBrowser webview;'
+wd       'cc browser webview;'
+wd     'bin z;'
 wd   'bin z;'
 wd 'bin z;'
 wd 'set snapshotLog visible 1'
@@ -489,6 +496,15 @@ end.
 leftWidth =. winW * LayoutRatio
 vocContextWidth =. <. leftWidth - tocListWidth
 browserWidth =. winW - leftWidth
+quoraFlag =. +./ 'www.quora.com' E. LastUrlLoaded
+if. quoraPageCheck '' do.
+	browserHeight =. <. -: winH - controlHeight
+	quoraGlossaryHeight =. winH - browserHeight
+else.
+	browserHeight =. winH - controlHeight
+	quoraGlossaryHeight =. 0
+end.
+wd 'set quoraBrowser visible ' , ": quoraPageCheck ''
 NB. wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
 wd 'set fontSlider maxwh ' , (": (<. leftWidth * 0.18) , controlHeight) , ';'
 wd 'set searchStatic maxwh ' , (": (<. leftWidth * 0.07) , controlHeight) , ';'
@@ -514,7 +530,7 @@ wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
 wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set liveQuora maxwh ' , (": 60 , controlHeight) , ';'
-wd 'set wikiSearchMenu maxwh ' , (": (-: vocContextWidth - 350) , controlHeight) , ';'
+wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 340) , controlHeight) , ';'
 NB. wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
 NB. wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
 
@@ -525,7 +541,8 @@ wd 'set bookmark maxwh ' , (": 100, controlHeight) , ';'
 wd 'set history maxwh ' , (": (browserWidth * 0.5) , controlHeight) , ';'
 wd 'set launch maxwh ' , (": (browserWidth * 0.15) , controlHeight) , ';'
 wd 'set feedback maxwh ' , (": 100, controlHeight) , ';'
-wd 'set browser maxwh ' , (": browserWidth , winH - controlHeight) , ';'
+wd 'set browser maxwh ' , (": browserWidth , browserHeight) , ';'
+wd 'set quoraBrowser maxwh ' , (": browserWidth , quoraGlossaryHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
 setLiveAgeLabel ''
@@ -800,6 +817,7 @@ else.
 	topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
 	if. -. +./ topHistoryUrl -: url do. addToHistoryMenu url ; url end.
 end.
+if. quoraPageCheck '' do. wd 'set quoraBrowser url *https://code.jsoftware.com/wiki/J_Viewer' end.
 resetBookmarkButton ''
 resetForumPostLoadButton ''
 loadHistoryMenu ''
@@ -1669,11 +1687,6 @@ log 'submitLiveSearch: ' , searchBox , ' AND ' , searchBoxWords
 try.
 	LiveSearchRawResult =: ''
 	if. 1 >: (# searchBox) + # searchBoxWords do. return. end.
-NB.	rattleResult =. 4 T. LiveSearchPNB.yx
-NB.	if.  rattleResult > 0 do. NB. Make sure we don't step on a running search. 
-NB.		1 log 'submitLiveSearch: search in progress already.  Returning.'
-NB.		return.
-NB.	end.
 	LastLiveSearchQuery =: searchBox , ' ' , searchBoxWords
 	setLiveSearchPageIndex 0
 	forumFlag =. liveForum = '1'
@@ -1683,18 +1696,9 @@ NB.	end.
 	quoraFlag =. liveQuora = '1'
 	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. quoraFlag =. 1 end.
 	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag, quoraFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"' ; '"Q"')) , ') '
-NB.	currentYear =. {. (6!:0) ''
-NB.	if. 10 = ". liveAge do.
-NB.		cutoffYear =. 0
-NB.	else.
-NB.		cutoffYear =. 1 + currentYear - ". liveAge
-NB. 	end.	
 	cutoffYear =. 0
 	query =. createQuery ''
-NB. 	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND (year >= ' , (": cutoffYear) , ') AND ' , whereClause , ' limit 200'
 	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND ' , whereClause , ' limit 200'
-NB.	log 'About to make a pyx for search: ' , fullSearch
-NB.	LiveSearchPyx =: performLiveSearch t. 'worker' fullSearch
 	LiveSearchRawResult =: performLiveSearch fullSearch
 	LiveSearchIsDirty =: 0
 catch.
@@ -1721,6 +1725,7 @@ try.
 		1 NB. Fake rattleResult indicating that we're done with the query.
 		return.
 	end.
+NB. 	result =. (] {~ (# ? #)) result
 	result =. result /: 'test'&E. &. > (1 {"1 result) NB. Sort 'test' files last
 	snippets =. 4 {"1 result
 	sources =. {. &. > 3 {"1 result
@@ -1736,7 +1741,7 @@ try.
 	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
 	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
 	categorizedQuoraResults =. categorizeLiveSearchQuoraFiles results #~ sources = < 'Q'
-	categorizedResults =. ((<'*All') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults
+	categorizedResults =. ((<'*All (Max 200)') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults
 	categories =. {. categorizedResults
 	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
 	categoryMenuList =. categories , &. > categoryCounts
