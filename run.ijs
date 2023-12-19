@@ -817,7 +817,7 @@ else.
 	topHistoryUrl =. > 0 { 0 { getHistoryMenu ''
 	if. -. +./ topHistoryUrl -: url do. addToHistoryMenu url ; url end.
 end.
-if. quoraPageCheck '' do. wd 'set quoraBrowser url *https://code.jsoftware.com/wiki/J_Viewer' end.
+if. quoraPageCheck '' do. wd 'set quoraBrowser url *https://code.jsoftware.com/wiki/SkipCaveVerbs' end.
 resetBookmarkButton ''
 resetForumPostLoadButton ''
 loadHistoryMenu ''
