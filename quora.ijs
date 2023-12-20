@@ -83,6 +83,7 @@ NB. HTML: curl 'https://api.crawlbase.com/?token=VYb8a0W9wF1hk2BTgY5vQA&url=http
 NB. https://api.crawlbase.com/?token=JXODhIqe9SdsGFHeyeTGUQ&url=https%3A%2f%2fwww.quora.com%2fWhat-are-7-consecutive-primes-which-sum-to-the-same-number-when-the-digits-are-reversed%2fanswer%2fEllis-Cave&page_wait=2000&ajax_wait=true
 NB. url =. 'https://www.quora.com/What-are-7-consecutive-primes-which-sum-to-the-same-number-when-the-digits-are-reversed/answer/Ellis-Cave'
 NB. queryUrl =. 'https://api.crawlbase.com/?token=JXODhIqe9SdsGFHeyeTGUQ&url=https%3A%2f%2fwww.quora.com%2fWhat-are-7-consecutive-primes-which-sum-to-the-same-number-when-the-digits-are-reversed%2fanswer%2fEllis-Cave&page_wait=2000&ajax_wait=true'
+token =. (1!:1) < jpath '~temp/loaddb/crawltoken.txt'
 queryUrl =. 'https://api.crawlbase.com/?token=JXODhIqe9SdsGFHeyeTGUQ&url=' , (encodeUrl y) , '&page_wait=2000&ajax_wait=true'
 NB. queryUrl =. 'https://api.crawlbase.com/?token=JXODhIqe9SdsGFHeyeTGUQ&url=' , encodeUrl url
 html =. gethttp queryUrl

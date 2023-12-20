@@ -357,7 +357,7 @@ end.
 wd 'set appUpdate caption *' , appCap
 
 select. DatabaseDownloadStatus
-case. _3 do. dbCap =. 'Click to move new data online'
+case. _3 do. dbCap =. '*** Click to move new data online'
 case. _2 do. dbCap =. 'Downloading data (background)...'
 case. _1 do. dbCap =. 'Checking for new database...'
 case. 0 do. dbCap =. 'Local database is up to date'
@@ -365,6 +365,8 @@ case. 1 do. dbCap =. '*** Click to download the latest data...'
 case. 2 do. dbCap =. '*** Database download required...'
 case. 3 do. dbCap =. '*** Offline (apparently)'
 end.
+
+NB. wd 'set dbUpdate stylesheet *border-width: 4px solid red'
 
 wd 'set dbUpdate caption *' , dbCap
 if. DatabaseDownloadStatus >: 0 do. wd 'set appUpdate enable 1' else. wd 'set appUpdate enable 0' end.
@@ -496,7 +498,6 @@ end.
 leftWidth =. winW * LayoutRatio
 vocContextWidth =. <. leftWidth - tocListWidth
 browserWidth =. winW - leftWidth
-quoraFlag =. +./ 'www.quora.com' E. LastUrlLoaded
 if. quoraPageCheck '' do.
 	browserHeight =. <. -: winH - controlHeight
 	quoraGlossaryHeight =. winH - browserHeight
