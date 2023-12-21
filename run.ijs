@@ -436,6 +436,7 @@ wd       'cc liveGitHub checkbox; cn *GitHub'
 wd       'cc liveWiki checkbox; cn *Wiki'
 wd       'cc liveRosetta checkbox; cn *Rosetta'
 wd       'cc liveQuora checkbox; cn *Quora'
+wd       'cc liveYouTube checkbox; cn *YouTube'
 wd       'cc wikiSearchMenu combolist;'
 NB. wd       'cc liveAgeLabel static'
 NB. wd       'cc liveAge slider 2 1 1 1 10 3'
@@ -531,7 +532,8 @@ wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
 wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
 wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set liveQuora maxwh ' , (": 60 , controlHeight) , ';'
-wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 340) , controlHeight) , ';'
+wd 'set liveYouTube maxwh ' , (": 80 , controlHeight) , ';'
+wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 380) , controlHeight) , ';'
 NB. wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
 NB. wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
 
@@ -567,6 +569,7 @@ try.
 	wd 'set liveWiki enable ' , flag
 	wd 'set liveRosetta enable ' , flag
 	wd 'set liveQuora enable ' , flag
+	wd 'set liveYouTube enable ' , flag
 	wd 'set wikiSearchMenu enable ' , flag
 NB.  	wd 'set liveAgeLabel enable ' , flag
 NB. 	wd 'set liveAge enable ' , flag
@@ -589,6 +592,7 @@ wd 'set liveGitHub value 1'
 wd 'set liveWiki value 1'
 wd 'set liveRosetta value 1'
 wd 'set liveQuora value 1'
+wd 'set liveYouTube value 1'
 }}
 
 MinScreenWidth =: 1500
@@ -717,6 +721,12 @@ setTocOutlineRailTopLevelEntry LiveSearchCatString
 }}
 
 vizform_liveQuora_button =: 3 : 0
+markLiveSearchDirty ''
+invalidateDisplay ''
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+)
+
+vizform_liveYouTube_button =: 3 : 0
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
@@ -1000,6 +1010,7 @@ ForumColor =: 110 38 14
 GitHubColor =: 136 6 206
 RosettaColor =: 11 0 128
 QuoraColor =: 4 151 242
+YouTubeColor =: 242 151 4
 
 TimerCount =: 0
 
@@ -1615,6 +1626,11 @@ NB. y A list of boxed titles, snippets, urls, years, sources from the forum sear
 NB. Just categorize everything under Quora.
 (< 'Quora') ,: < y
 )
+categorizeLiveSearchYouTubeFiles =: 3 : 0
+NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
+NB. Just categorize everything under YouTube.
+(< 'YouTube') ,: < y
+)
 
 setLiveAgeLabel =: 3 : 0
 try.
@@ -1695,8 +1711,9 @@ try.
 	gitHubFlag =. liveGitHub = '1'
 	rosettaFlag =. liveRosetta = '1'
 	quoraFlag =. liveQuora = '1'
-	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. quoraFlag =. 1 end.
-	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag, quoraFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"' ; '"Q"')) , ') '
+	youTubeFlag =. liveYouTube = '1'
+	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag , youTubeFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. quoraFlag =. youTubeFlag =. 1 end.
+	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag , youTubeFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"' ; '"Q"' ; '"V"')) , ') '
 	cutoffYear =. 0
 	query =. createQuery ''
 	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND ' , whereClause , ' limit 200'
@@ -1742,7 +1759,8 @@ NB. 	result =. (] {~ (# ? #)) result
 	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
 	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
 	categorizedQuoraResults =. categorizeLiveSearchQuoraFiles results #~ sources = < 'Q'
-	categorizedResults =. ((<'*All (Max 200)') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults
+	categorizedYouTubeResults =. categorizeLiveSearchYouTubeFiles results #~ sources = < 'V'
+	categorizedResults =. ((<'*All (Max 200)') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults ,. categorizedYouTubeResults
 	categories =. {. categorizedResults
 	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
 	categoryMenuList =. categories , &. > categoryCounts
@@ -1884,9 +1902,17 @@ try.
 	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
 	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles	
 
+	sieve =. sources = <'V'
+	glclip xx , windowY , colWidth , windowHeight
+	(<"1 (sieve # snippetOrigins) ,"(1 1) colWidth , TocLineHeight) drawCodeWithHighlights"0 1 (< highlightString) ,. (sieve # snippets) ,. < YouTubeColor
+	glclip (xx + 5 + colWidth) , windowY , colWidth , windowHeight
+	(<"1 sieve # titleOrigins) drawStringAt &. > sieve # titles	
+
 	glclip 0 0 10000 100000
-	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
-	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
+	textFragments =. urlencode &. > snippets
+	textFragmentLinks =. links , &. > '#:~:text='&, &. > textFragments
+	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 textFragmentLinks ,. titles ,. (# snippets) # < 1
+	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 textFragmentLinks ,. titles ,. (# titles) # < 1
 	log '...finished drawTocEntryLiveSearch'
 catch.
 	1 log 'Problem in drawTocEntryLiveSearch: ' , (13!:12) ''

@@ -25,6 +25,7 @@ forumHtmlDir =: forumDir , '/html'
 masterDbFile =: appDir , '/master.db'
 NB.indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
 quoraDbPath =: appDir , '/quora.db'
+youTubeDbPath =: appDir , '/youtube.db'
 tokenFile =: appDir , '/token.txt'
 compressedDbPath =: appDir , '/jviewer.lz4'
 NB. gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
@@ -195,6 +196,23 @@ data =. links ; links ; ((# links) # <'Quora') ; ((# links) # < 'Q') ; ((# links
 sqlinsert__masterDb 'content' ; masterCols ; < data
 )
 NB. ======================== End Crawling Quora ========================================
+
+NB. ========================= Crawling YouTube =========================================
+updateMasterDbWithYouTube =: 3 : 0
+smoutput 'updateMasterDbWithYouTube'
+createOrOpenMasterDb ''
+youTubeDb =. sqlopen_psqlite_ youTubeDbPath
+sqlcmd__masterDb 'delete from content where sourcetype = "V"'
+table =. > {: sqlreadm__youTubeDb 'select link, title, description, transcript from videos'
+links =. 0 {"1 table
+titles =. '[YouTube] '&, &. > 1 {"1 table
+descriptions =. 2 {"1 table
+transcripts =. 3 {"1 table
+bodies =. titles , &. > ' '&, &. > descriptions , &. > ' '&, &. > transcripts
+data =. links ; links ; ((# links) # <'YouTube') ; ((# links) # < 'V') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # <' ') ; < bodies
+sqlinsert__masterDb 'content' ; masterCols ; < data
+)
+NB. ======================= End Crawling YouTube =======================================
 
 NB. ============================ Crawling GitHub ======================================
 indexSuffixes =:  '.ijs' ; '.ijt'
@@ -1082,6 +1100,7 @@ moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
 updateMasterDbWithRosettaCode ''
 updateMasterDbWithQuora ''
+updateMasterDbWithYouTube ''	
 finishLoadingForums ''
 finishLoadingVocabulary ''
 moveFullTextIndexIntoStage ''
