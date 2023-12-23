@@ -1911,8 +1911,8 @@ try.
 	glclip 0 0 10000 100000
 	textFragments =. urlencode &. > snippets
 	textFragmentLinks =. links , &. > '#:~:text='&, &. > textFragments
-	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 textFragmentLinks ,. titles ,. (# snippets) # < 1
-	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 textFragmentLinks ,. titles ,. (# titles) # < 1
+	(snippetRects =. <"1 snippetOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# snippets) # < 1
+	(titleRects =. <"1 titleOrigins ,"1 1 colWidth , TocLineHeight) registerRectLink &. > <"1 links ,. titles ,. (# titles) # < 1
 	log '...finished drawTocEntryLiveSearch'
 catch.
 	1 log 'Problem in drawTocEntryLiveSearch: ' , (13!:12) ''
@@ -2788,7 +2788,7 @@ columnWidths =. >./ > lineNumbers < /. cellWidths
 lineHeights =. > >./ &. > lineNumbers < /. {:"1 dimensions
 lines =. ({. , {:)"1 &. > lineNumbers < /. cells NB. POS Glyph
 spacings =. 3 * ~: lineNumbers
-glfont 'consolas bold 12'
+glfont 'consolas bold 12'	 
 glrgb 0 0 0
 gltextcolor ''
 for_line. lines do.
