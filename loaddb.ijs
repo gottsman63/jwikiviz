@@ -324,7 +324,7 @@ for_postHtml. postsHtml do.
 	'dayOffset dayLength' =. {: dayPat rxmatch html
 	day =. ". dayLength {. dayOffset }. html
 	'titleOffset titleLength' =. {: titlePat rxmatch html
-	title =. }: }: }: }: titleLength {. titleOffset }. html
+	title =. ('[' , (": year) , ']') , }: }: }: }: titleLength {. titleOffset }. html
 	jtitle =. translateToJEnglish title
 	'authorOffset authorLength' =. {: authorPat rxmatch html
 	author =. authorLength {. authorOffset }. html
@@ -388,7 +388,7 @@ for_rowBatch. _100 < \ uniqueRows do.
 	wd 'msgs'
 	links =. 1 {"1 rows
 	urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
-	titles =. {."1 rows
+	titles =. '[Wiki] '&, &. > {."1 rows
 	rawHtmls =. getHtml urls
 	extractedHtmls =. extractTextFromWikiArticle &. > rawHtmls
 	htmls =. translateToJEnglish &. > extractedHtmls
@@ -417,6 +417,7 @@ ol =. {:"2 (rxcomp '<a href="([^"]+)" class="mw-changeslist-title"') rxmatches c
 wikiLinks =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
 ol =. {:"2 (rxcomp 'class="mw-changeslist-title" title="([^"]+)">') rxmatches changedLinkHtml
 titles =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
+titles =. '[Wiki] '&, &. > titles
 smoutput 'Found ', (": # titles) , ' changed wiki pages.'
 if. 0 = # titles do. return. end.
 links =. (wikiUrlPrefix , '/')&, &. > wikiLinks
