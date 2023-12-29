@@ -567,11 +567,13 @@ if. newDatabaseAvailable '' do.
 	wd 'set dbUpdate minwh ' , (": <. (x * 0.38 + f) , 2 * y) , ';'
 else.
 	wd 'set dbUpdate maxwh ' , (": <. (x * 0.38 + f) , y) , ';'
+	wd 'set dbUpdate minwh ' , (": <. (x * 0.38 + f) , y) , ';'
 end.
 if. newAppAvailable '' do.
 	wd 'set appUpdate minwh ' , (": <. (x * 0.28 + f) , 2 * y) , ';'
 else.
 	wd 'set appUpdate maxwh ' , (": <. (x * 0.28 + f) , y) , ';'
+	wd 'set appUpdate minwh ' , (": <. (x * 0.28 + f) , y) , ';'
 end.
 )
 
@@ -2974,7 +2976,7 @@ isDatabaseOpen =: {{
 }}
 
 newDatabaseAvailable =: 3 : 0
-DatabaseDownloadStatus = 1
+(DatabaseDownloadStatus = 1) +. DatabaseDownloadStatus = _3
 )
 
 asyncCheckForNewerDatabase =: {{
