@@ -46,6 +46,10 @@ manifest_version=: {{
   VERSION
 }}
 
+newAppAvailable =: 3 : 0
+AppUpToDate = 2
+)
+
 asyncCheckAppUpToDate =: 3 : 0
 NB. _1 if we're checking for a new version.
 NB. 0 if the app is out of date.
@@ -57,9 +61,7 @@ try.
 	v1 =. manifest_version (1!:1) < jpath addonPath
 	if. IFWGET_wgethttp_ do.
 		v2 =. manifest_version gethttp githubUrl
-NB.		v2 =. manifest_version c =. '-O - --header "Cache-Control: no-cache, no-store, must-revalidate" ' gethttp githubUrl
 	else.
-NB.		v2 =. manifest_version '-s -H "Cache-Control: no-cache, no-store, must-revalidate"' gethttp githubUrl
 		v2 =. manifest_version gethttp githubUrl
 	end.
 	if. v2 -: 'none' do. AppUpToDate =: 2
@@ -79,6 +81,7 @@ wd 'set appUpdate caption *Updating the J Viewer...'
 wd 'msgs'
 (9!:29) 1
 (9!:27) 'load ''~addons/gottsman63/jwikiviz/run.ijs'' [ install ''github:gottsman63/jwikiviz'''
+animate 5
 )
 NB. ===========================================================
 
@@ -400,7 +403,12 @@ if. downloadFlag do.
 	DatabaseDownloadStatus =: _2
 	downloadPyx =: downloadLatestData t. 'worker' ''
 	setUpdateButtons ''
-	if. -. isDatabaseOpen '' do. snapshotLogToBrowser 0 end.
+NB. 	if. -. isDatabaseOpen '' do. snapshotLogToBrowser 0 end.
+	if. -. dbPathExists '' do. 
+		loadPage 'https://code.jsoftware.com/wiki/J_Viewer#Initial' ; 'Initial Download' 
+	else. 
+		snapshotLogToBrowser 0
+	end.
 end.
 }}
 
@@ -416,12 +424,21 @@ wd 'pn *' , caption
 wd 'bin h;'
 wd   'bin v;'
 wd     'bin h;'
-NB. wd       'cc closeButton button; cn *X'
-wd       'cc fontSlider slider 2 1 1 1 9 3'
 wd       'cc searchStatic static; cn *In Order:'
 wd       'cc searchBox edit;'
+wd       'cc searchHelp button; cn *Max 200 Results?!'
 wd       'cc searchWordsStatic static; cn *Any Order:'
 wd       'cc searchBoxWords edit;'
+wd     'bin z;'
+wd     'bin h;'
+wd       'cc fontSlider slider 2 1 1 1 9 3'
+wd       'cc liveForum checkbox; cn *Forum'
+wd       'cc liveGitHub checkbox; cn *GitHub'
+wd       'cc liveWiki checkbox; cn *Wiki'
+wd       'cc liveRosetta checkbox; cn *Rosetta'
+wd       'cc liveQuora checkbox; cn *Quora'
+wd       'cc liveYouTube checkbox; cn *YouTube'
+NB. wd       'cc wikiSearchMenu combolist;'
 wd     'bin z;'
 wd     'bin h;'
 wd       'cc logcheck checkbox; cn Debug (Log);'
@@ -429,17 +446,6 @@ wd       'cc snapshotLog button; cn 0;'
 wd       'cc shortcut button;cn Shortcut...;'
 wd       'cc dbUpdate button; cn Haha!;'
 wd       'cc appUpdate button; cn Wocka!;'
-wd     'bin z;'
-wd     'bin h;'
-wd       'cc liveForum checkbox; cn *Forum'
-wd       'cc liveGitHub checkbox; cn *GitHub'
-wd       'cc liveWiki checkbox; cn *Wiki'
-wd       'cc liveRosetta checkbox; cn *Rosetta'
-wd       'cc liveQuora checkbox; cn *Quora'
-wd       'cc liveYouTube checkbox; cn *YouTube'
-wd       'cc wikiSearchMenu combolist;'
-NB. wd       'cc liveAgeLabel static'
-NB. wd       'cc liveAge slider 2 1 1 1 10 3'
 wd     'bin z;'
 wd     'bin h;'
 wd       'bin v;'
@@ -508,24 +514,20 @@ else.
 end.
 wd 'set quoraBrowser visible ' , ": quoraPageCheck ''
 NB. wd 'set closeButton maxwh ' , (": 20 , controlHeight) , ';'
-wd 'set fontSlider maxwh ' , (": (<. leftWidth * 0.18) , controlHeight) , ';'
+wd 'set fontSlider maxwh ' , (": (<. leftWidth * 0.14) , controlHeight) , ';'
 wd 'set searchStatic maxwh ' , (": (<. leftWidth * 0.07) , controlHeight) , ';'
-wd 'set searchBox maxwh ' , (": (<. leftWidth * 0.3) , controlHeight) , ';'
+wd 'set searchBox maxwh ' , (": (<. leftWidth * 0.28) , controlHeight) , ';'
 wd 'set searchWordsStatic maxwh ' , (": (<. leftWidth * 0.08) , controlHeight) , ';'
-wd 'set searchBoxWords maxwh ' , (": (<. leftWidth * 0.32) , controlHeight) , ';'
+wd 'set searchBoxWords maxwh ' , (": (<. leftWidth * 0.3) , controlHeight) , ';'
 if. ShortcutFlag = 0 do.
-wd 'set shortcut visible 1'
-wd 'set shortcut maxwh ' ,  , (": (<. leftWidth * 0.12) , controlHeight) , ';'
-wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
-wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.1) , controlHeight) , ';'
-wd 'set dbUpdate maxwh ' , (": (<. leftWidth * 0.38) , controlHeight) , ';'
-wd 'set appUpdate maxwh ' , (": (<. leftWidth * 0.28) , controlHeight) , ';'
+	wd 'set shortcut visible 1'
+	wd 'set shortcut maxwh ' ,  , (": (<. leftWidth * 0.12) , controlHeight) , ';'
+	wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
+	wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.1) , controlHeight) , ';'
 else.
-wd 'set shortcut visible 0'
-wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
-wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.16) , controlHeight) , ';'
-wd 'set dbUpdate maxwh ' , (": (<. leftWidth * 0.4) , controlHeight) , ';'
-wd 'set appUpdate maxwh ' , (": (<. leftWidth * 0.3) , controlHeight) , ';'
+	wd 'set shortcut visible 0'
+	wd 'set logcheck maxwh ' , (": (<. leftWidth * 0.12) , controlHeight) , ';'
+	wd 'set snapshotLog maxwh ' ,  (": (<. leftWidth * 0.16) , controlHeight) , ';'
 end.
 wd 'set liveForum maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveGitHub maxwh ' , (": 70 , controlHeight) , ';'
@@ -533,7 +535,8 @@ wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
 wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set liveQuora maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveYouTube maxwh ' , (": 80 , controlHeight) , ';'
-wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 380) , controlHeight) , ';'
+NB. wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 380) , controlHeight) , ';'
+wd 'set searchHelp maxwh ' , (": 160 , controlHeight) , ';'
 NB. wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
 NB. wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
 
@@ -548,10 +551,35 @@ wd 'set browser maxwh ' , (": browserWidth , browserHeight) , ';'
 wd 'set quoraBrowser maxwh ' , (": browserWidth , quoraGlossaryHeight) , ';'
 wd 'set loadPost visible ' , ": LayoutForumPostLoadButtonEnable
 if. LayoutRatio ~: LayoutRatioTarget do. animate 2 end.
-setLiveAgeLabel ''
+NB. setLiveAgeLabel ''
 setRosettaJumpButtons ''
+leftWidth setDownloadButtons controlHeight
 NB. setUpdateButtons ''  NB. This turns out to be a significant drag on frame rate.  Do not do it.
 setControlVisibility isDatabaseOpen ''
+setMax200ButtonCaption ''
+)
+
+setDownloadButtons =: 4 : 0
+NB. x left width
+NB. y control height
+if. ShortcutFlag = 0 do. f =. 0 else. f =. 0.02 end.
+if. newDatabaseAvailable '' do.
+	wd 'set dbUpdate minwh ' , (": <. (x * 0.38 + f) , 2 * y) , ';'
+else.
+	wd 'set dbUpdate maxwh ' , (": <. (x * 0.38 + f) , y) , ';'
+end.
+if. newAppAvailable '' do.
+	wd 'set appUpdate minwh ' , (": <. (x * 0.28 + f) , 2 * y) , ';'
+else.
+	wd 'set appUpdate maxwh ' , (": <. (x * 0.28 + f) , y) , ';'
+end.
+)
+
+setMax200ButtonCaption =: 3 : 0
+log 'setMax200ButtonCaption'
+count =. # LiveSearchResults
+if. 200 <: count do. caption =. '200+ (Why?)' else. caption =. (": count) , ' Hits' end.
+wd 'set searchHelp caption *' , caption
 )
 
 setControlVisibility =: {{
@@ -570,11 +598,8 @@ try.
 	wd 'set liveRosetta enable ' , flag
 	wd 'set liveQuora enable ' , flag
 	wd 'set liveYouTube enable ' , flag
-	wd 'set wikiSearchMenu enable ' , flag
-NB.  	wd 'set liveAgeLabel enable ' , flag
-NB. 	wd 'set liveAge enable ' , flag
+NB.	wd 'set wikiSearchMenu enable ' , flag
 	wd 'set tocList enable ' , flag
-NB.	wd 'set vocContext enable ' , flag
 	wd 'set bookmark enable ' , flag
 	wd 'set history enable ' , flag
 	wd 'set launch enable ' , flag
@@ -672,6 +697,10 @@ vizform_escape =: 3 : 0
 vizform_close ''
 )
 
+vizform_searchHelp_button =: 3 : 0
+loadPage 'https://code.jsoftware.com/wiki/J_Viewer#Max' ; 'Max 200'
+)
+
 vizform_browser_escape =: 3 : 0
 vizform_close ''
 )
@@ -738,13 +767,13 @@ invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
-vizform_wikiSearchMenu_select =: 3 : 0
-log 'vizform_wikiSearchMenu_select ' , wikiSearchMenu
-LiveSearchWikiCategory =: ('\s\([^)]+\)' ; '') rxrplc wikiSearchMenu
-markLiveSearchDirty ''
-invalidateDisplay ''
-setTocOutlineRailTopLevelEntry LiveSearchCatString
-)
+NB. vizform_wikiSearchMenu_select =: 3 : 0
+NB. log 'vizform_wikiSearchMenu_select ' , wikiSearchMenu
+NB. LiveSearchWikiCategory =: ('\s\([^)]+\)' ; '') rxrplc wikiSearchMenu
+NB. markLiveSearchDirty ''
+NB. invalidateDisplay ''
+NB. setTocOutlineRailTopLevelEntry LiveSearchCatString
+NB. )
 
 vizform_expandBrowser_button =: 3 : 0
 log 'vizform_expandBrowser_button'
@@ -919,7 +948,9 @@ end.
 if. LogLoadBrowserFlag_jwikiviz_ *. LogBrowserUpdateRequired_jwikiviz_ do. snapshotLogToBrowser_jwikiviz_ 300 end.
 try.
 if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
-	checkWhetherNewDatabaseHasArrived_jwikiviz_ ''
+	if. checkWhetherNewDatabaseHasArrived_jwikiviz_ '' do.
+		if. -. dbPathExists_jwikiviz_ '' do. bringNewDataOnline_jwikiviz_ '' end.
+	end.
 	setUpdateButtons_jwikiviz_ ''
 end.
 if. 0 = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
@@ -1703,7 +1734,7 @@ NB. Create a table of title ; Snippet ; Url
 log 'submitLiveSearch: ' , searchBox , ' AND ' , searchBoxWords
 try.
 	LiveSearchRawResult =: ''
-	if. 1 >: (# searchBox) + # searchBoxWords do. return. end.
+	if. 0 = (# searchBox) + # searchBoxWords do. return. end.
 	LastLiveSearchQuery =: searchBox , ' ' , searchBoxWords
 	setLiveSearchPageIndex 0
 	forumFlag =. liveForum = '1'
@@ -1738,7 +1769,7 @@ try.
 	result =. LiveSearchRawResult
 	if. 0 = # result do. 
 		LiveSearchResults =: ''
- 		wd 'set wikiSearchMenu items *'
+NB. 		wd 'set wikiSearchMenu items *'
 		log 'processLiveSearchResults: no results found'
 		1 NB. Fake rattleResult indicating that we're done with the query.
 		return.
@@ -1753,28 +1784,28 @@ NB. 	result =. (] {~ (# ? #)) result
 	links =. (1 {"1 result) , &. > lineLabels
 	results =. (titles =. 0 {"1 result) ,. snippets ,. links ,. (years =. 2 {"1 result) ,. sources
 	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
-	LiveSearchResults =: results
-	categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
-	categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
-	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
-	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
-	categorizedQuoraResults =. categorizeLiveSearchQuoraFiles results #~ sources = < 'Q'
-	categorizedYouTubeResults =. categorizeLiveSearchYouTubeFiles results #~ sources = < 'V'
-	categorizedResults =. ((<'*All (Max 200)') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults ,. categorizedYouTubeResults
-	categories =. {. categorizedResults
-	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
-	categoryMenuList =. categories , &. > categoryCounts
-	wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoryMenuList
+	LiveSearchResults =: \:~ results
+NB. 	categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
+NB. 	categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
+NB. 	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
+NB. 	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
+NB. 	categorizedQuoraResults =. categorizeLiveSearchQuoraFiles results #~ sources = < 'Q'
+NB. 	categorizedYouTubeResults =. categorizeLiveSearchYouTubeFiles results #~ sources = < 'V'
+NB. 	categorizedResults =. ((<'*All (Max 200)') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults ,. categorizedYouTubeResults
+NB. 	categories =. {. categorizedResults
+NB. 	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
+NB. 	categoryMenuList =. categories , &. > categoryCounts
+NB.	wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoryMenuList
 	setLiveSearchPageIndex 0
-	if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
-	index =. categories i. < LiveSearchWikiCategory
-	if. index = # categories do. index =. 0 end.
-	wd 'set wikiSearchMenu select ' , ": index
-	if. index > 0 do.
-		LiveSearchResults =: > index { (1 { categorizedResults)
-	else.
-		LiveSearchResults =: results
-	end.
+NB.	if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
+NB.	index =. categories i. < LiveSearchWikiCategory
+NB.	if. index = # categories do. index =. 0 end.
+NB.	wd 'set wikiSearchMenu select ' , ": index
+NB.	if. index > 0 do.
+NB.		LiveSearchResults =: > index { (1 { categorizedResults)
+NB.	else.
+NB.		LiveSearchResults =: \:~ results
+NB.	end.
 catch.
 	1 log 'Problem in processLiveSearchResults: ' , (13!:12) ''
 	1 log 'DB error (if any): ' , dbError ''
@@ -2034,7 +2065,7 @@ glrgb BackgroundColor
 glbrush ''
 glrect xx , yy , width , height
 glfont SectionFont
-s =. 'J''s original Vocabulary, though largely superseded by NuVoc, is still valued by many experienced J developers. '
+s =. 'J''s original Vocabulary, though largely superseded by NuVoc, is still valued by many experienced J developers for its formality and concision. '
 lineHeight =. {: glqextent s
 words =. < ;. 2 s
 wordWidths =. > {.@glqextent &. > words
@@ -2854,10 +2885,11 @@ remoteHash =. getRemoteDatabaseHash ''
 )
 
 checkWhetherNewDatabaseHasArrived =: {{
+NB. Return 
 if. NewDatabaseContents -: '' do.
 	0
 else.
-	DatabaseDownloadStatus =: _3  NB. The data is here; we're ready to bring it online.
+	DatabaseDownloadStatus =: _3  
 	1
 end.
 }}
@@ -2884,7 +2916,11 @@ if. IFWGET_wgethttp_ do.
 else.
 	header =. '-sI ' gethttp dbUrl_jwikiviz_
 end.
+try.
 > 4 { < ;. _2 header , LF
+catch.
+''
+end.
 )
  
 getLocalDatabaseHash =: {{
@@ -2937,6 +2973,10 @@ isDatabaseOpen =: {{
 -. db -: ''
 }}
 
+newDatabaseAvailable =: 3 : 0
+DatabaseDownloadStatus = 1
+)
+
 asyncCheckForNewerDatabase =: {{
 NB. Set DatabaseDownloadStatus
 NB. Note that this routine is meant to be called as a task.
@@ -2968,6 +3008,7 @@ catch. catcht.
 	return.
 end.
 1 log '*** Moved the new data online ***'
+animate 5
 }}
 NB. ==================== End Database Management ======================
 

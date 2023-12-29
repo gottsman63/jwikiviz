@@ -324,7 +324,7 @@ for_postHtml. postsHtml do.
 	'dayOffset dayLength' =. {: dayPat rxmatch html
 	day =. ". dayLength {. dayOffset }. html
 	'titleOffset titleLength' =. {: titlePat rxmatch html
-	title =. ('[' , (": year) , ']') , }: }: }: }: titleLength {. titleOffset }. html
+	title =. '[' , (": year) , ']' , ('^\s*';'') rxrplc }: }: }: }: titleLength {. titleOffset }. html
 	jtitle =. translateToJEnglish title
 	'authorOffset authorLength' =. {: authorPat rxmatch html
 	author =. authorLength {. authorOffset }. html
