@@ -26,6 +26,7 @@ masterDbFile =: appDir , '/master.db'
 NB.indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
 quoraDbPath =: appDir , '/quora.db'
 youTubeDbPath =: appDir , '/youtube.db'
+forumsDbPath =: appDir , '/forums.db'
 tokenFile =: appDir , '/token.txt'
 compressedDbPath =: appDir , '/jviewer.lz4'
 NB. gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
@@ -294,17 +295,52 @@ smoutput 'moveForumRecordsFromMasterToStage'
 createOrOpenMasterDb ''
 dbOpenDb ''
 sqlcmd__db 'delete from forums'
-f =. > {: sqlreadm__masterDb 'select id, sourcename, year, monthIndex, day, subject, author from content where sourcetype = "F"'
+f =. > {: sqlreadm__masterDb 'select link, sourcename, year, monthIndex, day, subject, author from content where sourcetype = "F"'
 cols =. ;: 'forumname year month day subject author link'
-data =. ('J'&, &. > 1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
+NB. data =. ('J'&, &. > 1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
+data =. (1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
 sqlinsert__db 'forums' ; cols ; <data
 smoutput 'moveForumRecordsFromMasterToStage: ' , ": # f
+)
+
+NB. ======================== Crawling Forums ==========================
+updateMasterDbWithForumPosts =: 3 : 0
+smoutput 'updateMasterDbWithForumPosts'
+wd 'msgs'
+try.
+createOrOpenMasterDb ''
+sqlcmd__masterDb 'delete from content where sourcetype = "F"'
+forumsDb =: sqlopen_psqlite_ forumsDbPath
+ftable =. > {: sqlreadm__forumsDb 'select link, id, sourcename, year, monthindex, day, subject, author, body from forum' 
+smoutput '$ ftable' ; $ ftable
+links =. 0 {" 1 ftable
+ids =. 1 {"1 ftable
+sourceNames =. 2 {"1 ftable
+smoutput '10 {. sourceNames' ; 10 {. sourceNames
+years =. > 3 {"1 ftable
+k =: years
+smoutput '10 {. years' ; 10 {. years
+monthIndexes =. > 4 {"1 ftable
+days =. > 5 {"1 ftable
+subjects =. 6 {"1 ftable
+authors =. 7 {"1 ftable
+bodies =. 8 {"1 ftable
+data =. links ; ids ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; < bodies
+sqlinsert__masterDb 'content' ; masterCols ; < data
+smoutput 'end updateMasterDbWithForumPosts'
+wd 'msgs'
+catch. catcht.
+  echo (13!:12) ''
+  echo sqlerror__masterDb ''
+end.
 )
 
 updateMasterDbWithPostsForDate =: 4 : 0
 NB. x Forum name (programming, chat, etc.)
 NB. y year, monthIndex
 NB. Get posts from forum x for the date y and upsert them.
+NB. No longer used.
+return.
 'year monthIndex' =. y
 smoutput 'Processing' ; x ; year ; > monthIndex { Months
 wd 'msgs'
@@ -351,6 +387,8 @@ end.
 updateMasterDbWithPosts =: 3 : 0
 NB. Determine the most recent year-month for which we have posts.  
 NB. Grab all of those posts as well as all posts since and upsert them into masterDb.
+NB. No longer used.
+return.
 smoutput 'updateMasterDbWithPosts'
 createOrOpenMasterDb ''
 dbOpenDb ''
@@ -369,6 +407,7 @@ dates =. years ,. months
 forums =. ;: 'general chat programming database source beta'
 (((# forums) * # dates) $ forums) updateMasterDbWithPostsForDate &. > <"(1) (# forums) # dates
 )
+NB. ==================== End Crawling Forums ======================
 
 updateMasterDbWithAllWikiPages =: 3 : 0
 smoutput 'updateMasterDbWithAllWikiPages'
@@ -782,9 +821,32 @@ ol =. {: (rxcomp x) rxmatch y
 ({: ol) {. ({. ol) }. y
 )
 
+NB. ------------------- Forums ---------------------
+copyForumRecordsToMaster =: 3 : 0
+NB. New routine to use now that the old jsoftware Forum archive is unavailable.
+NB. Move the Forum records from forunms.db to master.db.
+createOrOpenMasterDb ''
+sqlcmd__masterDb 'delete from content where sourcetype = "F"'
+forumsDb =: sqlopen_psqlite_ forumsDbPath
+table =. > {: sqlreadm__forumsDb 'select link, sourcename, year, monthindex, day, subject, body, author from forum'
+links =. 0 {"1 table
+sourceNames =. 1 {"1 table
+years =. > 2 {"1 table
+monthIndexes =. > 3 {"1 table
+days =. > 4 {"1 table
+subjects =. 5 {"1 table
+bodies =. 6 {"1 table
+authors =. 7 {"1 table
+data =. links ; ((# links) # < ' ') ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; < bodies 
+smoutput ,. data
+sqlinsert__masterDb 'content' ; masterCols ; < data
+)
+
 loadForum =: 3 : 0
 NB. y Forum name (path component)
 NB. Retrieve the forum archive files and add them to the forums table.
+NB. No longer used now that the jsoftware Forum archive is unavailable.
+return.
 smoutput 'loadForum' ; y
 wd 'msgs'
 mainPageHtml =: gethttp 'https://www.jsoftware.com/pipermail/' , y , '/'
@@ -820,6 +882,7 @@ NB. Load all of the categories and remove the existing tree categories from the 
 NB. Create a category called *Tags in the categories table and put the Tag categories under it.
 NB. Load all of the Tag categories' pages into the wiki table.
 NB. html =. gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
+NB. No longer used now that the jsoftware Forum archive is unavailable.
 smoutput 'loadTagCategories'
 anchorId =. 500000
 data1 =. 1 ; 1 ; (nextCatId 1) ; '*Tags' ; _1 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
@@ -1096,12 +1159,14 @@ loadTagCategories ''
 NB. loadForum &. > ;: 'programming general beta chat source database '
 writeEndTime ''
 if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMasterDbWithAllWikiPages '' end.
-updateMasterDbWithPosts ''
+NB. updateMasterDbWithPosts ''
+copyForumRecordsToMaster ''
 moveForumRecordsFromMasterToStage ''
 updateMasterDbWithGitHubProjects ''
 updateMasterDbWithRosettaCode ''
 updateMasterDbWithQuora ''
 updateMasterDbWithYouTube ''	
+updateMasterDbWithForumPosts ''
 finishLoadingForums ''
 finishLoadingVocabulary ''
 moveFullTextIndexIntoStage ''

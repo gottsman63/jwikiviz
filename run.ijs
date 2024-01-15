@@ -1188,18 +1188,26 @@ NB. Return 1 if the url is for a Forum post AND we're currently showing search r
 
 reverseEngineerForumUrl =: 3 : 0
 NB. y A url, possibly from a Forum
-NB. If it's from a Forum, return the forum name, link, month (Jan/Feb/...), and year.
+NB. If it's from a Forum, return the forum name, id, month (Jan/Feb/...), and year.
 NB. If it's not from a Forum, return ''
 NB. Sample Forum url: https://www.jsoftware.com/pipermail/programming/2023-July/062652.html
 if. 0  = +/ '/pipermail/' E. y do. '' return. end.
+'name yearMonth idhtml' =. _3 _2 _1 { < ;. _2 y , '/'
+'year longMonth' =. < ;. _2 yearMonth , '-'
+month =. > ShortMonths {~ Months i. < longMonth
+forumName =. 'J' , name
+NB. id =. 6 {. idhtml
+forumName ; y ; month ; year
+return.
 'link forumName' =. _1 _3{ <;._2 y , '/'
 link =. 6 {. link
 forumName =. 'J' , forumName
-result =. , > {: sqlreadm__db 'select year, month from forums where forumname = "' , forumName , '" AND link = "' , link , '"'
+NB. result =. , > {: sqlreadm__db 'select year, month from forums where forumname = "' , forumName , '" AND link = "' , link , '"'
+result =. , > {: sqlreadm__db 'select year, month from forums where link = "' , y , '"'
 NB.  smoutput 'result' ; result
 'year monthIndex' =. result
 years =. , > {: sqlreadm__db 'select distinct year from forums where forumname = "' , forumName , '" order by year'
-forumName ; link ; (> monthIndex { ShortMonths) ; year
+forumName ; id ; (> monthIndex { ShortMonths) ; year
 )
 
 resetForumPostLoadButton =: 3 : 0
@@ -1215,6 +1223,7 @@ NB. Load the currently-displayed Forum post in the Forums section of the table o
 NB. ForumCacheTable year ; month ; subject ; author ; link
 'url title' =. {. getHistoryMenu ''
 'forumName link month year' =. reverseEngineerForumUrl url
+year =. ". year
 entries =. 1 getTocOutlineRailEntries MaxTocDepth  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link
 setTocOutlineRailSelectedIndex (, 3 {"1 entries) i. < forumName
 resetForumCache forumName
@@ -1583,7 +1592,8 @@ setTocEntryForumAuthorIndex =: 3 : 0
 NB. The index of the author who's currently highlighted.
 TocEntryForumAuthorIndex =: y
 'year month subject author link day' =. TocEntryForumAuthorIndex { ForumAuthorEntries
-queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
+NB. queueUrl ('https://www.jsoftware.com/pipermail/' , (}. ForumCurrentName) , '/' , (": year) , '-' , (> month { Months) , '/' , link , '.html') ; subject -. LF
+queueUrl link ; subject -. LF
 )
 
 NB. ---------------------- Live Search ---------------------------
@@ -2200,7 +2210,7 @@ ForumMonthBumpCount =: 0
 resetForumCache =: 3 : 0
 NB. y Forum name
 NB. Fill the forum cache with y's posts.
-NB. ForumCacheTable year ; month ; subject ; author ; link
+NB. ForumCacheTable year ; month ; subject ; author ; link ; day
 result =. > {: sqlreadm__db 'select year, month, subject, author, link, day from forums where forumname = "' , y , '" order by year desc, month asc, day asc'
 ForumCacheTable =: 0 1 2 3 4 5 {"1 result
 ForumCurrentName =: y
