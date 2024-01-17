@@ -24,6 +24,12 @@ NB. Spider the Vocabulary--don't use the spreadsheet.
 NB. Tags as first-class/suggested search terms…?
 NB. NuVoc R1 under Reference: blue 200 is wrong. (Multi-page category lists are a PITA.)
 
+NB. https://github.com/dzaima/chatlogs
+NB. https://code.golf/recent/solutions/all/j/bytes
+NB. https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&l=
+
+
+
 NB. ===================== Version Updates =====================
 addonPath =: '~addons/gottsman63/jwikiviz/manifest.ijs'
 githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifest.ijs'
@@ -227,6 +233,8 @@ if. LogMutex -: '' do. LogMutex =: 10 T. 0 end.
 2 log 'email to edward.j.gottsman@gmail.com'
 2&log &. > < ;. _2 JVERSION , LF
 2 log 'qscreen: ' , wd 'qscreen'
+try. sqliteRev =. > {. sqlite_info_psqlite_'' catch. sqliteRev =. 'No SQLite Add-On' end.
+2 log 'SQLite Add-On: ' , sqliteRev
 )
 
 logVersionInfo =: {{
