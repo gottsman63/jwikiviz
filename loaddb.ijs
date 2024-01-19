@@ -9,6 +9,7 @@ load 'data/sqlite'
 load 'web/gethttp'
 load 'regex'
 load 'arc/lz4'
+load 'convert/pjson'
 
 db =: ''
 Months =: ;:'January February March April May June July August September October November December'
@@ -23,22 +24,36 @@ forumDir =: appDir , '/forums'
 forumStderrDir =: forumDir , '/stderr'
 forumHtmlDir =: forumDir , '/html'
 masterDbFile =: appDir , '/master.db'
-NB.indexFile =: appDir , '/jwikiviz.fulltext.txt.lz4'
 quoraDbPath =: appDir , '/quora.db'
 youTubeDbPath =: appDir , '/youtube.db'
 forumsDbPath =: appDir , '/forums.db'
 tokenFile =: appDir , '/token.txt'
 compressedDbPath =: appDir , '/jviewer.lz4'
-NB. gitHubContentFile =: appDir , '/jwikiviz.gitHub.dat.lz4'
+logPath =: appDir , '/log.txt'
 
 jEnglishEquivalents =: _2 ]\ '(' ; 'leftpar' ; ')' ; 'rightpar' ; '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jEnglishDict =: (0 {"1 jEnglishEquivalents) ,. 'J'&, &. > <@":"0 i. # jEnglishEquivalents
 jMnemonics =: , &. > 0 {"1 jEnglishDict
 jEnglishWords =: 1 {"1 jEnglishDict
 htmlEncodings =: _2 ]\ '&gt;' ; '>' ; '&lt;' ; '<' ; '&quot;' ; '"' ; '&amp;' ; '&' ; '<tt>' ; ' ' ; '</tt>' ; ' ' ; '<pre>' ; ' ' ; '&nbsp;' ; ' '
-searchJMnemonics =: jMnemonics&i.
+NB. searchJMnemonics =: jMnemonics&i.
 
 translateToJEnglish =: 3 : 0
+NB. y Text with J mnemonics and English words
+NB. Convert the J mnemonics to JEnglish.
+try.
+	translatedHtml =. ('''' ; ' ') rxrplc translateHtmlEncodings , y
+	rawTokens =. , ;: translatedHtml
+	hits =. (jMnemonics , rawTokens) i. rawTokens
+	result =. ; (<' ') ,. hits { jEnglishWords , rawTokens
+	if. 0 = # result do. 'No Code' else. result end.
+catch. catcht.
+	smoutput 'JEnglish Failure ' , (13!:12) ''
+	'JEnglish Failure'
+end.
+)
+
+translateToJEnglishOld =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 NB. try. raw =. ('''' ; '''''') rxrplc y catch. ' ' return. end.
@@ -50,7 +65,7 @@ NB.	if. 1 = 2 | +/ '''' = y do. quoted =. singleLine , '''' else. quoted =. sing
 	hits =. searchJMnemonics"0 1 rawTokens
 	result =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 	if. 0 = # result do. 'No Code' else. result end.
-catch.  
+catch. catcht.
 	smoutput 'JEnglish Failure ' , (13!:12) ''
 	'JEnglish Failure'
 end.
@@ -201,6 +216,7 @@ NB. ======================== End Crawling Quora ================================
 NB. ========================= Crawling YouTube =========================================
 updateMasterDbWithYouTube =: 3 : 0
 smoutput 'updateMasterDbWithYouTube'
+try.
 createOrOpenMasterDb ''
 youTubeDb =. sqlopen_psqlite_ youTubeDbPath
 sqlcmd__masterDb 'delete from content where sourcetype = "V"'
@@ -212,6 +228,9 @@ transcripts =. 3 {"1 table
 bodies =. titles , &. > ' '&, &. > descriptions , &. > ' '&, &. > transcripts
 data =. links ; links ; ((# links) # <'YouTube') ; ((# links) # < 'V') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # <' ') ; < bodies
 sqlinsert__masterDb 'content' ; masterCols ; < data
+catch. catcht.
+	smoutput (13!:12) ''
+end.
 )
 NB. ======================= End Crawling YouTube =======================================
 
@@ -220,61 +239,107 @@ indexSuffixes =:  '.ijs' ; '.ijt'
 sep =: 0 { a.
 gitHubContent =: ''
 
+log =: 3 : 0
+LF (1!:3) < logPath
+y (1!:3) < logPath
+)
+
+updateMasterDbWithGitHubJRepos =: 3 : 0
+echo 'updateMasterDbWithGitHubJRepos'
+try.
+createOrOpenMasterDb ''
+sqlcmd__masterDb 'delete from content where sourcetype = "G"'
+NB. url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&p='
+url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&sort:updated&p='
+page =. 0
+while. 1 do.
+  '' (1!:2) < logPath
+  json =. gethttp url , ": page =. page + 1
+echo 'page' ; page
+echo json
+  rec =. > {. {:"1 dec_pjson_ json
+  keys =. {."1 rec
+  vals =. {:"1 rec
+  pageCount =. > (keys i. < 'page_count') { vals
+  echo 'pageCount' ; pageCount
+  tokens =. {."1 > (keys i. < 'csrf_tokens') { vals
+  projects =. ~. ; &. > (<'/')&,. &. > 1 2&{ &. > < ;. _2 &. >  ,&'/' &. > tokens 
+  updateMasterDbWithGitHubDocs &. > projects
+  if. page > pageCount do. break. end.
+  (6!:3) 30
+end.
+catch. catcht.
+	log (13!:12) ''
+end.
+echo 'end updateMasterDbWithGitHubJRepos'
+)
+
 updateMasterDbWithGitHubDocs =: 3 : 0
-NB. y Project name from the jsoftware section of GitHub
+NB. y Project name from GitHub
 NB. Get the project, get contents of the relevant files, translate, insert into master.db.
 project =. y
 smoutput project
+log project
 wd 'msgs'
 token =. LF -.~ (1!:1) < tokenFile
 NB. cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/gottsman63/' , project , '/zipball/master/'
-cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/jsoftware/' , project , '/zipball/master/'
+cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com' , project , '/zipball/master/'
 zip =. (2!:0) cmd
-zipFilename =. appDir , '/github/' , project , '.zip'
-exdir =. appDir , '/github/' , project
+zipFilename =. appDir , '/github/' , (project -. '/') , '.zip'
+try. (2!:0) 'mkdir ' , appDir , '/github/' catch. end.
+exdir =. appDir , '/github/' , project -. '/'
 zip (1!:2) < zipFilename
 try. (2!:0) 'rm -r ' , exdir catch. end.
 try.
 	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
 	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
-	filenames =. ; < ;. _2 @(2!:0) &. > commands
-	contents =. translateToJEnglish &. > rawContents =. <@(1!:1)"0 filenames
-	urls =. ('https://github.com/jsoftware/' , project , '/blob/master/')&, &. > ('^.*jsoftware[^/]+/' ; '')&rxrplc &. > filenames
-	for_i. i. # urls do.
+	filenames =. a: -.~ , > < ;. _2 @(2!:0) &. > commands
+	rawContents =. <@(1!:1)"0 filenames
+	contents =. translateToJEnglish &. > rawContents
+	for_i. i. # filenames do.
 		lines =. < ;. 2 (> i { contents) , LF
 		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
 		content =. ; lineNumbers ,. lines
-		url =. i { urls
-		filename =. i { filenames
-		subject =. '[GitHub] ' , project , ': ' , (('^.*/' , project, '/[^/]+/') ; '') rxrplc > filename
-		data =. url ; filename ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
-		sqlinsert__masterDb 'content' ; masterCols ; < data
+		fullPath =. , > i { filenames
+		partialPath_1 =. ((# project -. '/') + (project -. '/') I.@E. fullPath) }. fullPath
+		partialPath =. (('^/[^/]+/') ; '') rxrplc partialPath_1
+		url =. 'https://github.com' , project , '/blob/master/' , partialPath
+		subject =. '[GitHub] ' , project , ': ' , partialPath
+		data =. url ; url ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
+		try.
+NB.			sqlinsert__masterDb 'content' ; masterCols ; < data
+			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
+		catch. catcht.
+			smoutput 'Problem upserting: ' , sqlerror__masterDb
+			smoutput (13!:12) ''
+		end.
 	end.
-catch.
+catch. catcht.
 	smoutput (13!:12) ''
 	smoutput sqlerror__masterDb ''
 end.
 try. (2!:0) 'rm -r ' , exdir catch. end.
 try. (2!:0) 'rm ' , zipFilename catch. end.
+(6!:3) 2
 )
 
-updateMasterDbWithGitHubProjects =: 3 : 0
-NB. Update master.db with the jsoftware projects from GitHub.
-smoutput 'updateMasterDbWithGitHubProjects'
-gitHubContent =: ''
-createOrOpenMasterDb ''
-sqlcmd__masterDb 'delete from content where sourcetype = "G"'
-page =. 1
-whilst. 0 < # ol do.
-	url =. 'https://github.com/orgs/jsoftware/repositories?page=' , (": page) , '&type=all'
-	html =. gethttp url
-	ol =. }. {:"2 (rxcomp 'd-inline-block">\s+([^<]+)<') rxmatches html
-	projects =. -.&LF &. > (<"0 {:"1 ol) {. &. > ({."1 ol) <@}."0 1 html
-	updateMasterDbWithGitHubDocs &. > projects NB. -. 'jsource' ; 'winget-pkgs'
-	page =. >: page
-	smoutput 'page' ; page
-end.
-)
+NB. updateMasterDbWithGitHubProjects =: 3 : 0
+NB. NB. Update master.db with the jsoftware projects from GitHub.
+NB. smoutput 'updateMasterDbWithGitHubProjects'
+NB. gitHubContent =: ''
+NB. createOrOpenMasterDb ''
+NB. sqlcmd__masterDb 'delete from content where sourcetype = "G"'
+NB. page =. 1
+NB. whilst. 0 < # ol do.
+NB. 	url =. 'https://github.com/orgs/jsoftware/repositories?page=' , (": page) , '&type=all'
+NB. 	html =. gethttp url
+NB. 	ol =. }. {:"2 (rxcomp 'd-inline-block">\s+([^<]+)<') rxmatches html
+NB. 	projects =. -.&LF &. > (<"0 {:"1 ol) {. &. > ({."1 ol) <@}."0 1 html
+NB. 	updateMasterDbWithGitHubDocs &. > projects NB. -. 'jsource' ; 'winget-pkgs'
+NB. 	page =. >: page
+NB. 	smoutput 'page' ; page
+NB. end.
+NB. )
 NB. ========================== End Crawling GitHub ====================================
 
 NB. =================================== Master DB =============================================
@@ -1162,7 +1227,8 @@ if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMa
 NB. updateMasterDbWithPosts ''
 copyForumRecordsToMaster ''
 moveForumRecordsFromMasterToStage ''
-updateMasterDbWithGitHubProjects ''
+NB. updateMasterDbWithGitHubProjects ''
+updateMasterDbWithGitHubJRepos ''
 updateMasterDbWithRosettaCode ''
 updateMasterDbWithQuora ''
 updateMasterDbWithYouTube ''	
