@@ -687,6 +687,17 @@ vizform_vocContext_mwheel =: 3 : 0
 scrollChange 5 * {: ". > {: 13 { wdq
 )
 
+vizform_vocContext_char =: 3 : 0
+c =. > (({."1 wdq) i. < 'sysdata') { {:"1 wdq
+if. 239 160 128 -: 3 u: c do. vizform_close '' end.
+)
+
+vizform_browser_char =: 3 : 0
+NB. This never gets called; the web view seems to swallow keystrokes.
+c =. > (({."1 wdq) i. < 'sysdata') { {:"1 wdq
+if. 239 160 128 -: 3 u: c do. vizform_close '' end.
+)
+
 vizform_close =: 3 : 0
 log 'vizform_close'
 dbCloseDb ''
@@ -711,14 +722,6 @@ vizform_close ''
 
 vizform_searchHelp_button =: 3 : 0
 loadPage 'https://code.jsoftware.com/wiki/J_Viewer#Max' ; 'Max 200'
-)
-
-vizform_browser_escape =: 3 : 0
-vizform_close ''
-)
-
-vizform_vocContext_escape =: 3 : 0
-vizform_close ''
 )
 
 vizform_fontSlider_changed =: 3 : 0
