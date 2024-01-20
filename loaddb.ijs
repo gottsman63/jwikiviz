@@ -299,12 +299,12 @@ try.
 	for_i. i. # filenames do.
 		lines =. < ;. 2 (> i { contents) , LF
 		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
-		content =. ; lineNumbers ,. lines
 		fullPath =. , > i { filenames
 		partialPath_1 =. ((# project -. '/') + (project -. '/') I.@E. fullPath) }. fullPath
 		partialPath =. (('^/[^/]+/') ; '') rxrplc partialPath_1
 		url =. 'https://github.com' , project , '/blob/master/' , partialPath
 		subject =. '[GitHub] ' , project , ': ' , partialPath
+		content =. subject , ' ' , ; lineNumbers ,. lines
 		data =. url ; url ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
 		try.
 NB.			sqlinsert__masterDb 'content' ; masterCols ; < data
