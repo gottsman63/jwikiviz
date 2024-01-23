@@ -93,6 +93,7 @@ getHtml =: 3 : 0
 NB. y Boxed urls
 NB. Return a list of boxed html, one for each url
 smoutput 'getHtml...'
+echo ,. y
 blockSize =. 100 <. # y
 urlBlocks =. (- blockSize) <\ y
 result =. ''
@@ -305,7 +306,8 @@ try.
 		url =. 'https://github.com' , project , '/blob/master/' , partialPath
 		subject =. '[GitHub] ' , project , ': ' , partialPath
 		content =. subject , ' ' , ; lineNumbers ,. lines
-		data =. url ; url ; project ; (<'G') ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
+NB. masterCols: link id sourcename sourcetype year monthindex day subject author body
+		data =. url ; url ; project ; 'G'	 ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
 		try.
 NB.			sqlinsert__masterDb 'content' ; masterCols ; < data
 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
@@ -526,11 +528,12 @@ smoutput 'Found ', (": # titles) , ' changed wiki pages.'
 if. 0 = # titles do. return. end.
 links =. (wikiUrlPrefix , '/')&, &. > wikiLinks
 urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
-htmls =. translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
+htmls =: translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
 data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
 try.
 	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
 catch. catcht.
+	smoutput 'updateMasterDbWithChangedWikiPages'
 	smoutput (13!:12) ''
 	smoutput sqlerror__masterDb '' 
 end.

@@ -1715,7 +1715,7 @@ NB. Use searchBox and searchBoxWords to create a query.
 phrase =. ; }: , (<'+') ,.~ a: -.~ < ;. _2 (translateToJEnglish searchBox) , ' '
 words =. ; }: , (<' AND ') ,.~ a: -.~ < ;. _2 (translateToJEnglish searchBoxWords) , ' '
 if. (0 = # words) +. 0 = # phrase do. and =. '' else. and =. ' AND ' end.
-'"' , phrase , and , words , '"'
+'''"' , phrase , and , words , '"'''
 )
 
 dropSpacesSnippetTokens =: (jMnemonics -. , &. > ':' ; '.') , , &. > '(' ; ')'
