@@ -249,7 +249,7 @@ updateMasterDbWithGitHubJRepos =: 3 : 0
 echo 'updateMasterDbWithGitHubJRepos'
 try.
 createOrOpenMasterDb ''
-sqlcmd__masterDb 'delete from content where sourcetype = "G"'
+NB. sqlcmd__masterDb 'delete from content where sourcetype = "G"'
 NB. url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&p='
 url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&sort:updated&p='
 page =. 0
