@@ -295,6 +295,10 @@ ScrollOffset =: 0 NB. Negative numbers indicate scrolling down.  This value is a
 ScrollWindowHeight =: 10
 ScrollContentHeight =: 100
 
+resetScrollOffset =: 3 : 0
+setScrollAbsolute 0
+)
+
 setScrollWindowHeight =: 3 : 0
 NB. The height of the window (viewport) onto the content, in the same units as the content height.
 ScrollWindowHeight =: y
@@ -307,26 +311,24 @@ ScrollContentHeight =: y
 
 scrollChange =: 3 : 0
 NB. Negative y indicates scrolling downward--that is, pulling the content upward.
+NB. echo 'scrollChange y ' ; y
 originalScrollOffset =. ScrollOffset
-ScrollOffset =: ScrollOffset + y
+ScrollOffset =: ScrollOffset - y
 normalizeScroll ''
 if. originalScrollOffset ~: ScrollOffset do. animate 1 end.
 )
 
-scrollSetAbsolute =: 3 : 0
+setScrollAbsolute =: 3 : 0
 ScrollOffset =: y
 normalizeScroll ''
+clearLiveSearchPageRecords ''
 animate 1
 )
 
 normalizeScroll =: 3 : 0
 NB. Ensure that the scroll offset is within bounds.
-ScrollOffset =: 0 <. (- ScrollContentHeight - ScrollWindowHeight) >. ScrollOffset
-)
-
-resetScroll =: 3 : 0
-ScrollOffset =: 0
-TargetScrollOffset =: 0
+NB. echo 'normalizeScroll' ; ScrollContentHeight ; ScrollWindowHeight ; ScrollOffset
+ScrollOffset =: 0 >. (ScrollContentHeight - ScrollWindowHeight) <. ScrollOffset
 )
 NB. ===========================================================
 
@@ -447,7 +449,7 @@ wd       'cc liveWiki checkbox; cn *Wiki'
 wd       'cc liveRosetta checkbox; cn *Rosetta'
 wd       'cc liveQuora checkbox; cn *Quora'
 wd       'cc liveYouTube checkbox; cn *YouTube'
-NB. wd       'cc wikiSearchMenu combolist;'
+wd       'cc liveAllNone checkbox; cn *All/None'
 wd     'bin z;'
 wd     'bin h;'
 wd       'cc logcheck checkbox; cn Debug (Log);'
@@ -545,6 +547,7 @@ wd 'set liveWiki maxwh ' , (": 50 , controlHeight) , ';'
 wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set liveQuora maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveYouTube maxwh ' , (": 80 , controlHeight) , ';'
+wd 'set liveAllNone maxwh ' , (": 80 , controlHeight) , ';'
 NB. wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 380) , controlHeight) , ';'
 wd 'set searchHelp maxwh ' , (": 160 , controlHeight) , ';'
 NB. wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
@@ -589,9 +592,9 @@ end.
 
 setMax200ButtonCaption =: 3 : 0
 log 'setMax200ButtonCaption'
-count =. # LiveSearchResults
-if. 200 <: count do. caption =. '200+ (Why?)' else. caption =. (": count) , ' Hits' end.
-wd 'set searchHelp caption *' , caption
+NB. count =. # LiveSearchRowIds
+NB. if. 200 <: count do. caption =. '200+ (Why?)' else. caption =. (": count) , ' Hits' end.
+wd 'set searchHelp caption *' , (": # LiveSearchRowIds) , ' Hits'
 )
 
 setControlVisibility =: {{
@@ -610,7 +613,6 @@ try.
 	wd 'set liveRosetta enable ' , flag
 	wd 'set liveQuora enable ' , flag
 	wd 'set liveYouTube enable ' , flag
-NB.	wd 'set wikiSearchMenu enable ' , flag
 	wd 'set tocList enable ' , flag
 	wd 'set bookmark enable ' , flag
 	wd 'set history enable ' , flag
@@ -623,13 +625,22 @@ catch.
 end.
 }}
 
+LiveForumFlag =: 1
+LiveGitHubFlag =: 1
+LiveWikiFlag =: 1
+LiveRosettaFlag =: 1
+LiveQuoraFlag =: 1
+LiveYouTubeFlag =: 1
+
 setLiveSearchSourceFlagButtons =: {{
-wd 'set liveForum value 1'
-wd 'set liveGitHub value 1'
-wd 'set liveWiki value 1'
-wd 'set liveRosetta value 1'
-wd 'set liveQuora value 1'
-wd 'set liveYouTube value 1'
+flag =. ": y
+wd 'set liveForum value ' , flag
+wd 'set liveGitHub value ' , flag
+wd 'set liveWiki value ' , flag
+wd 'set liveRosetta value ' , flag
+wd 'set liveQuora value ' , flag
+wd 'set liveYouTube value ' , flag
+LiveForumFlag =: LiveGitHubFlag =: LiveWikiFlag =: LiveRosettaFlag =: LiveQuoraFlag =: LiveYouTubeFlag =: y
 }}
 
 MinScreenWidth =: 1500
@@ -741,46 +752,59 @@ snapshotLogToBrowser 0
 )
 
 vizform_liveForum_button =: 3 : 0
+LiveForumFlag =: liveForum = '1'
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveWiki_button =: 3 : 0
+LiveWikiFlag =: liveWiki = '1'
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveGitHub_button =: 3 : 0
+LiveGitHubFlag =: liveGitHub = '1'
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveRosetta_button =: {{
+LiveRosettaFlag =: liveRosetta = '1'
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 }}
 
 vizform_liveQuora_button =: 3 : 0
+LiveQuoraFlag =: liveQuora = '1'
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
 vizform_liveYouTube_button =: 3 : 0
+LiveYouTubeFlag =: liveYouTube = '1'
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
 
-vizform_liveAge_changed =: 3 : 0
+vizform_liveAllNone_button =: 3 : 0
+setLiveSearchSourceFlagButtons ". liveAllNone
 markLiveSearchDirty ''
 invalidateDisplay ''
 setTocOutlineRailTopLevelEntry LiveSearchCatString
 )
+
+NB. vizform_liveAge_changed =: 3 : 0
+NB. markLiveSearchDirty ''
+NB. invalidateDisplay ''
+NB. setTocOutlineRailTopLevelEntry LiveSearchCatString
+NB. )
 
 NB. vizform_wikiSearchMenu_select =: 3 : 0
 NB. log 'vizform_wikiSearchMenu_select ' , wikiSearchMenu
@@ -1608,23 +1632,12 @@ queueUrl link ; subject -. LF
 )
 
 NB. ---------------------- Live Search ---------------------------
-NB. indexDbFile =: '~temp/jsearch.db'
-liveSearchDb =: ''
-liveSearchPageIndex =: 0
-LiveSearchPyx =: a:
 LiveSearchIsDirty =: 0
 LiveSearchResults =: '' NB. Title ; Snippet ; URL
-LiveSearchWikiTitlesByCategory =: '' NB. Category ; Title
-LiveSearchCategorizedWikiResults =: '' NB. Category ; < Titles ; Snippets ; Urls
-LiveSearchWikiCategory =: '' NB. Currently-selected wiki category name
-LastLiveSearchQuery =: ''
-NB. LiveSearchCountdown =: 0
-LiveSearchRawResult =: ''
+LiveSearchRowIds =: ''
+LiveSearchPageRecords =: ''
+LiveSearchLastOffset =: _1
 
-NB. jEnglishDict =: _2 ]\ '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
-NB. jMnemonics =: , &. > 0 {"1 jEnglishDict
-NB. jEnglishWords =: 'J'&, &. > 1 {"1 jEnglishDict
-NB. jPrintedIndices =: 'J'&, &. > <@":"0 i. # jMnemonics
 jEnglishEquivalents =: _2 ]\ '(' ; 'leftpar' ; ')' ; 'rightpar' ; '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jEnglishDict =: (0 {"1 jEnglishEquivalents) ,. 'J'&, &. > <@":"0 i. # jEnglishEquivalents
 jMnemonics =: , &. > 0 {"1 jEnglishDict
@@ -1637,85 +1650,14 @@ buildLiveSearchWikiTitlesByCategory =: {{
 LiveSearchWikiTitlesByCategory =: > {: sqlreadm__db 'select category, title from categories, wiki where categories.categoryid = wiki.categoryid'
 }}
 
-categorizeLiveSearchWikiTitles =: {{
-NB. y A list of boxed titles, snippets, urls, years, sources from the wiki search results
-NB. Return a table of Category Name .: (titles ; urls)
-NB. The first category should be a synthetic "all" containing all titles/urls.
-NB. LiveSearchWikiTitlesByCategory: Category ; Title
-titleSnippetUrlYearSource =. y #~ (0 {"1 y) e. 1 {"1 LiveSearchWikiTitlesByCategory
-titles1 =. 0 {"1 titleSnippetUrlYearSource
-titles2 =. 1 {"1 LiveSearchWikiTitlesByCategory
-categories =. (titles2 i. titles1) { 0 {"1 LiveSearchWikiTitlesByCategory
-categoryKeys =. ~. categories
-groups =. (categories < /. titleSnippetUrlYearSource) /: categoryKeys
-(/:~ categoryKeys) ,: groups
-}}
-
-categorizeLiveSearchForumPosts =: {{
-NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
-NB. Return a table of Category (Forum) Name .: (subjects ; urls)
-lengths =. >:@{.@i.&' ' &. > }. &. > 0 {"1 y
-categories =. lengths {. &. > 0 {"1 y
-categoryKeys =. ~. categories
-groups =. (categories < /. y) /: categoryKeys
-(/:~ categoryKeys) ,: groups
-}}
-
-categorizeLiveSearchGitHubFiles =: {{
-NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
-NB. Return a table of Category (Repository) Name .: (subjects ; urls)
-lengths =. {.@i.&':' &. > 0 {"1 y
-categories =. lengths {. &. > 0 {"1 y
-categoryKeys =. ~. categories
-groups =. (categories < /. y) /: categoryKeys
-(/:~ categoryKeys) ,: groups
-}}
-
-categorizeLiveSearchRosettaFiles =: {{
-NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
-NB. Just categorize everything under RosettaCode.
-(< 'RosettaCode') ,: < y
-}}
-
-categorizeLiveSearchQuoraFiles =: 3 : 0
-NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
-NB. Just categorize everything under Quora.
-(< 'Quora') ,: < y
-)
-categorizeLiveSearchYouTubeFiles =: 3 : 0
-NB. y A list of boxed titles, snippets, urls, years, sources from the forum search results
-NB. Just categorize everything under YouTube.
-(< 'YouTube') ,: < y
-)
-
-setLiveAgeLabel =: 3 : 0
-try.
-if. (". liveAge) = 10 do.
-	wd 'set liveAgeLabel text *' , 'All Docs'
-else.
-	cutoffYear =. 1 + ({. (6!:0) '') - ". liveAge
-	wd 'set liveAgeLabel text * >= ' , ": cutoffYear
-end.
-catch.
-end.
-)
-
-setLiveSearchPageIndex =: 3 : 0
-scrollSetAbsolute - y * ScrollWindowHeight
-NB. liveSearchPageIndex =: y
-NB. invalidateDisplay ''
-)
-
-NB. openLiveSearchDb =: 3 : 0
-NB. if. liveSearchDb -: '' do. liveSearchDb =: sqlopen_psqlite_ liveSearchDbPath end.
-NB. )
-
 createQuery =: 3 : 0
 NB. Use searchBox and searchBoxWords to create a query.
 phrase =. ; }: , (<'+') ,.~ a: -.~ < ;. _2 (translateToJEnglish searchBox) , ' '
 words =. ; }: , (<' AND ') ,.~ a: -.~ < ;. _2 (translateToJEnglish searchBoxWords) , ' '
+if. (0 = # words) *. 0 = # phrase do. '' return. end.
 if. (0 = # words) +. 0 = # phrase do. and =. '' else. and =. ' AND ' end.
-'''' , phrase , and , words , ''''
+NB. '''' , phrase , and , words , ''''
+phrase , and , words
 )
 
 dropSpacesSnippetTokens =: (jMnemonics -. , &. > ':' ; '.') , , &. > '(' ; ')'
@@ -1739,113 +1681,83 @@ end.
 )
 
 performLiveSearch =: 3 : 0
-NB. y A SQL statement
+NB. y A SQL statement that will set LiveSearchRowIds: rowid, source
 1 log 'performLiveSearch: ' , y
 try.
-	LiveSearchRawResult =: ''
 	dbOpenDb ''
-	time =. (6!:2) 'LiveSearchRawResult =. > {: sqlreadm__db y'
-	1 log '...' , (": # LiveSearchRawResult) , ' result(s) in ' , (": time) , ' sec.'
+	time =. (6!:2) 'result =. > {: sqlreadm__db y'
+	rowids =. {."1 result
+	sources =: {. &. > {:"1 result
+	querySources =: <"0 (LiveForumFlag , LiveWikiFlag , LiveGitHubFlag , LiveRosettaFlag , LiveQuoraFlag , LiveYouTubeFlag) # 'FWGRQV'
+	map =. +./ sources ="1 0 querySources
+	grade =. \: map # sources
+	LiveSearchRowIds =: grade { map # > rowids
+	setMax200ButtonCaption ''
+	1 log '...' , (": # LiveSearchRowIds) , ' final results, ' , (": # result) , ' raw result(s) in ' , (": time) , ' sec.'
 catch. catcht.
 1 log 'Live Search problem: ' , (13!:12) ''
 1 log 'DB Error (if any): ' , dbError ''
 end.
-LiveSearchRawResult
 )
 
 submitLiveSearch =: 3 : 0
-NB. y Empty
-NB. Create a table of title ; Snippet ; Url
-log 'submitLiveSearch: ' , searchBox , ' AND ' , searchBoxWords
+LiveSearchIsDirty =: 0
+LiveSearchRowids =: ''
+LiveSearchPageRecords =: ''
+LiveSearchLastOffset =: _1
+query =. createQuery ''
+if. 0 < # query do.
+  performLiveSearch 'select rownum, source from auxiliary , jindex where (jindex MATCH ''' , query , ''') and rownum = jindex.rowid'
+end.
+)
+
+clearLiveSearchPageRecords =: 3 : 0
+LiveSearchPageRecords =: ''
+LiveSearchLastOffset =: _1
+)
+
+fillInLiveSearchPageRecords =: 4 : 0
+NB. x Offset into the results
+NB. y Length of the result set to return
+NB. Fill in title, url, year, source, snippet for each hit in the specified subsequence.
+log (": x) , ' fillInLiveSearchPageRecords ' , (": y)
 try.
-	LiveSearchRawResult =: ''
-	if. 0 = (# searchBox) + # searchBoxWords do. return. end.
-	LastLiveSearchQuery =: searchBox , ' ' , searchBoxWords
-	setLiveSearchPageIndex 0
-	forumFlag =. liveForum = '1'
-	wikiFlag =. liveWiki = '1'
-	gitHubFlag =. liveGitHub = '1'
-	rosettaFlag =. liveRosetta = '1'
-	quoraFlag =. liveQuora = '1'
-	youTubeFlag =. liveYouTube = '1'
-	if. 0 = +./ forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag , youTubeFlag do. forumFlag =. wikiFlag =. gitHubFlag =. rosettaFlag =. quoraFlag =. youTubeFlag =. 1 end.
-	whereClause =. ' source IN (' , (}: ; ,&',' &. > ((forumFlag , wikiFlag , gitHubFlag , rosettaFlag , quoraFlag , youTubeFlag) # '"F"' ; '"W"' ; '"G"' ; '"R"' ; '"Q"' ; '"V"')) , ') '
-	cutoffYear =. 0
-	query =. createQuery ''
-	fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where jindex MATCH ' , query , ' AND (auxiliary.rowid = jindex.rowid) AND ' , whereClause , ' limit 200'
-	LiveSearchRawResult =: performLiveSearch fullSearch
-	LiveSearchIsDirty =: 0
+  if. 0 = # LiveSearchRowIds do. LiveSearchPageRecords =: '' return. end.
+  if. x ~: LiveSearchLastOffset do.
+    LiveSearchLastOffset =: x
+    dbOpenDb ''
+    query =. createQuery ''
+    offset =. 0 >. x <. # LiveSearchRowIds
+    length =. y <. (# LiveSearchRowIds) - offset
+    rownums =. length {. offset }. LiveSearchRowIds
+    rowNumString =. }. ; ','&,@":"0 rownums
+    fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where (jindex match ''' , query , ''') AND auxiliary.rownum IN (' , rowNumString , ') AND (auxiliary.rownum = jindex.rowid)'
+    result =. > {: sqlreadm__db fullSearch
+    snippets =. 4 {"1 result
+    sources =. {. &. > 3 {"1 result
+    if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
+    lineLabels =. highlightString&extractLineLabel &. > translateToJ &. > snippets
+    links =. (1 {"1 result) , &. > lineLabels
+    LiveSearchPageRecords =: (titles =. 0 {"1 result) ,. snippets ,. links ,. (years =. 2 {"1 result) ,. sources
+  end.
 catch.
-	1 log 'Problem in submitLiveSearch: ' , (13!:12) ''
-	1 log '...db error (if any): ' , dbError ''
+  1 log 'fillInLiveSearchPageRecords problem: ' , (13!:12) ''
+  1 log 'DB Error (if any): ' , dbError ''
 end.
 )
 
 markLiveSearchDirty =: 3 : 0
 log 'markLiveSearchDirty'
 LiveSearchIsDirty =: 1
+resetScrollOffset ''
 )
-
-processLiveSearchResults =: {{
-log 'processLiveSearchResults'
-try.
-	if. -. LiveSearchIsDirty do. 1 return. end.
-	submitLiveSearch ''
-	result =. LiveSearchRawResult
-	if. 0 = # result do. 
-		LiveSearchResults =: ''
-NB. 		wd 'set wikiSearchMenu items *'
-		log 'processLiveSearchResults: no results found'
-		1 NB. Fake rattleResult indicating that we're done with the query.
-		return.
-	end.
-NB. 	result =. (] {~ (# ? #)) result
-	result =. result /: 'test'&E. &. > (1 {"1 result) NB. Sort 'test' files last
-	snippets =. 4 {"1 result
-	sources =. {. &. > 3 {"1 result
-	if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
-
-	lineLabels =. highlightString&extractLineLabel &. > translateToJ &. > snippets
-	links =. (1 {"1 result) , &. > lineLabels
-	results =. (titles =. 0 {"1 result) ,. snippets ,. links ,. (years =. 2 {"1 result) ,. sources
-	log '...(processLiveSearchResults) found ' , (": # result) , ' results.'
-	LiveSearchResults =: \:~ results
-NB. 	categorizedWikiResults =. categorizeLiveSearchWikiTitles results #~ sources = < 'W'
-NB. 	categorizedForumResults =. categorizeLiveSearchForumPosts results #~ sources = < 'F'
-NB. 	categorizedGitHubResults =. categorizeLiveSearchGitHubFiles results #~ sources = < 'G'
-NB. 	categorizedRosettaResults =. categorizeLiveSearchRosettaFiles results #~ sources = < 'R'
-NB. 	categorizedQuoraResults =. categorizeLiveSearchQuoraFiles results #~ sources = < 'Q'
-NB. 	categorizedYouTubeResults =. categorizeLiveSearchYouTubeFiles results #~ sources = < 'V'
-NB. 	categorizedResults =. ((<'*All (Max 200)') ,: < LiveSearchResults) ,. categorizedForumResults ,. categorizedWikiResults ,. categorizedGitHubResults ,. categorizedRosettaResults ,. categorizedQuoraResults ,. categorizedYouTubeResults
-NB. 	categories =. {. categorizedResults
-NB. 	categoryCounts =. ' ('&, &. > ,&')' &. > ":@# &. > 1 { categorizedResults
-NB. 	categoryMenuList =. categories , &. > categoryCounts
-NB.	wd 'set wikiSearchMenu items ' , ; ' "'&, &. > ,&'"' &. > categoryMenuList
-	setLiveSearchPageIndex 0
-NB.	if. 0 = # LiveSearchWikiCategory do. LiveSearchWikiCategory =: '*All' end.
-NB.	index =. categories i. < LiveSearchWikiCategory
-NB.	if. index = # categories do. index =. 0 end.
-NB.	wd 'set wikiSearchMenu select ' , ": index
-NB.	if. index > 0 do.
-NB.		LiveSearchResults =: > index { (1 { categorizedResults)
-NB.	else.
-NB.		LiveSearchResults =: \:~ results
-NB.	end.
-catch.
-	1 log 'Problem in processLiveSearchResults: ' , (13!:12) ''
-	1 log 'DB error (if any): ' , dbError ''
-end.
-1 NB. Fake rattleResult indicating that we're done with the query.
-}}
 
 translateToJEnglish =: 3 : 0
 NB. y Text with J mnemonics and English words
 NB. Convert the J mnemonics to JEnglish.
 raw =. ('''' ; '''''') rxrplc y
-NB. rawTokens =. ;: raw
 rawTokens =. ;: raw
 hits =. jMnemonics i."1 0 rawTokens
-NB. string =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 ; (,&'"' &. > '"'&, &. > hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 )
 
@@ -1874,7 +1786,6 @@ NB. Display the results of the current search against the local database.
 log 'drawTocEntryLiveSearch ' , ": y
 try.
 	'xx yy width height' =. y
-	setLiveAgeLabel ''
 	glclip 0 0 10000 100000
 	glrgb 0 0 0
 	gltextcolor ''
@@ -1884,8 +1795,15 @@ try.
 	glrect xx , yy , width , height
 	glfont LiveSearchFont
 	colSep =: 20
-	rattleResult =. processLiveSearchResults ''
-	if. (0 = # LiveSearchResults) do.
+	if. LiveSearchIsDirty do. submitLiveSearch '' end.
+	topMargin =. 5
+	windowY =. yy + topMargin
+	windowHeight =. height - topMargin
+	setScrollWindowHeight windowHeight
+	windowLineCount =. >. windowHeight % TocLineHeight
+	offset =. <. (| ScrollOffset) % TocLineHeight
+	offset fillInLiveSearchPageRecords windowLineCount
+	if. (0 = # LiveSearchPageRecords) do.
 		glfont 'arial 30'
 		startY =. <. yy + -: height
 		noResults =. 'No Results'
@@ -1893,39 +1811,22 @@ try.
 		(startX , startY) drawStringAt noResults
 		return. 
 	end.
-	pageLabelHeight =. 30
-	pageLabelWidth =. 30
-	topMargin =. 5
-	windowY =. yy + pageLabelHeight + topMargin
-	windowHeight =. height - pageLabelHeight + topMargin
-
-	liveSearchPageIndex =: +/ (| ScrollOffset) > +/\ 100 # windowHeight
-
-	windowLineCount =. <. windowHeight % TocLineHeight
-	pageLabelCount =. >. (# LiveSearchResults) % windowLineCount
-	pageLabels =. <@":"0 >: i. pageLabelCount
-	pageLabelOrigins =. (xx + 60 + pageLabelWidth * i. pageLabelCount) ,. topMargin
-	pageLabelRects =. pageLabelOrigins ,"1 1 pageLabelWidth , pageLabelHeight
-	(pageLabelRects -"(1 1) 4 4 0 0) registerRectLink"1 1 ('*setLiveSearchPageIndex '&, &. > <@":"0 i. pageLabelCount) ,"0 1 (< ' ') , <1
-	((liveSearchPageIndex { pageLabelRects) - 4 4 0 0) drawHighlight SelectionColor
-
-	setScrollWindowHeight height - pageLabelHeight
-	setScrollContentHeight TocLineHeight * windowLineCount * >: pageLabelCount
-
-	rawLineRenderIndexes =. (>. (| ScrollOffset) % TocLineHeight) + i. 2 + windowLineCount
-	lineRenderIndexes =. (rawLineRenderIndexes < # LiveSearchResults) # rawLineRenderIndexes
-	NB. results =. > liveSearchPageIndex { (- contentLineCount) <\ LiveSearchResults
-	results =. LiveSearchResults
-	(<"1 pageLabelOrigins) drawStringAt &. > pageLabels
-	((5 + xx) , 5) drawStringAt 'Page:'
-
-	titles =. lineRenderIndexes { 0 {"1 results
-	snippets =. lineRenderIndexes { translateToJ &. > 1 {"1 results
-	links =. lineRenderIndexes { 2 {"1 results
-	sources =. lineRenderIndexes { 4 {"1 results
+	scrollBarHeight =. height * windowHeight % TocLineHeight * # LiveSearchRowIds
+	scrollRatio =. ScrollOffset % (TocLineHeight * # LiveSearchRowIds) - windowHeight
+	scrollBarVerticalOffset =. scrollRatio * windowHeight - scrollBarHeight
+	glrgb 127 127 127
+	glbrush ''
+	glpen ''
+	glrect <. (_10 + xx + width) , (yy + scrollBarVerticalOffset) , 10 , scrollBarHeight
+	results =. LiveSearchPageRecords
+	setScrollContentHeight TocLineHeight * # LiveSearchRowIds
+	titles =. 0 {"1 results
+	snippets =. translateToJ &. > 1 {"1 results
+	links =. 2 {"1 results
+	sources =. 4 {"1 results
 	colWidth =. <. -: width - colSep
-	snippetOrigins =. lineRenderIndexes { (xx + 5) ,. ScrollOffset + pageLabelHeight + topMargin + TocLineHeight * i. # results
-	titleOrigins =. lineRenderIndexes { (xx + colSep + colWidth) ,. ScrollOffset + pageLabelHeight + topMargin + TocLineHeight * i. # results
+	snippetOrigins =. (xx + 5) ,. topMargin + TocLineHeight * i. # results
+	titleOrigins =. (xx + colSep + colWidth) ,. topMargin + TocLineHeight * i. # results
 
 	if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
 
@@ -3094,6 +2995,7 @@ end.
 go =: 3 : 0
 try.
 	clearLog ''
+NB. LogFlag =: 1
 	logVersionInfo ''
 	if. -. checkGethttpVersion '' do. return. end.
 	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
@@ -3111,8 +3013,7 @@ try.
 	'w h' =. 2 3 { ". wd 'qscreen'
 	wd 'pshow'
 	wd 'msgs'
-	setLiveSearchSourceFlagButtons ''
-NB.	vizform_showBookmarks_button ''
+	setLiveSearchSourceFlagButtons 1
 	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
 	wd 'set searchBox focus'
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.

@@ -556,9 +556,9 @@ createOrOpenMasterDb ''
 table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
 titles =. 3 {"1 table
 years =: > 2 {"1 table
-sources =. 1 {"1 table
-urls =. 0 {"1 table
+sources =. -.&' ' &. > 1 {"1 table
 bodies =. 5 {"1 table
+urls =. 0 {"1 table
 sqlinsert__db 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
 sqlinsert__db 'jindex' ; (;: 'body') ;  << bodies
 
@@ -1186,14 +1186,12 @@ sqlcmd__db 'CREATE TABLE forums (forumname TEXT, year INTEGER, month INTEGER, da
 sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid INTEGER, category TEXT, parentseq INTEGER, count INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
-NB.sqlcmd__db 'CREATE TABLE log (datetime TEXT, msg TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE TABLE keyvalue (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
-sqlcmd__db 'CREATE TABLE auxiliary (title TEXT, year INTEGER, source TEXT, url TEXT)'
-NB. sqlcmd__db 'CREATE INDEX year_index ON auxiliary (year)'
-sqlcmd__db 'CREATE INDEX source_index ON auxiliary (source)'
+sqlcmd__db 'CREATE TABLE auxiliary (rownum INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, source TEXT, url TEXT)'
+NB. sqlcmd__db 'CREATE INDEX source_index ON auxiliary (source)'
 sqlcmd__db 'CREATE TABLE github (content BLOB)'
 )
 
