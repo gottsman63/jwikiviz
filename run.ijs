@@ -436,7 +436,7 @@ wd   'bin v;'
 wd     'bin h;'
 wd       'cc searchStatic static; cn *In Order:'
 wd       'cc searchBox edit;'
-wd       'cc searchHelp button; cn *Max 200 Results?!'
+wd       'cc searchHelp static; cn *Max 200 Results?!'
 wd       'cc searchWordsStatic static; cn *Any Order:'
 wd       'cc searchBoxWords edit;'
 wd     'bin z;'
@@ -731,9 +731,9 @@ vizform_escape =: 3 : 0
 vizform_close ''
 )
 
-vizform_searchHelp_button =: 3 : 0
-loadPage 'https://code.jsoftware.com/wiki/J_Viewer#Max' ; 'Max 200'
-)
+NB. vizform_searchHelp_button =: 3 : 0
+NB. loadPage 'https://code.jsoftware.com/wiki/J_Viewer#Max' ; 'Max 200'
+NB. )
 
 vizform_fontSlider_changed =: 3 : 0
 setFontSize ". fontSlider
@@ -1809,6 +1809,8 @@ try.
 		noResults =. 'No Results'
 		startX =. <. (xx + -: width) - -: {. glqextent noResults
 		(startX , startY) drawStringAt noResults
+		LiveSearchRowIds =: ''
+		setMax200ButtonCaption ''
 		return. 
 	end.
 	scrollBarHeight =. height * windowHeight % TocLineHeight * # LiveSearchRowIds
