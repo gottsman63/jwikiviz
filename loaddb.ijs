@@ -174,7 +174,7 @@ while. 0 < # html do.
 		wd 'msgs'
 		fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
 		table =: _10 ]\ , > (<a:) -.~ fullUrls updateMasterDbWithRosettaCodeChallenge &. > titles
-		data =: (0 {"1 table) ; (1 {"1 table) ; (2 {"1 table) ; (3 {"1 table) ; (> 4 {"1 table) ; (> 5 {"1 table) ; (> 6 {"1 table) ; (7 {"1 table) ; (8 {"1 table) ; < (9 {"1 table)
+		data =: (0 {"1 table) ; (1 {"1 table) ; (2 {"1 table) ; (3 {"1 table) ; (> 4 {"1 table) ; (> 5 {"1 table) ; (> 6 {"1 table) ; (7 {"1 table) ; (8 {"1 table) ; (9 {"1 table) ; < ((# table) # 1)
 		try.
 		 	sqlinsert__masterDb 'content' ; masterCols ; < data
 		catch. catcht. catchd.
@@ -209,7 +209,7 @@ links =. 0 {"1 table
 titles =. '[Quora] '&, &. > 1 {"1 table
 bodies =. 2 {"1 table
 augmentedBodies =. translateToJEnglish@translateHtmlEncodings &. > titles , &. > ' '&, &. > bodies
-data =. links ; links ; ((# links) # <'Quora') ; ((# links) # < 'Q') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # < 'Skip Cave') ; < augmentedBodies
+data =. links ; links ; ((# links) # <'Quora') ; ((# links) # < 'Q') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # < 'Skip Cave') ; augmentedBodies ; < ((# links) # 1)
 sqlinsert__masterDb 'content' ; masterCols ; < data
 )
 NB. ======================== End Crawling Quora ========================================
@@ -227,7 +227,7 @@ titles =. '[YouTube] '&, &. > 1 {"1 table
 descriptions =. 2 {"1 table
 transcripts =. 3 {"1 table
 bodies =. titles , &. > ' '&, &. > descriptions , &. > ' '&, &. > transcripts
-data =. links ; links ; ((# links) # <'YouTube') ; ((# links) # < 'V') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # <' ') ; < bodies
+data =. links ; links ; ((# links) # <'YouTube') ; ((# links) # < 'V') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # <' ') ; bodies ; ((# bodies) # 1)
 sqlinsert__masterDb 'content' ; masterCols ; < data
 catch. catcht.
 	smoutput (13!:12) ''
@@ -307,7 +307,10 @@ try.
 		subject =. '[GitHub] ' , project , ': ' , partialPath
 		content =. subject , ' ' , ; lineNumbers ,. lines
 NB. masterCols: link id sourcename sourcetype year monthindex day subject author body
-		data =. url ; url ; project ; 'G'	 ; 9999 ; 0 ; 0 ; subject ; ' ' ; < content
+		priority =. 2
+		if. +./ 'jsoftware' E. url do. priority =. 3 end.
+		if. +./ 'test' E. url do. priority =. 1 end.
+		data =. url ; url ; project ; 'G' ; 9999 ; 0 ; 0 ; subject ; ' ' ; content ; <priority
 		try.
 NB.			sqlinsert__masterDb 'content' ; masterCols ; < data
 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
@@ -345,7 +348,7 @@ NB. )
 NB. ========================== End Crawling GitHub ====================================
 
 NB. =================================== Master DB =============================================
-masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body'
+masterCols =: ;: 'link id sourcename sourcetype year monthindex day subject author body priority'
 
 createOrOpenMasterDb =: 3 : 0
 if. fexist < masterDbFile do.
@@ -353,21 +356,21 @@ if. fexist < masterDbFile do.
 else.
 	masterDb =: sqlcreate_psqlite_ masterDbFile
 	NB. The id can be used with other columns to reconstruct the link, which may not be sent down to the client (since it's fairly long).
-	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, author TEXT, body TEXT)'
+	sqlcmd__masterDb 'CREATE TABLE content (link TEXT PRIMARY KEY, id TEXT, sourcename TEXT, sourcetype TEXT, year INTEGER, monthindex INTEGER, day INTEGER, subject TEXT, author TEXT, body TEXT, priority INTEGER)'
 end.
 )
 
 moveForumRecordsFromMasterToStage =: 3 : 0
-smoutput 'moveForumRecordsFromMasterToStage'
+smoutput 'moveForumRecordsFromMasterToStage...'
 createOrOpenMasterDb ''
 dbOpenDb ''
 sqlcmd__db 'delete from forums'
 f =. > {: sqlreadm__masterDb 'select link, sourcename, year, monthIndex, day, subject, author from content where sourcetype = "F"'
 cols =. ;: 'forumname year month day subject author link'
 NB. data =. ('J'&, &. > 1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
-data =. (1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
+data =. (1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < (0 {"1 f)
 sqlinsert__db 'forums' ; cols ; <data
-smoutput 'moveForumRecordsFromMasterToStage: ' , ": # f
+smoutput '...moveForumRecordsFromMasterToStage: ' , ": # f
 )
 
 NB. ======================== Crawling Forums ==========================
@@ -392,7 +395,7 @@ days =. > 5 {"1 ftable
 subjects =. 6 {"1 ftable
 authors =. 7 {"1 ftable
 bodies =. 8 {"1 ftable
-data =. links ; ids ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; < bodies
+data =. links ; ids ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; bodies ; < ((# links) # 1)
 sqlinsert__masterDb 'content' ; masterCols ; < data
 smoutput 'end updateMasterDbWithForumPosts'
 wd 'msgs'
@@ -498,7 +501,7 @@ for_rowBatch. _100 < \ uniqueRows do.
 	rawHtmls =. getHtml urls
 	extractedHtmls =. extractTextFromWikiArticle &. > rawHtmls
 	htmls =. translateToJEnglish &. > extractedHtmls
-	data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
+	data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; htmls ; < ((# links) # 1)
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
 	catch. catcht.
@@ -529,7 +532,7 @@ if. 0 = # titles do. return. end.
 links =. (wikiUrlPrefix , '/')&, &. > wikiLinks
 urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
 htmls =: translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
-data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; < htmls
+data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; htmls ; < ((# urls) # 1)
 try.
 	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
 catch. catcht.
@@ -553,13 +556,16 @@ NB. )
 moveFullTextIndexIntoStage =: {{
 smoutput 'moveFullTextIndexIntoStage'
 createOrOpenMasterDb ''
-table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body from content'
+dbOpenDb ''
+table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body, priority from content'
 titles =. 3 {"1 table
 years =: > 2 {"1 table
 sources =. -.&' ' &. > 1 {"1 table
 bodies =. 5 {"1 table
 urls =. 0 {"1 table
-sqlinsert__db 'auxiliary' ; (;: 'title year source url') ; < titles ; years ; sources ; < urls
+priorities =. > 6 {"1 table
+data =. titles ; years ; sources ; urls ; < priorities
+sqlinsert__db 'auxiliary' ; (;: 'title year source url priority') ; < data
 sqlinsert__db 'jindex' ; (;: 'body') ;  << bodies
 
 }}
@@ -893,6 +899,7 @@ NB. ------------------- Forums ---------------------
 copyForumRecordsToMaster =: 3 : 0
 NB. New routine to use now that the old jsoftware Forum archive is unavailable.
 NB. Move the Forum records from forunms.db to master.db.
+smoutput 'copyForumRecordsToMaster'
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "F"'
 forumsDb =: sqlopen_psqlite_ forumsDbPath
@@ -905,7 +912,7 @@ days =. > 4 {"1 table
 subjects =. 5 {"1 table
 bodies =. 6 {"1 table
 authors =. 7 {"1 table
-data =. links ; ((# links) # < ' ') ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; < bodies 
+data =. links ; ((# links) # < ' ') ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; bodies ; ((# links) # 1)
 smoutput ,. data
 sqlinsert__masterDb 'content' ; masterCols ; < data
 )
@@ -1190,7 +1197,7 @@ sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE TABLE keyvalue (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
-sqlcmd__db 'CREATE TABLE auxiliary (rownum INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, source TEXT, url TEXT)'
+sqlcmd__db 'CREATE TABLE auxiliary (rownum INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, source TEXT, url TEXT, priority INTEGER)'
 NB. sqlcmd__db 'CREATE INDEX source_index ON auxiliary (source)'
 sqlcmd__db 'CREATE TABLE github (content BLOB)'
 )

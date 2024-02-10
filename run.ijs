@@ -1686,12 +1686,14 @@ NB. y A SQL statement that will set LiveSearchRowIds: rowid, source
 try.
 	dbOpenDb ''
 	time =. (6!:2) 'result =. > {: sqlreadm__db y'
-	rowids =. {."1 result
-	sources =: {. &. > {:"1 result
+NB. 	rowids =. > {."1 result
+	sources =: {. &. > 1 {"1 result NB. {. to drop the leading axis.
+NB.	priorities =. <"0 > 2 {"1 result
 	querySources =: <"0 (LiveForumFlag , LiveWikiFlag , LiveGitHubFlag , LiveRosettaFlag , LiveQuoraFlag , LiveYouTubeFlag) # 'FWGRQV'
 	map =. +./ sources ="1 0 querySources
-	grade =. \: map # sources
-	LiveSearchRowIds =: grade { map # > rowids
+	filteredResult =. map # result
+	grade =. \: ({. &. > 1 {"1 filteredResult) ,. <"0 > 2 {"1 filteredResult NB. Sort by source, priority
+	LiveSearchRowIds =: grade { > 0 {"1 filteredResult
 	setMax200ButtonCaption ''
 	1 log '...' , (": # LiveSearchRowIds) , ' final results, ' , (": # result) , ' raw result(s) in ' , (": time) , ' sec.'
 catch. catcht.
@@ -1707,7 +1709,7 @@ LiveSearchPageRecords =: ''
 LiveSearchLastOffset =: _1
 query =. createQuery ''
 if. 0 < # query do.
-  performLiveSearch 'select rownum, source from auxiliary , jindex where (jindex MATCH ''' , query , ''') and rownum = jindex.rowid'
+  performLiveSearch 'select rownum, source, priority from auxiliary , jindex where (jindex MATCH ''' , query , ''') and rownum = jindex.rowid'
 end.
 )
 
