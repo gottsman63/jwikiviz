@@ -367,6 +367,7 @@ case. 1 do. appCap =. 'J Viewer is up to date'
 case. 2 do. appCap =. '*** Offline (apparently)'
 end.
 
+wd 'set appUpdate enable ' , ": +./ 0 1 e. AppUpToDate
 wd 'set appUpdate caption *' , appCap
 
 select. DatabaseDownloadStatus
@@ -380,7 +381,7 @@ case. 3 do. dbCap =. '*** Offline (apparently)'
 end.
 
 NB. wd 'set dbUpdate stylesheet *border-width: 4px solid red'
-
+wd 'set dbUpdate enable ' , ": +./ _3 0 1 2 3 e. DatabaseDownloadStatus
 wd 'set dbUpdate caption *' , dbCap
 if. DatabaseDownloadStatus >: 0 do. wd 'set appUpdate enable 1' else. wd 'set appUpdate enable 0' end.
 wd 'msgs'

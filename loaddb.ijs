@@ -1236,7 +1236,9 @@ NB. updateMasterDbWithPosts ''
 copyForumRecordsToMaster ''
 moveForumRecordsFromMasterToStage ''
 NB. updateMasterDbWithGitHubProjects ''
-updateMasterDbWithGitHubJRepos ''
+for_i. i.5 do.
+  updateMasterDbWithGitHubJRepos ''
+end.
 updateMasterDbWithRosettaCode ''
 updateMasterDbWithQuora ''
 updateMasterDbWithYouTube ''	
