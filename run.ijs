@@ -1734,8 +1734,11 @@ try.
     length =. y <. (# LiveSearchRowIds) - offset
     rownums =. length {. offset }. LiveSearchRowIds
     rowNumString =. }. ; ','&,@":"0 rownums
-    fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50) from auxiliary, jindex where (jindex match ''' , query , ''') AND auxiliary.rownum IN (' , rowNumString , ') AND (auxiliary.rownum = jindex.rowid)'
+    fullSearch =. 'select title, url, year, source, snippet(jindex, 0, '''', '''', '''', 50), rownum from auxiliary, jindex where (jindex match ''' , query , ''') AND auxiliary.rownum IN (' , rowNumString , ') AND (auxiliary.rownum = jindex.rowid)'
     result =. > {: sqlreadm__db fullSearch
+    resultRowNums =. > 5 {"1 result
+    grade =. resultRowNums i."2 0 rownums
+    result =. grade { result
     snippets =. 4 {"1 result
     sources =. {. &. > 3 {"1 result
     if. 0 < # searchBox do. highlightString =. searchBox else. highlightString =. > {. < ;. _2 searchBoxWords , ' ' end.
