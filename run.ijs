@@ -713,7 +713,7 @@ if. 239 160 128 -: 3 u: c do. vizform_close '' end.
 vizform_close =: 3 : 0
 log 'vizform_close'
 dbCloseDb ''
-wd 'timer 0'
+wd 'ptimer 0'
 wd 'pclose'
 )
 
@@ -975,8 +975,7 @@ else.
 end.
 }}
 
-sys_timer_z_ =: {{
-NB. frame_jwikiviz_ ''
+vizform_timer_z_ =: {{
 wd 'psel vizform'
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
 fps =. <. 1000 % TimerFractionMsec_jwikiviz_
@@ -1016,7 +1015,7 @@ end.
 
 TimerCount =: 0
 
-wd 'timer 0'
+NB. wd 'ptimer 0'
 
 setDisplayRects =: 3 : 0
 'w h' =. ". wd 'get vocContext wh'
@@ -1286,7 +1285,6 @@ log 'queueUrl ' , (0 {:: y) , ' ' , 1 {:: y
 NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. end.
 QueuedUrl =: y
 QueuedUrlTime =: (6!:1) ''
-NB. wd 'timer ' , ": QueuedUrlTimeDelay
 loadQueuedUrl ''
 )
 
@@ -3026,7 +3024,7 @@ NB. LogFlag =: 1
 	wd 'set searchBox focus'
 	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	animate 10
-	wd 'timer ' , ": TimerFractionMsec
+	wd 'ptimer ' , ": TimerFractionMsec
 	if. -. dbPathExists '' do. vizform_dbUpdate_button '' end.
 catch. catcht.
 	1 log 'go: Problem: ' , (13!:12) ''
