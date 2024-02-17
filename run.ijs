@@ -857,7 +857,7 @@ NB. if. PageLoadFreezeDuration > ((6!:1) '') - PageLoadFreezeTime do. return. en
 VocMouseXY =: 0 1 { ". > 1 { 13 { wdq
 setLayoutRatioToc ''
 invalidateDisplay ''
-sys_timer_z_ ''
+vizform_timer_z_ ''
 )
 
 vizform_vocContext_mblup =: 3 : 0
