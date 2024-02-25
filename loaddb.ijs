@@ -48,7 +48,7 @@ try.
 	result =. ; (<' ') ,. hits { jEnglishWords , rawTokens
 	if. 0 = # result do. 'No Code' else. result end.
 catch. catcht.
-	smoutput 'JEnglish Failure ' , (13!:12) ''
+	echo 'JEnglish Failure ' , (13!:12) ''
 	'JEnglish Failure'
 end.
 )
@@ -66,7 +66,7 @@ NB.	if. 1 = 2 | +/ '''' = y do. quoted =. singleLine , '''' else. quoted =. sing
 	result =. ; (hits {"0 1 jEnglishWords ,"1 0 rawTokens) ,. < ' '
 	if. 0 = # result do. 'No Code' else. result end.
 catch. catcht.
-	smoutput 'JEnglish Failure ' , (13!:12) ''
+	echo 'JEnglish Failure ' , (13!:12) ''
 	'JEnglish Failure'
 end.
 )
@@ -92,7 +92,7 @@ NB. Title of the form /wiki/...
 getHtml =: 3 : 0
 NB. y Boxed urls
 NB. Return a list of boxed html, one for each url
-smoutput 'getHtml...'
+echo 'getHtml...'
 echo ,. y
 blockSize =. 100 <. # y
 urlBlocks =. (- blockSize) <\ y
@@ -106,8 +106,8 @@ for_i. i. # urlBlocks do.
 	try.
 		(2!:0) command
 	catch.
-		smoutput (13!:12) ''
-		smoutput urlSpec
+		echo (13!:12) ''
+		echo urlSpec
 	end.
 	result =. result , <@(1!:1)"0 files
 end.
@@ -124,9 +124,48 @@ try.
 catch.
 result =. 'extractTextFromWikiArticle failure!'
 end.
-NB. smoutput 'extractTextFromWikiArticle Failure! ' , 200 {. result
+NB. echo 'extractTextFromWikiArticle Failure! ' , 200 {. result
 result
 )
+
+NB. ===================== Magic 8 Ball ===========================
+loadMagic8Docs =: 3 : 0
+NB. y Number of docs to return
+NB. Return a table id ; contents
+result =. > {: sqlreadm__db 'select jindex.rowid, body, source from jindex, auxiliary where auxiliary.rownum = jindex.rowid limit ' , ": y
+sources =. , > 2 {"1 result
+docs =. (sources ~: 'G') # 0 1 {"1 result
+bodies =. tolower &. > -.&'.,:"' &. > 1 {"1 docs
+Docs =:  (0 {"1 docs) ,. bodies
+echo '# Docs' ; (# Docs) ; '# result' ; (# result)
+)
+
+buildMagic8Ball =: 3 : 0
+loadMagic8Docs 500000
+rawDocs =. < ;._2 &. > -.&(LF , CR , '();,._0123456789') &. > tolower &. > ,&' ' &. > 1 {"1 Docs
+wordsWithRepeats =. ; rawDocs
+uniqueWords =. ~. wordsWithRepeats
+echo '$ uniqueWords' ; $ uniqueWords
+counts =. # /.~ wordsWithRepeats
+countSieve =. (counts > 1) *. counts < 200
+wordLengths =. > $ &. > uniqueWords
+lengthSieve =. (wordLengths < 20) *. wordLengths > 2
+sieve =. , countSieve *. lengthSieve
+sievedWords =. sieve # uniqueWords
+echo '$ sievedWords' ; $ sievedWords
+sievedCounts =. sieve # counts
+try.
+  sqlcmd__db 'delete from similar'
+  data =. sievedCounts ; < sievedWords
+  sqlinsert__db 'similar' ; (;: 'count word') ; < data
+catch. catcht.
+  echo 'Problem in buildCounts: ' , (13!:12) ''
+  echo 'DB Error (if any): ' , dbError ''
+end.
+NB. out =.; (": &. > 0 {"1 table) ,. (< TAB) ,. (1 {"1 table) ,. < LF
+NB. out (1!:2) < jpath '~temp/counts.txt'
+)
+NB. =================== End Magic 8 Ball =========================
 
 NB. ========================== Crawling Rosettacode ====================================
 updateMasterDbWithRosettaCodeChallenge =: {{
@@ -137,14 +176,14 @@ NB. Return url ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; author 
 url =. x
 title =. '[Rosetta] ' , y
 try.
-	smoutput 'RosettaCode: ' , title
+	echo 'RosettaCode: ' , title
 	wd 'msgs'
 	html =. gethttp url , '?action=edit'
 	problemPlus =. html {.~ {. I. '=={{header|' E. html
 	problem =. problemPlus }.~ {. I. '<textarea' E. problemPlus
 	jSolution =. > jList #~ (< '=={{header|J}}==') = 16&{. &. > jList =. ('=={{header|' E. html) <  ;. 1 html
 	if. jSolution -: '' do. 
-		smoutput 'No J code found for ' , title
+		echo 'No J code found for ' , title
 		a:
 		return.
 	end.
@@ -152,14 +191,14 @@ try.
 	filename =. ' '
 	(url , '#J') ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; ' ' ; content
 catch. catchd.
-	smoutput (13!:12) ''
+	echo (13!:12) ''
 	a:
 	return.
 end.
 }}
 
 updateMasterDbWithRosettaCode =: {{
-smoutput 'updateMasterDbWithRosettaCode'
+echo 'updateMasterDbWithRosettaCode'
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "R"'
 pat =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
@@ -170,7 +209,7 @@ while. 0 < # html do.
 		c =. 1 2 {"2 pat rxmatches html
 		urlTitles =. ({:"1 c) <@{."0 1 ({."1 c) }."0 1 html
 		titles =. 1 {"1 urlTitles
-		smoutput titles
+		echo titles
 		wd 'msgs'
 		fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
 		table =: _10 ]\ , > (<a:) -.~ fullUrls updateMasterDbWithRosettaCodeChallenge &. > titles
@@ -178,8 +217,8 @@ while. 0 < # html do.
 		try.
 		 	sqlinsert__masterDb 'content' ; masterCols ; < data
 		catch. catcht. catchd.
-			smoutput 'Problem ' , (13!:12) ''
-			smoutput sqlerror__masterDb ''
+			echo 'Problem ' , (13!:12) ''
+			echo sqlerror__masterDb ''
 		end.
 		if. 0 < {. c =. {: nextPagePat rxmatch html do.
 			nextUrl =. 'https://rosettacode.org' , ({: c) {. ({. c) }. html
@@ -188,9 +227,9 @@ while. 0 < # html do.
 			html =. ''
 		end.
 	catch.
-		smoutput 'Problem ' , (13!:12) ''
-		smoutput sqlerror__masterDb ''
-		smoutput 400 {. html
+		echo 'Problem ' , (13!:12) ''
+		echo sqlerror__masterDb ''
+		echo 400 {. html
 		break.
 	end.
 end.
@@ -200,7 +239,7 @@ NB. ======================= End Crawling Rosettacode ===========================
 
 NB. ========================== Crawling Quora ==========================================
 updateMasterDbWithQuora =: 3 : 0
-smoutput 'updateMasterDbWithQuora'
+echo 'updateMasterDbWithQuora'
 createOrOpenMasterDb ''
 quoraDb =. sqlopen_psqlite_ quoraDbPath
 sqlcmd__masterDb 'delete from content where sourcetype = "Q"'
@@ -216,7 +255,7 @@ NB. ======================== End Crawling Quora ================================
 
 NB. ========================= Crawling YouTube =========================================
 updateMasterDbWithYouTube =: 3 : 0
-smoutput 'updateMasterDbWithYouTube'
+echo 'updateMasterDbWithYouTube'
 try.
 createOrOpenMasterDb ''
 youTubeDb =. sqlopen_psqlite_ youTubeDbPath
@@ -230,7 +269,7 @@ bodies =. titles , &. > ' '&, &. > descriptions , &. > ' '&, &. > transcripts
 data =. links ; links ; ((# links) # <'YouTube') ; ((# links) # < 'V') ; ((# links) # 9999) ; ((# links) # 0) ; ((# links) # 0) ; titles ; ((# links) # <' ') ; bodies ; ((# bodies) # 1)
 sqlinsert__masterDb 'content' ; masterCols ; < data
 catch. catcht.
-	smoutput (13!:12) ''
+	echo (13!:12) ''
 end.
 )
 NB. ======================= End Crawling YouTube =======================================
@@ -279,7 +318,7 @@ updateMasterDbWithGitHubDocs =: 3 : 0
 NB. y Project name from GitHub
 NB. Get the project, get contents of the relevant files, translate, insert into master.db.
 project =. y
-smoutput project
+echo project
 log project
 wd 'msgs'
 token =. LF -.~ (1!:1) < tokenFile
@@ -315,13 +354,13 @@ NB. masterCols: link id sourcename sourcetype year monthindex day subject author
 NB.			sqlinsert__masterDb 'content' ; masterCols ; < data
 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
 		catch. catcht.
-			smoutput 'Problem upserting: ' , sqlerror__masterDb
-			smoutput (13!:12) ''
+			echo 'Problem upserting: ' , sqlerror__masterDb
+			echo (13!:12) ''
 		end.
 	end.
 catch. catcht.
-	smoutput (13!:12) ''
-	smoutput sqlerror__masterDb ''
+	echo (13!:12) ''
+	echo sqlerror__masterDb ''
 end.
 try. (2!:0) 'rm -r ' , exdir catch. end.
 try. (2!:0) 'rm ' , zipFilename catch. end.
@@ -330,7 +369,7 @@ try. (2!:0) 'rm ' , zipFilename catch. end.
 
 NB. updateMasterDbWithGitHubProjects =: 3 : 0
 NB. NB. Update master.db with the jsoftware projects from GitHub.
-NB. smoutput 'updateMasterDbWithGitHubProjects'
+NB. echo 'updateMasterDbWithGitHubProjects'
 NB. gitHubContent =: ''
 NB. createOrOpenMasterDb ''
 NB. sqlcmd__masterDb 'delete from content where sourcetype = "G"'
@@ -342,7 +381,7 @@ NB. 	ol =. }. {:"2 (rxcomp 'd-inline-block">\s+([^<]+)<') rxmatches html
 NB. 	projects =. -.&LF &. > (<"0 {:"1 ol) {. &. > ({."1 ol) <@}."0 1 html
 NB. 	updateMasterDbWithGitHubDocs &. > projects NB. -. 'jsource' ; 'winget-pkgs'
 NB. 	page =. >: page
-NB. 	smoutput 'page' ; page
+NB. 	echo 'page' ; page
 NB. end.
 NB. )
 NB. ========================== End Crawling GitHub ====================================
@@ -361,7 +400,7 @@ end.
 )
 
 moveForumRecordsFromMasterToStage =: 3 : 0
-smoutput 'moveForumRecordsFromMasterToStage...'
+echo 'moveForumRecordsFromMasterToStage...'
 createOrOpenMasterDb ''
 dbOpenDb ''
 sqlcmd__db 'delete from forums'
@@ -370,26 +409,26 @@ cols =. ;: 'forumname year month day subject author link'
 NB. data =. ('J'&, &. > 1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < 0 {"1 f
 data =. (1 {"1 f) ; (> 2 {"1 f) ; (> 3 {"1 f) ; (> 4 {"1 f) ; (5 {"1 f) ; (6 {"1 f) ; < (0 {"1 f)
 sqlinsert__db 'forums' ; cols ; <data
-smoutput '...moveForumRecordsFromMasterToStage: ' , ": # f
+echo '...moveForumRecordsFromMasterToStage: ' , ": # f
 )
 
 NB. ======================== Crawling Forums ==========================
 updateMasterDbWithForumPosts =: 3 : 0
-smoutput 'updateMasterDbWithForumPosts'
+echo 'updateMasterDbWithForumPosts'
 wd 'msgs'
 try.
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "F"'
 forumsDb =: sqlopen_psqlite_ forumsDbPath
 ftable =. > {: sqlreadm__forumsDb 'select link, id, sourcename, year, monthindex, day, subject, author, body from forum' 
-smoutput '$ ftable' ; $ ftable
+echo '$ ftable' ; $ ftable
 links =. 0 {" 1 ftable
 ids =. 1 {"1 ftable
 sourceNames =. 2 {"1 ftable
-smoutput '10 {. sourceNames' ; 10 {. sourceNames
+echo '10 {. sourceNames' ; 10 {. sourceNames
 years =. > 3 {"1 ftable
 k =: years
-smoutput '10 {. years' ; 10 {. years
+echo '10 {. years' ; 10 {. years
 monthIndexes =. > 4 {"1 ftable
 days =. > 5 {"1 ftable
 subjects =. 6 {"1 ftable
@@ -397,7 +436,7 @@ authors =. 7 {"1 ftable
 bodies =. 8 {"1 ftable
 data =. links ; ids ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; bodies ; < ((# links) # 1)
 sqlinsert__masterDb 'content' ; masterCols ; < data
-smoutput 'end updateMasterDbWithForumPosts'
+echo 'end updateMasterDbWithForumPosts'
 wd 'msgs'
 catch. catcht.
   echo (13!:12) ''
@@ -412,7 +451,7 @@ NB. Get posts from forum x for the date y and upsert them.
 NB. No longer used.
 return.
 'year monthIndex' =. y
-smoutput 'Processing' ; x ; year ; > monthIndex { Months
+echo 'Processing' ; x ; year ; > monthIndex { Months
 wd 'msgs'
 tocHtml =. gethttp 'https://www.jsoftware.com/pipermail/' , x , '/' , (": year) , '-' , (> monthIndex { Months) , '/subject.html'
 ol =. {:"2 (rxcomp '<LI><A HREF="([^"]+)">') rxmatches tocHtml
@@ -447,8 +486,8 @@ for_postHtml. postsHtml do.
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
 	catcht. catch.
-		smoutput 'Failed to insert:'
-		smoutput ,. data
+		echo 'Failed to insert:'
+		echo ,. data
 	end.
 end.
 # links
@@ -459,7 +498,7 @@ NB. Determine the most recent year-month for which we have posts.
 NB. Grab all of those posts as well as all posts since and upsert them into masterDb.
 NB. No longer used.
 return.
-smoutput 'updateMasterDbWithPosts'
+echo 'updateMasterDbWithPosts'
 createOrOpenMasterDb ''
 dbOpenDb ''
 'currentYear currentMonthIndex' =. 0 _1 + 2 {. (6!:0) ''
@@ -470,7 +509,7 @@ else.
 	startYear =. {. , > > {: sqlreadm__masterDb 'select max(year) from content where sourcetype = "F"'
 	startMonth =. {. , > > {: sqlreadm__masterDb 'select max(monthIndex) from content where sourcetype = "F" and year = ' , ": startYear
 end.
-smoutput '$ startYear ' ; $ startYear
+echo '$ startYear ' ; $ startYear
 years =.  startMonth }. 12 # startYear + i. 1 + currentYear - startYear
 months =. startMonth }. (12 * 1 + currentYear - startYear) $ i.12
 dates =. years ,. months
@@ -480,7 +519,7 @@ forums =. ;: 'general chat programming database source beta'
 NB. ==================== End Crawling Forums ======================
 
 updateMasterDbWithAllWikiPages =: 3 : 0
-smoutput 'updateMasterDbWithAllWikiPages'
+echo 'updateMasterDbWithAllWikiPages'
 dbOpenDb ''
 createOrOpenMasterDb ''
 rawRows =. > {: sqlreadm__db 'select title, link from wiki'
@@ -489,11 +528,11 @@ rawLinks =. 1 {"1 rawRows
 prefixes =. (k =: > 'https:'&-: &. > 6&{. &. > rawLinks) { h =. wikiUrlPrefix ; ''
 rawUrls =. prefixes , &. > rawLinks
 uniqueRows =. (~: rawUrls) # rawTitles ,. rawUrls
-smoutput 'Processing row count' ; # uniqueRows
+echo 'Processing row count' ; # uniqueRows
 wd 'msgs'
 for_rowBatch. _100 < \ uniqueRows do.
 	rows =. > rowBatch
-	smoutput 'processing row count' ; # rows
+	echo 'processing row count' ; # rows
 	wd 'msgs'
 	links =. 1 {"1 rows
 	urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
@@ -505,8 +544,8 @@ for_rowBatch. _100 < \ uniqueRows do.
 	try.
 		sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
 	catch. catcht.
-		smoutput (13!:12) ''
-		smoutput sqlerror__masterDb '' 
+		echo (13!:12) ''
+		echo sqlerror__masterDb '' 
 	end.
 end.
 )
@@ -514,7 +553,7 @@ end.
 updateMasterDbWithChangedWikiPages =: 3 : 0
 NB. Use the Mediawiki "changed" page to grab the last three days' changes...
 NB. ...unless there are no wiki pages, in which case load the whole wiki.
-smoutput 'updateMasterDbWithChangedWikiPages...'
+echo 'updateMasterDbWithChangedWikiPages...'
 dbOpenDb ''
 createOrOpenMasterDb ''
 if. 0 = # > > {: sqlreadm__masterDb 'select count(*) from content where sourcetype = "W"' do.
@@ -527,7 +566,7 @@ wikiLinks =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
 ol =. {:"2 (rxcomp 'class="mw-changeslist-title" title="([^"]+)">') rxmatches changedLinkHtml
 titles =. ~. ({:"1 ol) <@{."0 1 ({."1 ol) }."0 1 changedLinkHtml
 titles =. '[Wiki] '&, &. > titles
-smoutput 'Found ', (": # titles) , ' changed wiki pages.'
+echo 'Found ', (": # titles) , ' changed wiki pages.'
 if. 0 = # titles do. return. end.
 links =. (wikiUrlPrefix , '/')&, &. > wikiLinks
 urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
@@ -536,9 +575,9 @@ data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # ur
 try.
 	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
 catch. catcht.
-	smoutput 'updateMasterDbWithChangedWikiPages'
-	smoutput (13!:12) ''
-	smoutput sqlerror__masterDb '' 
+	echo 'updateMasterDbWithChangedWikiPages'
+	echo (13!:12) ''
+	echo sqlerror__masterDb '' 
 end.
 )
 NB. ================================= End Master DB ===========================================
@@ -554,7 +593,7 @@ NB. s (1!:2) < indexFile
 NB. )
 
 moveFullTextIndexIntoStage =: {{
-smoutput 'moveFullTextIndexIntoStage'
+echo 'moveFullTextIndexIntoStage'
 createOrOpenMasterDb ''
 dbOpenDb ''
 table =. > {: sqlreadm__masterDb 'select link, sourcetype, year, subject, author, body, priority from content'
@@ -866,7 +905,7 @@ sqlerror__db ''
 
 loadAncillaryPages =: 3 : 0
 try.
-smoutput 'loadAncillaryPages'
+echo 'loadAncillaryPages'
 html =. gethttp 'https://code.jsoftware.com/wiki/NuVoc'
 html =. (I. 'printfooter' E. html) {. html =. (I. 'Ancillary_Pages' E. html) }. html
 pat =. 'href="([^"]+)" title="([^"]+)"'
@@ -877,13 +916,13 @@ links =. (<"0 {:"1 linkOffsetLengths) {. &. > ({."1 linkOffsetLengths) <@}."0 1 
 titles =. (<"0 {:"1 titleOffsetLengths) {. &. > ({."1 titleOffsetLengths) <@}."0 1 html
 nuVocId =. 1 getCategoryId '*NuVoc'
 data =. 2 ; nuVocId ; (nextCatId 1) ; 'Ancillary Pages' ; (# titles) ; _1 ; 'https://code.jsoftware.com/wiki/NuVoc'
-smoutput data
+echo data
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data
 ancillaryId =. nuVocId getCategoryId 'Ancillary Pages'
 sqlinsert__db 'wiki' ; (;: 'categoryid title link') ; < (ancillaryId #~ # links) ; titles ; <links
 catcht.
-	smoutput (13!:12) ''
-	smoutput dbError ''
+	echo (13!:12) ''
+	echo dbError ''
 end.
 )
 
@@ -899,7 +938,7 @@ NB. ------------------- Forums ---------------------
 copyForumRecordsToMaster =: 3 : 0
 NB. New routine to use now that the old jsoftware Forum archive is unavailable.
 NB. Move the Forum records from forunms.db to master.db.
-smoutput 'copyForumRecordsToMaster'
+echo 'copyForumRecordsToMaster'
 createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "F"'
 forumsDb =: sqlopen_psqlite_ forumsDbPath
@@ -913,7 +952,7 @@ subjects =. 5 {"1 table
 bodies =. 6 {"1 table
 authors =. 7 {"1 table
 data =. links ; ((# links) # < ' ') ; sourceNames ; ((# links) # < 'F') ; years ; monthIndexes ; days ; subjects ; authors ; bodies ; ((# links) # 1)
-smoutput ,. data
+echo ,. data
 sqlinsert__masterDb 'content' ; masterCols ; < data
 )
 
@@ -922,7 +961,7 @@ NB. y Forum name (path component)
 NB. Retrieve the forum archive files and add them to the forums table.
 NB. No longer used now that the jsoftware Forum archive is unavailable.
 return.
-smoutput 'loadForum' ; y
+echo 'loadForum' ; y
 wd 'msgs'
 mainPageHtml =: gethttp 'https://www.jsoftware.com/pipermail/' , y , '/'
 ol =. {:"2 (rxcomp 'href="([^\"]+subject.html)"') rxmatches mainPageHtml
@@ -958,7 +997,7 @@ NB. Create a category called *Tags in the categories table and put the Tag categ
 NB. Load all of the Tag categories' pages into the wiki table.
 NB. html =. gethttp 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
 NB. No longer used now that the jsoftware Forum archive is unavailable.
-smoutput 'loadTagCategories'
+echo 'loadTagCategories'
 anchorId =. 500000
 data1 =. 1 ; 1 ; (nextCatId 1) ; '*Tags' ; _1 ; 4 ; 'https://code.jsoftware.com/mediawiki/index.php?title=Special:Categories&offset=&limit=1000'
 cols1 =. ;: 'level parentid categoryid category count parentseq link'
@@ -987,14 +1026,14 @@ for_entry. k =. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
 	try. 
 		catHtml =. (2!:0) 'curl "' , link , '"'
 	catch.
-		smoutput (13!:12) ''
+		echo (13!:12) ''
 		continue.
 	end.
 	catHtml =. (I. 'printfooter' E. catHtml) {. catHtml =. (I. 'mw-category-generated' E. catHtml) }. catHtml
 	pagePat =. 'href="([^"]+)"[^>]+>([^<]+)<'
 	pageOffsetLengths =. }."2 pagePat rxmatches catHtml
 	data4 =. 5 ; headerId ; (nextCatId 1) ; category ; (# pageOffsetLengths) ; entry_index ; link
-	smoutput data4
+	echo data4
 	wd 'msgs'
 	sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < data4
 	catId =. headerId getCategoryId category
@@ -1022,11 +1061,11 @@ NB. Retrieve and processs the HTML.  Recurse to handle any child categories.
 while. 0 < # pairsToVisit do.
 	'level parentId childCategory' =. {. pairsToVisit
 	pairsToVisit =: }. pairsToVisit
-	if. (# visitedPairs) > visitedPairs i. (parentId ; childCategory) do. smoutput 'Skipping--visited.' ; parentId ; childCategory continue. end.
-	if. 0 <: getCategoryIdNoParent childCategory do. smoutput 'Skipping--already in the db.' ; parentId ; childCategory continue. end.
-	if. childCategory -: parentCategory =. getCategory parentId do. smoutput 'Skipping--parent=child' ; parentCategory ; childCategory continue. end.
+	if. (# visitedPairs) > visitedPairs i. (parentId ; childCategory) do. echo 'Skipping--visited.' ; parentId ; childCategory continue. end.
+	if. 0 <: getCategoryIdNoParent childCategory do. echo 'Skipping--already in the db.' ; parentId ; childCategory continue. end.
+	if. childCategory -: parentCategory =. getCategory parentId do. echo 'Skipping--parent=child' ; parentCategory ; childCategory continue. end.
 	visitedPairs =: visitedPairs , (parentId ; childCategory)
-	smoutput 'Processing category pair' ; parentId ; childCategory
+	echo 'Processing category pair' ; parentId ; childCategory
 	wd 'msgs'
 	catWithUnderscores =. (' ';'_') rxrplc childCategory
 	url =. 'https://code.jsoftware.com/wiki/Category:' , ('\)' ; '\\\)') rxrplc ('\(' ; '\\\(') rxrplc ('''' ; '\''') rxrplc urlencode catWithUnderscores
@@ -1049,11 +1088,11 @@ while. 0 < # pairsToVisit do.
 		parentSeq =. ". ({: ol) {. ({. ol) }. viewSourceHtml 
 	end.
 	parms =.'categories' ; (;: 'level parentid categoryid category parentseq link') ; < (level + 1) ; parentId ; (nextCatId 1) ; childCategory ; parentSeq ; ('Category:' , childCategory)
-	smoutput parms
+	echo parms
 	sqlinsert__db parms
 	count =. 0
 	categoryId =. parentId getCategoryId childCategory
-	smoutput categoryId ; $ categoryId
+	echo categoryId ; $ categoryId
 	if. ((# visitedChildren) = visitedChildren i. < childCategory) *. 0 < # offsetLengths do.
 NB.		sqlcmd__db 'begin transaction'
 		linkOffsetLengths =. 0 {"2 offsetLengths
@@ -1070,7 +1109,7 @@ NB.		sqlcmd__db 'begin transaction'
 		sqlinsert__db 'wiki' ; cols ; <data
 NB.		sqlcmd__db 'commit transaction'
 	end.
-	smoutput 'parentId childCategory' ; parentId ; childCategory
+	echo 'parentId childCategory' ; parentId ; childCategory
 	parms =.'categories' ; ('categoryid = ' , ": categoryId) ; (;: 'count') ; < count
 	sqlupdate__db parms
 	childCategories =. ('&#039;' ; '''')&rxrplc &. > categories
@@ -1098,7 +1137,7 @@ sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count paren
 )
 
 finishLoadingVocabulary =: 3 : 0
-smoutput 'finishLoadingVocabulary'
+echo 'finishLoadingVocabulary'
 cols =. ;: 'title categoryid link'
 titles =. 'Vocabulary' ; 'Dictionary Contents'
 links =. 'https://www.jsoftware.com/help/dictionary/vocabul.htm' ; 'https://www.jsoftware.com/help/dictionary/contents.htm'
@@ -1107,13 +1146,13 @@ sqlinsert__db 'wiki' ; cols ; < data
 )
 
 finishLoadingForums =: 3 : 0
-smoutput 'finishLoadingForums'
+echo 'finishLoadingForums'
 forumNames =. > 1 { sqlreadm__db 'select distinct forumname from forums'
 forumId =. 1 getCategoryId '*Forums'
 links =. 'https://www.jsoftware.com/mailman/listinfo/'&, &. > }. &. > forumNames
 cols =. ;: 'level parentid categoryid category parentseq count link'
 data =. (< 2 #~ # forumNames) , (< (#forumNames) # forumId) , (< nextCatId # links) , (< , forumNames) , (< i. # links) , (< _1 #~ # forumNames) , < , links
-NB. smoutput data
+NB. echo data
 sqlinsert__db 'categories';cols;<data
 )
 
@@ -1194,10 +1233,11 @@ sqlcmd__db 'CREATE TABLE wiki (title TEXT, categoryid INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE categories (level INTEGER, parentid INTEGER, categoryid INTEGER, category TEXT, parentseq INTEGER, count INTEGER, link TEXT)'
 sqlcmd__db 'CREATE TABLE vocabulary (groupnum INTEGER, pos TEXT, row INTEGER, glyph TEXT, monadicrank TEXT, label TEXT, dyadicrank TEXT, link TEXT)'
 sqlcmd__db 'CREATE TABLE history (label TEXT, link TEXT)'
+sqlcmd__db 'CREATE TABLE similar (word TEXT, count INTEGER)'
 sqlcmd__db 'CREATE TABLE admin (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE TABLE keyvalue (key TEXT primary key, value TEXT)'
 sqlcmd__db 'CREATE VIRTUAL TABLE jindex USING FTS5 (body, tokenize="porter")'
-sqlcmd__db 'CREATE TABLE auxiliary (rownum INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, source TEXT, url TEXT, priority INTEGER)'
+sqlcmd__db 'CREATE TABLE auxiliary (rownum INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, year INTEGER, source TEXT, url TEXT, priority INTEGER, similar TEXT)'
 NB. sqlcmd__db 'CREATE INDEX source_index ON auxiliary (source)'
 sqlcmd__db 'CREATE TABLE github (content BLOB)'
 )
@@ -1246,6 +1286,7 @@ updateMasterDbWithForumPosts ''
 finishLoadingForums ''
 finishLoadingVocabulary ''
 moveFullTextIndexIntoStage ''
+buildMagic8Ball ''
 turnOnOptimization ''
 sqlclose__db ''
 compressDatabaseFile ''

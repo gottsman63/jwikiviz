@@ -354,6 +354,61 @@ end.
 )
 NB. ------------------------- End RosettaCode Navigation --------------------------
 
+NB. --------------------------- Magic Eight Ball ------------------------------
+WordFrequencies =: '' NB. word ; count
+MagicEightBallIndices =: ''
+
+loadWordFrequencies =: 3 : 0
+NB. Load the WordFrequencies table.
+try.
+result =. > {: sqlreadm__db 'select word, count from similar order by count desc'
+words =. 0 {"1 result
+counts =. 1 {"1 result
+WordFrequencies =: words ,. counts
+catch. catcht.
+end.
+)
+
+getWordIndicesForHtml =: 3 : 0
+NB. y HTML
+NB. Return a table of word ; count for words in y
+~. (# WordFrequencies) -.~ (0 {"1 WordFrequencies) i. < ;. _2 tolower y , ' '
+)
+
+loadMagicEightBallIndices =: 3 : 0
+NB. y A url
+html =. gethttp y
+indices =. getWordIndicesForHtml html
+grade =. \: > 1 {"1 indices { WordFrequencies
+MagicEightBallIndices =: grade { indices
+)
+
+searchForMagicEightBallIndex =: 3 : 0
+NB. y An index into WordFrequencies
+NB. Launch a search with the corresponding term.
+if. y = 0 do. return. end.
+index =. <: y  NB. Account for the "Magic 8 Ball" label.
+wd 'set searchBox text ' , > index { MagicEightBallIndices { 0 {"1 WordFrequencies
+setTocOutlineRailTopLevelEntry LiveSearchCatString
+markLiveSearchDirty ''
+)
+
+loadMagicEightBallMenu =: 3 : 0
+if. 0 = # WordFrequencies do. return. end.
+if. (+./ 'quora' E. LastUrlLoaded) +. (+./ 'pipermail' E. LastUrlLoaded) +. (+./ 'code.jsoftware' E. LastUrlLoaded) do.
+  loadMagicEightBallIndices LastUrlLoaded
+  rows =. MagicEightBallIndices { WordFrequencies
+  counts =. ,&'+]' &. > ' ['&, &. > ": &. > 1 {"1 rows
+  words =. 0 {"1 rows
+  items =. ,&'"' &. > '"'&, &. > words , &. > counts
+  title =. '"Magic 8 Ball [' , (": # items) , ']" '
+  wd 'set magic8ball items ' ,  n =. title , ; items
+else.
+  wd 'set magic8ball items "Magic 8 Ball [0]"'
+end.
+)
+NB. ------------------------ End Magic Eight Ball -----------------------------
+
 NB. ==================== Form =====================
 VocMouseXY =: 0 0
 VocMouseClickXY =: 0 0
@@ -476,6 +531,7 @@ wd       'cc feedback button; cn Feedback;'
 wd     'bin z;'
 wd     'bin h;'
 wd       'cc shrinkBrowser button ; cn *> Shrink Browser <'
+wd       'cc magic8ball combolist'
 wd       'cc expandBrowser button ; cn *< Expand Browser >'
 wd     'bin z;'
 wd     'bin h;'	
@@ -549,10 +605,7 @@ wd 'set liveRosetta maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set liveQuora maxwh ' , (": 60 , controlHeight) , ';'
 wd 'set liveYouTube maxwh ' , (": 80 , controlHeight) , ';'
 wd 'set liveAllNone maxwh ' , (": 80 , controlHeight) , ';'
-NB. wd 'set wikiSearchMenu maxwh ' , (": (vocContextWidth - 380) , controlHeight) , ';'
 wd 'set searchHelp maxwh ' , (": 160 , controlHeight) , ';'
-NB. wd 'set liveAgeLabel maxwh ' , (": 70 , controlHeight) , ';'
-NB. wd 'set liveAge maxwh ' , (": (-: leftWidth - 340) , controlHeight) , ';'
 
 wd 'set vocContext maxwh ' , (": vocContextWidth , vocContextHeight) , ';'
 wd 'set tocList maxwh ' , (": tocListWidth , vocContextHeight) , ';'
@@ -890,6 +943,7 @@ url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 if. -. 'http' -: 4 {. url do. return. end.  NB. Probably loading html, not a url.
 LogLoadBrowserFlag =: 0
 LastUrlLoaded =: url
+loadMagicEightBallMenu ''
 historyMenu =. getHistoryMenu ''
 if. 0 = # historyMenu do.
 	addToHistoryMenu url ; url
@@ -938,6 +992,11 @@ vizform_history_select =: 3 : 0
 log 'vizform_history_select'
 LogLoadBrowserFlag =: 0
 loadPage (". history_select) { getHistoryMenu ''
+)
+
+vizform_magic8ball_select =: 3 : 0
+log 'vizform_magic8ball_select'
+searchForMagicEightBallIndex ". magic8ball_select
 )
 
 vizform_launch_button =: 3 : 0
@@ -2991,6 +3050,7 @@ NB.	initAdmin ''
 	caption =. 'J Viewer ' , version , ' (Crawl Datetime: ' , datetime , ')'
 	wd 'pn *' , caption
 	initializeTocList MaxTocDepth
+	loadWordFrequencies ''
 	markLiveSearchDirty ''
 catch.
 	1 log 'initializeWithDatabase Problem: ' , (13!:12) ''
