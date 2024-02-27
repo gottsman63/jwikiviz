@@ -1057,7 +1057,7 @@ if. 0 = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
 end.
 catch.
 end.
-if. 0 = TimerCount_jwikiviz_ do. return. end.
+if. 0 = TimerCount_jwikiviz_ do. EMPTY return. end.
 NB. log_jwikiviz_ 'sys_timer_z_: ' , ": TimerCount_jwikiviz_
 try.
 	TimerCount_jwikiviz_ =: TimerCount_jwikiviz_ - 1
@@ -1065,11 +1065,12 @@ try.
 	trigger_paint_jwikiviz_ ''
 	setShowBookmarks_jwikiviz_ ''
 catch.
-	smoutput (13!:12) ''
-	smoutput dbError_jwikiviz_ ''
+	smoutput 'Timer routine: ' , (13!:12) ''
+	smoutput 'Timer routine: ' , dbError_jwikiviz_ ''
 	1 log (13!:12) ''
 	1 log dbError_jwikiviz_ ''
 end.
+EMPTY
 }}
 
 TimerCount =: 0
