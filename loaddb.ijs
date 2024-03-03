@@ -306,7 +306,6 @@ echo json
   projects =. ~. ; &. > (<'/')&,. &. > 1 2&{ &. > < ;. _2 &. >  ,&'/' &. > tokens 
   updateMasterDbWithGitHubDocs &. > projects
   if. page > pageCount do. break. end.
-  (6!:3) 30
 end.
 catch. catcht.
 	log (13!:12) ''
@@ -319,12 +318,12 @@ NB. y Project name from GitHub
 NB. Get the project, get contents of the relevant files, translate, insert into master.db.
 project =. y
 echo project
-log project
 wd 'msgs'
 token =. LF -.~ (1!:1) < tokenFile
-NB. cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com/gottsman63/' , project , '/zipball/master/'
 cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com' , project , '/zipball/master/'
+echo 'cmd' ; cmd
 zip =. (2!:0) cmd
+echo '$ zip' ; $ zip
 zipFilename =. appDir , '/github/' , (project -. '/') , '.zip'
 try. (2!:0) 'mkdir ' , appDir , '/github/' catch. end.
 exdir =. appDir , '/github/' , project -. '/'
@@ -336,6 +335,7 @@ try.
 	filenames =. a: -.~ , > < ;. _2 @(2!:0) &. > commands
 	rawContents =. <@(1!:1)"0 filenames
 	contents =. translateToJEnglish &. > rawContents
+echo '# filenames' ; # filenames
 	for_i. i. # filenames do.
 		lines =. < ;. 2 (> i { contents) , LF
 		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
@@ -344,7 +344,8 @@ try.
 		partialPath =. (('^/[^/]+/') ; '') rxrplc partialPath_1
 		url =. 'https://github.com' , project , '/blob/master/' , partialPath
 		subject =. '[GitHub] ' , project , ': ' , partialPath
-		content =. subject , ' ' , ; lineNumbers ,. lines
+		content =. (kk =.translateToJEnglish partialPath) , ' ' , subject , ' ' , ; lineNumbers ,. lines
+echo '[' , partialPath , '] [' , kk , ']'
 NB. masterCols: link id sourcename sourcetype year monthindex day subject author body
 		priority =. 2
 		if. +./ 'jsoftware' E. url do. priority =. 3 end.
@@ -364,7 +365,22 @@ catch. catcht.
 end.
 try. (2!:0) 'rm -r ' , exdir catch. end.
 try. (2!:0) 'rm ' , zipFilename catch. end.
-(6!:3) 2
+(6!:3) 30
+)
+
+updateMasterDbWithGitHubJSoftwareProjects =: 3 : 0
+createOrOpenMasterDb ''
+token =. LF -.~ (1!:1) < tokenFile
+header =. '-L -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ' , token , '" -H "X-GitHub-Api-Version: 2022-11-28"' 
+page =. 0
+while. 1 do.
+  json =. header gethttp 'https://api.github.com/users/jsoftware/repos?per_page=100&page=' , ": page =. page + 1
+  result =. '"full_name": "(jsoftware/[^"]+)"' rxmatches json
+  if. 0 = # result do. break. end.
+  ols =. 1 {"2 result
+  updateMasterDbWithGitHubDocs &. > '/'&, &. > ({:"1 ols) <@{."0 1 ({."1 ols) }."0 1 json
+end.
+NB. updateMasterDbWithGitHubDocs &. > repositories
 )
 
 NB. updateMasterDbWithGitHubProjects =: 3 : 0
@@ -1276,6 +1292,8 @@ NB. updateMasterDbWithPosts ''
 copyForumRecordsToMaster ''
 moveForumRecordsFromMasterToStage ''
 NB. updateMasterDbWithGitHubProjects ''
+sqlcmd__masterDb 'delete from content where sourcetype = "G"'
+updateMasterDbWithGitHubJSoftwareProjects ''
 for_i. i.5 do.
   updateMasterDbWithGitHubJRepos ''
 end.
