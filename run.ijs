@@ -36,8 +36,10 @@ githubUrl =: 'https://raw.githubusercontent.com/gottsman63/jwikiviz/main/manifes
 awsPrefix =: 'https://jviewer.s3.us-east-2.amazonaws.com'
 dbUrl =: awsPrefix , '/jviewer.lz4'
 
-dbPath =: jpath '~temp/jviewer.db'
-logPath =: jpath '~temp/jviewer.log'
+oldDbPath =: jpath '~temp/jviewer.db'
+pathPrefix =: jpath '~user/jviewer/'
+dbPath =: pathPrefix , 'jviewer.db'
+logPath =: pathPrefix , 'jviewer.log'
 AppUpToDate =: _1
 DatabaseDownloadStatus =: _1
 DatabaseDownloadMessage =: ''
@@ -51,6 +53,25 @@ manifest_version=: {{
   coerase temp
   VERSION
 }}
+
+testUserDirectory =: 3 : 0
+NB. Return 1 if everything is fine.  
+NB. Return 0 if the user doesn't want to move the database or if there's an error.
+try.
+  if. fexist < dbPath do. 1 return. end.
+  if. -. fexist oldDbPath do. 1 return. end.
+  msg =. 'Yes to move the local database to ' , dbPath , '; No to exit.'
+  result =. wd 'mb query mb_yes mb_no "Move the Local Database" "' , msg , '"'
+  if. result -: 'no' do. 0 return. end.
+  (1!:5) < pathPrefix
+  dbContents =. (1!:1) < oldDbPath
+  dbContents (1!:2) < dbPath
+  1
+catch.
+  echo 'Problem: ' , (13!:12) ''
+  0
+end.
+)
 
 newAppAvailable =: 3 : 0
 AppUpToDate = 2
@@ -3061,32 +3082,34 @@ end.
 
 go =: 3 : 0
 try.
-	clearLog ''
+	if. 1 = testUserDirectory '' do.
+	  clearLog ''
 NB. LogFlag =: 1
-	logVersionInfo ''
-	if. -. checkGethttpVersion '' do. return. end.
-	if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
-	appPyx =: asyncCheckAppUpToDate t. 'worker' ''
-	if. dbPathExists '' do. 
-		dbOpenDb ''
-	else.
+	  logVersionInfo ''
+	  if. -. checkGethttpVersion '' do. return. end.
+	  if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
+	  appPyx =: asyncCheckAppUpToDate t. 'worker' ''
+	  if. dbPathExists '' do. 
+	  	dbOpenDb ''
+	  else.
 		1 log '*** Database download required. ***'
 		DatabaseDownloadStatus =: 2 
+	  end.
+	  setShortcutFlag ''
+	  buildForm ''
+	  layoutForm ''
+	  setUpdateButtons ''
+	  'w h' =. 2 3 { ". wd 'qscreen'
+	  wd 'pshow'
+	  wd 'msgs'
+	  setLiveSearchSourceFlagButtons 1
+	  wd 'pmove 10 60 ' , ": (w - 20) , h - 80
+	  wd 'set searchBox focus'
+	  if. isDatabaseOpen '' do. initializeWithDatabase '' end.
+	  animate 10
+	  wd 'ptimer ' , ": TimerFractionMsec
+	  if. -. dbPathExists '' do. vizform_dbUpdate_button '' end.
 	end.
-	setShortcutFlag ''
-	buildForm ''
-	layoutForm ''
-	setUpdateButtons ''
-	'w h' =. 2 3 { ". wd 'qscreen'
-	wd 'pshow'
-	wd 'msgs'
-	setLiveSearchSourceFlagButtons 1
-	wd 'pmove 10 60 ' , ": (w - 20) , h - 80
-	wd 'set searchBox focus'
-	if. isDatabaseOpen '' do. initializeWithDatabase '' end.
-	animate 10
-	wd 'ptimer ' , ": TimerFractionMsec
-	if. -. dbPathExists '' do. vizform_dbUpdate_button '' end.
 catch. catcht.
 	1 log 'go: Problem: ' , (13!:12) ''
 	1 log 'go: Database error (if any): ' , sqlerror__db ''

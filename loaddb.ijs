@@ -365,7 +365,7 @@ catch. catcht.
 end.
 try. (2!:0) 'rm -r ' , exdir catch. end.
 try. (2!:0) 'rm ' , zipFilename catch. end.
-(6!:3) 30
+(6!:3) 10
 )
 
 updateMasterDbWithGitHubJSoftwareProjects =: 3 : 0
