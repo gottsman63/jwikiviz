@@ -964,7 +964,7 @@ url =. > (1 {"1 wdq) {~ ({."1 wdq) i. < 'browser_curl'
 if. -. 'http' -: 4 {. url do. return. end.  NB. Probably loading html, not a url.
 LogLoadBrowserFlag =: 0
 LastUrlLoaded =: url
-loadMagicEightBallMenu ''
+NB. loadMagicEightBallMenu ''
 historyMenu =. getHistoryMenu ''
 if. 0 = # historyMenu do.
 	addToHistoryMenu url ; url
@@ -1017,7 +1017,8 @@ loadPage (". history_select) { getHistoryMenu ''
 
 vizform_magic8ball_select =: 3 : 0
 log 'vizform_magic8ball_select'
-searchForMagicEightBallIndex ". magic8ball_select
+tocMapLinkSelect ". magic8ball_select
+NB. searchForMagicEightBallIndex ". magic8ball_select
 )
 
 vizform_launch_button =: 3 : 0
@@ -2421,6 +2422,114 @@ else.
 end.
 )
 
+NB. ------------------------ TOC Map -------------------------
+TocMapCache =: ''  NB. level ; parentid ; categoryid ; category ; parentseq ; count ; link ; truncatedName
+TocMapHorizontalScroll =: 0
+TocMapMouseXY =: _1 _1
+TocMapMouseRect =: 0 0 0 0
+TocMapTitleLinks =: ''
+
+tocMapLinkSelect =: 3 : 0
+NB. y Index into TocMapTitleLinks
+loadPage |. (0 >. <: y) { TocMapTitleLinks
+)
+
+loadTocMapMenu =: 4 : 0
+NB. x Category name
+NB. y CategoryId
+  titleLinks =. > {: sqlreadm__db 'select title, link from wiki where categoryid = ' , ": y
+  if. 0 = # titleLinks do. return. end.
+  TocMapTitleLinks =: titleLinks
+  items =. ; ,&'"' &. > ' "'&, &. > 0 {"1 titleLinks
+  title =. '"[' , x , ']"'
+  wd 'set magic8ball items ' ,  title , ' ' , items
+)
+
+drawTocMap =: 3 : 0
+NB. y xx yy width height
+'xx yy width height' =. y
+log 'drawTocMap ' , ": y
+if. TocMapCache -: '' do.
+  entries =. 1 getTocOutlineRailEntries 99
+  rawNames =. 3 {"1 entries
+  spaceIndexes =. i:&' ' &. > rawNames
+  truncatedNames =. spaceIndexes {. &. > rawNames
+  TocMapCache =: entries ,. truncatedNames
+end.
+indent =. 6
+verticalSeparation =. 2
+columnSeparation =. 30
+scrollBorderWidth =. 0.1 * width
+barMaxWidth =. 150
+docMaxCount =. >./ > 5 {"1 TocMapCache
+top =. 10
+bottom =. height - 20
+counts =. > 4 {"1 TocMapCache
+levels =. > 5 {"1 TocMapCache
+maxFontSize =. 28 + FontAdjustment
+fontName =. < 'Arial '
+fonts =. fontName ,"1 1 &. > ": &. > (<"0 maxFontSize - 2 * i. 6)
+colors =. 0 0 0 , 127 0 0 , 0 127 0 , 0 0 255 , 0 0 0 , 127 0 127 ,: 0 127 127
+nameRects =. ''
+maxColumnWidthSoFar =. 0
+runningY =. top
+runningX =. columnSeparation + -ScrollOffset
+contentWidth =. columnSeparation
+hoverEntry =. ''
+hoverRect =. 0 0 0 0
+for_entry. 0 2 3 5 6 7 {"1 TocMapCache do.
+  'level categoryId category count link truncatedName' =. entry
+  glfont level {:: fonts
+  glrgb level { colors
+  gltextcolor ''
+  'w h' =. glqextent truncatedName
+  w =. w + level * indent
+  nameBarRect =. runningX , runningY , (barMaxWidth * count % docMaxCount) , h - 2
+  if. VocMouseXY pointInRect runningX, runningY, 1000 , h do.  NB. Last rect with the mouse in it will be chosen.
+    hoverEntry =. entry
+    hoverRect =. runningX, runningY, w , h 
+  end.
+  glrgba 230 230 230 255
+  glbrush ''
+  glrgba 0 0 0 0
+  glpen 0
+  glrect >. nameBarRect
+  maxColumnWidthSoFar =. maxColumnWidthSoFar >. w
+  ((runningX + indent =. level * 6), runningY) drawStringAt truncatedName
+  runningY =. runningY + h + verticalSeparation
+  if. (runningY + h) > bottom do.
+    runningY =. top
+    contentWidth =. contentWidth + maxColumnWidthSoFar + columnSeparation
+    runningX =. runningX + maxColumnWidthSoFar + columnSeparation
+    maxColumnWidthSoFar =. 0
+  end.
+end.
+if. -. hoverEntry -: '' do.
+  'level categoryId category count link truncatedName' =. hoverEntry
+  glfont level {:: fonts
+  glrgb level { colors
+  gltextcolor ''
+  countWidth =. {. glqextent ": count
+  origin =. (({. hoverRect) - countWidth + 4) , 1 { hoverRect
+  origin drawStringAt ": count
+  if. VocMouseXY -: VocMouseClickXY do. 
+    TocMapMouseXY =: VocMouseXY 
+    TocMapMouseRect =: hoverRect
+    loadPage link ; truncatedName
+    truncatedName loadTocMapMenu categoryId
+  end.
+  if. TocMapMouseXY -: VocMouseXY do.
+    glpen 2
+    glrgba 0 0 0 0
+    glbrush ''
+    glrect <. TocMapMouseRect
+  end.
+end.
+setScrollWindowHeight width
+setScrollContentHeight contentWidth + maxColumnWidthSoFar
+)
+NB. ----------------------- End TOC Map ----------------------
+
 drawTocEntryChildren =: 4 : 0
 NB. x Category id
 NB. y xx yy width height
@@ -2512,7 +2621,8 @@ if.  +./ NuVocString E. > 3 { entry do.
 elseif. (getTopCategoryId ForumsCatString) = > 1 { entry do. NB. level ; parent ; categoryid ; category ; parentseq ; count ; link
 	(> 3 { entry) drawTocEntryForum y
 elseif. TagCatString -: > 3 { entry do.
-	drawTocEntryTags y
+	drawTocMap y
+NB.	drawTocEntryTags y
 elseif. LiveSearchCatString -: > 3 { entry do.
 	drawTocEntryLiveSearch y
 elseif. GitHubCatString -: > 3 { entry do.
