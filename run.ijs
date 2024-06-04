@@ -59,11 +59,11 @@ NB. Return 1 if everything is fine.
 NB. Return 0 if the user doesn't want to move the database or if there's an error.
 try.
   if. fexist < dbPath do. 1 return. end.
-  if. -. fexist oldDbPath do. 1 return. end.
+  if. -. fexist pathPrefix do. (1!:5) < pathPrefix end.  NB. Create the app directory.
+  if. -. fexist oldDbPath do. 1 return. end.  NB. No old database; no reason to move anything.
   msg =. 'Yes to move the local database to ' , dbPath , '; No to exit.'
   result =. wd 'mb query mb_yes mb_no "Move the Local Database" "' , msg , '"'
   if. result -: 'no' do. 0 return. end.
-  (1!:5) < pathPrefix
   dbContents =. (1!:1) < oldDbPath
   dbContents (1!:2) < dbPath
   1
@@ -152,7 +152,7 @@ end.
 
 dbCloseDb =: {{
 try.
-	if. db ~: '' do. sqlclose__db '' end.
+	if. db ~: '' do. try. sqlclose__db '' catch. catcht. end. end.
 catch. catcht.
 	1 log 'dbCloseDb: Error closing database'
 end.
@@ -256,6 +256,7 @@ if. LogMutex -: '' do. LogMutex =: 10 T. 0 end.
 2 log 'qscreen: ' , wd 'qscreen'
 try. sqliteRev =. > {. sqlite_info_psqlite_'' catch. sqliteRev =. 'No SQLite Add-On' end.
 2 log 'SQLite Add-On: ' , sqliteRev
+logVersionInfo ''
 )
 
 logVersionInfo =: {{
@@ -477,13 +478,14 @@ downloadPyx =: a:
 vizform_dbUpdate_button =: {{
 downloadFlag =. 0
 log 'vizform_dbUpdate_Button'
-select. DatabaseDownloadStatus 
+query =. 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~user/jviewer."'
+select. DatabaseDownloadStatus
 case. _3 do. bringNewDataOnline ''
 case. _2 do. wdinfo 'Downloading data in the background'
 case. _1 do. wdinfo 'Checking for new data in the background'
-case. 0 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
-case. 1 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
-case. 2 do. downloadFlag =. 'yes' -: wd 'mb query mb_yes =mb_no "Local Database Status" "Nota bene: Yes to download ~350 MB that (decompressed & indexed) will occupy ~1 GB in ~temp."'
+case. 0 do. downloadFlag =. 'yes' -: wd query
+case. 1 do. downloadFlag =. 'yes' -: wd query
+case. 2 do. downloadFlag =. 'yes' -: wd query
 case. 3 do. setUpdateButtons ''  NB. We were offline; check whether we're connected again.
 end.
 if. downloadFlag do. 
@@ -3083,9 +3085,14 @@ end.
 go =: 3 : 0
 try.
 	if. 1 = testUserDirectory '' do.
+	  try. sqliteRev =. > {. sqlite_info_psqlite_'' 
+	  catch. 
+	    return. NB. SQLITE binaries haven't been installed.
+	  end.
+
 	  clearLog ''
 NB. LogFlag =: 1
-	  logVersionInfo ''
+NB.	  logVersionInfo ''
 	  if. -. checkGethttpVersion '' do. return. end.
 	  if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
 	  appPyx =: asyncCheckAppUpToDate t. 'worker' ''
@@ -3108,7 +3115,8 @@ NB. LogFlag =: 1
 	  if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	  animate 10
 	  wd 'ptimer ' , ": TimerFractionMsec
-	  if. -. dbPathExists '' do. vizform_dbUpdate_button '' end.
+NB.	  if. -. dbPathExists '' do. vizform_dbUpdate_button '' end.
+NB.	  animate 10
 	end.
 catch. catcht.
 	1 log 'go: Problem: ' , (13!:12) ''
