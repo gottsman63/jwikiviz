@@ -6,7 +6,7 @@ DESCRIPTION=: 0 : 0
 Interactive visualization of the J wiki and forums.
 )
 
-VERSION=: '2.4.5'
+VERSION=: '2.4.6'
 
 RELEASE=: 'j9.4'
 
