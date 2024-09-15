@@ -102,7 +102,7 @@ for_i. i. # urlBlocks do.
 	urlSpec =. ; ('"'&, &. > ,&'"' &. > urlBatch) ,. <' '
 	files =. (jpath '~temp/html/')&, &. > ,&'.html' &. > <@":"0 i. blockSize <. # urlBatch
 	outputSpec =. ; (<' -o ') ,. files
-	command =. 'curl ' , outputSpec , ' ' , urlSpec
+	command =. 'curl --parallel ' , outputSpec , ' ' , urlSpec
 	try.
 		(2!:0) command
 	catch.
@@ -284,33 +284,43 @@ LF (1!:3) < logPath
 y (1!:3) < logPath
 )
 
-updateMasterDbWithGitHubJRepos =: 3 : 0
-echo 'updateMasterDbWithGitHubJRepos'
+updateMasterDbWithGitHub =: 3 : 0
+NB. Process GitHub J repositories.
+owners =. ~. (getGitHubRepoOwners '') , (getGitHubRepoOwners '') , getGitHubRepoOwners ''
+echo 'Found owner count: ' , ": # owners
+updateMasterDbWithGitHubOwner &. > /:~ owners
+)
+
+getGitHubRepoOwners =: 3 : 0
+NB. Return a list of repository owners.
+echo 'getGitHubRepoOwners'
 try.
-createOrOpenMasterDb ''
-NB. sqlcmd__masterDb 'delete from content where sourcetype = "G"'
-NB. url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&p='
-url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&sort:updated&p='
-page =. 0
-while. 1 do.
-  '' (1!:2) < logPath
-  json =. gethttp url , ": page =. page + 1
+  url =. 'https://github.com/search?q=language%3AJ&type=Repositories&ref=advsearch&l=J&sort:updated&p='
+  page =. 0
+  owners =. ''
+  while. 1 do.
+    json =. gethttp url , ": page =. >: page
 echo 'page' ; page
 echo json
-  rec =. > {. {:"1 dec_pjson_ json
-  keys =. {."1 rec
-  vals =. {:"1 rec
-  pageCount =. > (keys i. < 'page_count') { vals
-  echo 'pageCount' ; pageCount
-  tokens =. {."1 > (keys i. < 'csrf_tokens') { vals
-  projects =. ~. ; &. > (<'/')&,. &. > 1 2&{ &. > < ;. _2 &. >  ,&'/' &. > tokens 
-  updateMasterDbWithGitHubDocs &. > projects
-  if. page > pageCount do. break. end.
+    rec =. > {. {:"1 dec_pjson_ json
+    keys =. {."1 rec
+    vals =. {:"1 rec
+    pageCount =. > (keys i. < 'page_count') { vals
+    echo 'pageCount' ; pageCount
+    tokens =. {."1 > (keys i. < 'csrf_tokens') { vals
+    projects =. ~. ; &. > (<'/')&,. &. > 1 2&{ &. > < ;. _2 &. >  ,&'/' &. > tokens 
+    newOwners =. > {. &. > < ;. _1 &. > projects
+    owners =. ~.owners , newOwners
+    echo $ owners
+NB.    updateMasterDbWithGitHubDocs &. > projects
+    if. page > pageCount do. break. end.
+    (6!:3) 10
+  end.
+catch.
+  echo (12!:13) ''
 end.
-catch. catcht.
-	log (13!:12) ''
-end.
-echo 'end updateMasterDbWithGitHubJRepos'
+echo 'end getGitHubRepoOwners'
+~. owners
 )
 
 updateMasterDbWithGitHubDocs =: 3 : 0
@@ -318,24 +328,23 @@ NB. y Project name from GitHub
 NB. Get the project, get contents of the relevant files, translate, insert into master.db.
 project =. y
 echo project
-wd 'msgs'
-token =. LF -.~ (1!:1) < tokenFile
-cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com' , project , '/zipball/master/'
-echo 'cmd' ; cmd
-zip =. (2!:0) cmd
-echo '$ zip' ; $ zip
-zipFilename =. appDir , '/github/' , (project -. '/') , '.zip'
-try. (2!:0) 'mkdir ' , appDir , '/github/' catch. end.
-exdir =. appDir , '/github/' , project -. '/'
-zip (1!:2) < zipFilename
-try. (2!:0) 'rm -r ' , exdir catch. end.
 try.
+	token =. LF -.~ (1!:1) < tokenFile
+	cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com' , project , '/zipball/master/'
+	echo 'cmd' ; cmd
+	zip =. (2!:0) cmd
+	echo '$ zip' ; $ zip
+	zipFilename =. appDir , '/github/' , (project -. '/') , '.zip'
+	try. (2!:0) 'mkdir ' , appDir , '/github/' catch. end.
+	exdir =. appDir , '/github/' , project -. '/'
+	zip (1!:2) < zipFilename
+	try. (2!:0) 'rm -r ' , exdir catch. end.
 	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
 	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
 	filenames =. a: -.~ , > < ;. _2 @(2!:0) &. > commands
 	rawContents =. <@(1!:1)"0 filenames
 	contents =. translateToJEnglish &. > rawContents
-echo '# filenames' ; # filenames
+	echo '# filenames' ; # filenames
 	for_i. i. # filenames do.
 		lines =. < ;. 2 (> i { contents) , LF
 		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
@@ -345,14 +354,13 @@ echo '# filenames' ; # filenames
 		url =. 'https://github.com' , project , '/blob/master/' , partialPath
 		subject =. '[GitHub] ' , project , ': ' , partialPath
 		content =. (kk =.translateToJEnglish partialPath) , ' ' , subject , ' ' , ; lineNumbers ,. lines
-echo '[' , partialPath , '] [' , kk , ']'
+		echo '[' , partialPath , '] [' , kk , ']'
 NB. masterCols: link id sourcename sourcetype year monthindex day subject author body
 		priority =. 2
 		if. +./ 'jsoftware' E. url do. priority =. 3 end.
 		if. +./ 'test' E. url do. priority =. 1 end.
 		data =. url ; url ; project ; 'G' ; 9999 ; 0 ; 0 ; subject ; ' ' ; content ; <priority
 		try.
-NB.			sqlinsert__masterDb 'content' ; masterCols ; < data
 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
 		catch. catcht.
 			echo 'Problem upserting: ' , sqlerror__masterDb
@@ -368,14 +376,20 @@ try. (2!:0) 'rm ' , zipFilename catch. end.
 (6!:3) 10
 )
 
-updateMasterDbWithGitHubJSoftwareProjects =: 3 : 0
+updateMasterDbWithGitHubOwner =: 3 : 0
+NB. y The name of a repo owner.
+NB. Process all of the projects for that owner.
+echo 'updateMasterDbWithGitHubOwner ' , y
 createOrOpenMasterDb ''
 token =. LF -.~ (1!:1) < tokenFile
 header =. '-L -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ' , token , '" -H "X-GitHub-Api-Version: 2022-11-28"' 
 page =. 0
+owner =. y -. '/'
 while. 1 do.
-  json =. header gethttp 'https://api.github.com/users/jsoftware/repos?per_page=100&page=' , ": page =. page + 1
-  result =. '"full_name": "(jsoftware/[^"]+)"' rxmatches json
+NB. https://api.github.com/search/repositories?q=user:jsoftware+language:J&per_page=100&page=1
+  json =. header gethttp 'https://api.github.com/search/repositories?q=user:' , owner , '+language:J&per_page=100&page=' , ": page =. page + 1
+NB.  json =. header gethttp 'https://api.github.com/users/' , owner , '/repos?per_page=100&page=' , ": page =. page + 1
+  result =. ('"full_name": "(' , owner , '/[^"]+)"') rxmatches json
   if. 0 = # result do. break. end.
   ols =. 1 {"2 result
   updateMasterDbWithGitHubDocs &. > '/'&, &. > ({:"1 ols) <@{."0 1 ({."1 ols) }."0 1 json
@@ -942,6 +956,21 @@ catcht.
 end.
 )
 
+extractFields =: 4 : 0
+NB. x Pattern string (assumes a single parenthesized subpattern match)
+NB. y String
+NB. Return boxed matches (all of them).
+try.
+  ols =. 1 {"2 (rxcomp x) rxmatches y
+  relativeIndices =. <@i."(0) 1 {"1 ols
+  indices =. (<"0 {."1 ols) + &. > relativeIndices
+  indices { &. > < y
+catch.
+  a:
+  return.
+end.
+)
+
 extractField =: 4 : 0
 NB. x Pattern string (assumes a parenthesized subpattern match)
 NB. y String
@@ -1065,6 +1094,25 @@ for_entry. k =. ((# categories) {. 15 # headerIds) ,. categories ,. links do.
 end.
 )
 
+loadUserCategories =: 3 : 0
+echo 'loadUserCategories'
+allUrls =. ''
+catUrl =. 'https://code.jsoftware.com/wiki/Special:AllPages?namespace=2'
+while. 1 do. 
+  pageListHtml =. , > getHtml < catUrl
+  allUrls =. allUrls , 'href="(/wiki/User:[^"]*)"' extractFields pageListHtml
+  relativeCatUrl =. '<a href="([^"]*)" title="Special:AllPages">Next' extractFields pageListHtml
+  if. a: -: relativeCatUrl do. break. end.
+  catUrl =. ('&amp;' ; '&') rxrplc 'https://code.jsoftware.com' , > {. relativeCatUrl
+end.
+users =. ~. >@{. &. > < ;. _2 &. > ,&'/' &. > 11&}. &. > allUrls
+return.
+cols =. ;: 'categoryid title link'
+data =. ((# titles) # categoryId) ; titles ; < links
+sqlinsert__db 'wiki' ; cols ; <data
+echo 'end loadUserCategories'
+)
+
 prepToProcessCategory =: {{
 visitedPairs =: ,: a: , a:
 visitedChildren =: ''
@@ -1142,14 +1190,13 @@ setupTables =: 3 : 0
 NB. Note that these should be the first rows inserted into the categories table.
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category parentseq count') ;      < 0 ; _1 ; 1 ; '' ; 0 ; _1
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 20 ; '*Live Search' ; _1 ; 7 ; ''
-NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 25 ; '*GitHub' ; _1 ; 7 ; ''
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 10 ; '*NuVoc' ; _1 ; 1 ; 'https://code.jsoftware.com/wiki/Category:NuVoc_R.1'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 15 ; '*Vocabulary' ; _1 ; 2 ; 'https://www.jsoftware.com/help/dictionary/vocabul.htm'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 30 ; '*Forums' ; _1 ; 3 ; 'https://www.jsoftware.com/mailman/listinfo/'
-NB. sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 200000 ; 40 ; '*Search' ; _1 ; 4 ; 'https://www.jsoftware.com/mailman/listinfo/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 50 ; '*JSaurus' ; _1 ; 5 ; 'https://jsaurus.info/'
 sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 60 ; '*JPlayground' ; _1 ; 6 ; 'https://jsoftware.github.io/j-playground/bin/html2/'
-sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1e6 ; '*Bookmarks' ; _1 ; 8 ; 'https://www.jsoftware.com/'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 70 ; '*Users' ; _1 ; 8 ; 'https://code.jsoftware.com/wiki/Special:AllPages?namespace=2'
+sqlinsert__db 'categories' ; (;: 'level parentid categoryid category count parentseq link') ; < 1 ; 1 ; 1e6 ; '*Bookmarks' ; _1 ; 9 ; 'https://www.jsoftware.com/'
 )
 
 finishLoadingVocabulary =: 3 : 0
@@ -1288,15 +1335,14 @@ loadTagCategories ''
 NB. loadForum &. > ;: 'programming general beta chat source database '
 writeEndTime ''
 if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMasterDbWithAllWikiPages '' end.
-NB. updateMasterDbWithPosts ''
 copyForumRecordsToMaster ''
 moveForumRecordsFromMasterToStage ''
-NB. updateMasterDbWithGitHubProjects ''
+NB. updateMasterDbWithGitHubJSoftwareProjects ''
+NB. for_i. i.5 do.
+NB.   updateMasterDbWithGitHubJRepos ''
+NB. end.
 sqlcmd__masterDb 'delete from content where sourcetype = "G"'
-updateMasterDbWithGitHubJSoftwareProjects ''
-for_i. i.5 do.
-  updateMasterDbWithGitHubJRepos ''
-end.
+updateMasterDbWithGitHub ''
 updateMasterDbWithRosettaCode ''
 updateMasterDbWithQuora ''
 updateMasterDbWithYouTube ''	
