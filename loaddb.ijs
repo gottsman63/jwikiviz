@@ -284,11 +284,47 @@ LF (1!:3) < logPath
 y (1!:3) < logPath
 )
 
+getval =: 4 : 0
+NB. x A boxed labeled json key:value structure 
+NB. y A path of the form label.label.label...
+components =. < ;. _2 y , '.'
+key =. {. components
+val =. > (1 {"1 x) {~ (0 {"1 x) i. key
+if. 1 = # components do. val return. end.
+val getval }: ; }. ,&'.' &. > components
+)
+
+getGitHubProjects =: 3 : 0
+NB. Return a list of project paths /owner/project
+try.
+url =. 'https://api.github.com/search/repositories?q=language:J&per_page=100&page='
+echo url
+page =. 0
+allProjects =. ''
+while. 1 do.
+  echo 'page' ; page
+  json =. gethttp url , ": page =. >: page
+  rec =. dec_pjson_ json
+  echo totalCount =. rec getval 'total_count'
+  items =. rec getval 'items'
+  echo projects =. getval&'full_name' &. > items
+  (6!:3) 10
+  allProjects =. allProjects , projects
+  if. (100 * page) > totalCount do. break. end.
+end.
+catch. catcht.
+  echo (13!:12) ''
+end.
+allProjects NB. -. < '/sponsors/batch_deferred_sponsor_buttons'
+)
+
 updateMasterDbWithGitHub =: 3 : 0
+projects =. /:~ getGitHubProjects ''
+updateMasterDbWithGitHubDocs &. > projects
 NB. Process GitHub J repositories.
-owners =. ~. (getGitHubRepoOwners '') , (getGitHubRepoOwners '') , getGitHubRepoOwners ''
-echo 'Found owner count: ' , ": # owners
-updateMasterDbWithGitHubOwner &. > /:~ owners
+NB. owners =. ~. (getGitHubRepoOwners '') , (getGitHubRepoOwners '') , getGitHubRepoOwners ''
+NB. echo 'Found owner count: ' , ": # owners
+NB. updateMasterDbWithGitHubOwner &. > /:~ owners
 )
 
 getGitHubRepoOwners =: 3 : 0
