@@ -315,10 +315,12 @@ end.
 catch. catcht.
   echo (13!:12) ''
 end.
-allProjects NB. -. < '/sponsors/batch_deferred_sponsor_buttons'
+'/'&, &. > allProjects NB. -. < '/sponsors/batch_deferred_sponsor_buttons'
 )
 
 updateMasterDbWithGitHub =: 3 : 0
+createOrOpenMasterDb ''
+sqlcmd__masterDb 'delete from content where sourcetype = "G"'
 projects =. /:~ getGitHubProjects ''
 updateMasterDbWithGitHubDocs &. > projects
 NB. Process GitHub J repositories.
@@ -397,7 +399,8 @@ NB. masterCols: link id sourcename sourcetype year monthindex day subject author
 		if. +./ 'test' E. url do. priority =. 1 end.
 		data =. url ; url ; project ; 'G' ; 9999 ; 0 ; 0 ; subject ; ' ' ; content ; <priority
 		try.
-			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
+			sqlinsert__masterDb 'content' ; masterCols ; < data
+NB. 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
 		catch. catcht.
 			echo 'Problem upserting: ' , sqlerror__masterDb
 			echo (13!:12) ''
