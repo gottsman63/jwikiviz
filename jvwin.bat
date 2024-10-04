@@ -1,13 +1,11 @@
 @echo off
 
-REM Get the full directory where this script is located
+REM Get the directory where this script is located
 set script_dir=%~dp0
 set script_dir=%script_dir:~0,-1%
 
-REM Trim everything after "\addons" to get the base directory
-for /f "tokens=1 delims=\addons" %%a in ("%script_dir%") do (
-    set base_dir=%%a
-)
+REM Strip the known substring "addons\gottsman63\jwikiviz\jvwin.bat" from the path to get the base directory
+set base_dir=%script_dir:addons\gottsman63\jwikiviz=%
 
 REM Construct the addon_path
 set addon_path="%script_dir%\run.ijs"
