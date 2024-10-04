@@ -1074,7 +1074,7 @@ if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
 	end.
 	setUpdateButtons_jwikiviz_ ''
 end.
-if. 0 = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
+if. 100 = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
 	asyncCheckAppUpToDate_jwikiviz_ t. 'worker' ''
 	asyncCheckForNewerDatabase_jwikiviz_ t. 'worker' ''
 end.
@@ -3095,7 +3095,7 @@ NB. LogFlag =: 1
 NB.	  logVersionInfo ''
 	  if. -. checkGethttpVersion '' do. return. end.
 	  if. 0 < count =. 0 >. 5 - 1 T. '' do. 0&T."(0) count # 0 end.
-	  appPyx =: asyncCheckAppUpToDate t. 'worker' ''
+NB.	  appPyx =: asyncCheckAppUpToDate t. 'worker' ''  Don't do this here.  Wait 'til we've been up for a while (see the timer handler).
 	  if. dbPathExists '' do. 
 	  	dbOpenDb ''
 	  else.

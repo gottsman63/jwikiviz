@@ -14,10 +14,15 @@ DEPENDS =: 0 : 0
 data/sqlite
 web/gethttp
 arc/lz4
+gl2
+regex
 )
 
 FOLDER=: 'gottsman63/jwikiviz'
 
 FILES=: 0 : 0
 run.ijs
+jvlinux.sh
+jvmac.sh
+jvwin.bat
 )
