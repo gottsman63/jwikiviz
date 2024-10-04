@@ -1058,8 +1058,12 @@ end.
 }}
 
 vizform_timer_z_ =: {{
-wd 'psel vizform'
 FrameCounter_jwikiviz_ =: >: FrameCounter_jwikiviz_
+if. 10 = FrameCounter_jwikiviz_ do.
+  startWindow_jwikiviz_ ''
+  return.
+end.
+wd 'psel vizform'
 fps =. <. 1000 % TimerFractionMsec_jwikiviz_
 if. LogNewEventsWrittenFlag_jwikiviz_ do. 
 	setSnapshotLogButtonState_jwikiviz_ ''
@@ -3082,6 +3086,15 @@ catch.
 end.
 }}
 
+startWindow =: 3 : 0
+	  'w h' =. 2 3 { ". wd 'qscreen'
+	  wd 'pshow'
+	  wd 'msgs'
+	  setLiveSearchSourceFlagButtons 1
+	  wd 'pmove 10 60 ' , ": (w - 20) , h - 80
+	  wd 'set searchBox focus'
+)
+
 go =: 3 : 0
 try.
 	if. 1 = testUserDirectory '' do.
@@ -3106,12 +3119,6 @@ NB.	  appPyx =: asyncCheckAppUpToDate t. 'worker' ''  Don't do this here.  Wait 
 	  buildForm ''
 	  layoutForm ''
 	  setUpdateButtons ''
-	  'w h' =. 2 3 { ". wd 'qscreen'
-	  wd 'pshow'
-	  wd 'msgs'
-	  setLiveSearchSourceFlagButtons 1
-	  wd 'pmove 10 60 ' , ": (w - 20) , h - 80
-	  wd 'set searchBox focus'
 	  if. isDatabaseOpen '' do. initializeWithDatabase '' end.
 	  animate 10
 	  wd 'ptimer ' , ": TimerFractionMsec
