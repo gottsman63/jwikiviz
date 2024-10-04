@@ -1074,7 +1074,7 @@ if. 0 = (10 * fps) | FrameCounter_jwikiviz_ do. NB. Check things.
 	end.
 	setUpdateButtons_jwikiviz_ ''
 end.
-if. 100 = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
+if. (fps * 10) = (60 * 60 * fps) | FrameCounter_jwikiviz_ do.
 	asyncCheckAppUpToDate_jwikiviz_ t. 'worker' ''
 	asyncCheckForNewerDatabase_jwikiviz_ t. 'worker' ''
 end.
@@ -3068,7 +3068,7 @@ NB.	initAdmin ''
 	fs =. '4' getKeyValue 'FontSlider'
 	try. wd 'set fontSlider ' , fs catch. end.
 	setFontSize ". fs
-	dbPyx =: asyncCheckForNewerDatabase t. 'worker' ''
+NB. 	dbPyx =: asyncCheckForNewerDatabase t. 'worker' ''
 	datetime =. , > > {: sqlreadm__db 'select value from admin where key = "CrawlStart"'
 	version =. manifest_version (1!:1) < jpath addonPath
 	caption =. 'J Viewer ' , version , ' (Crawl Datetime: ' , datetime , ')'
