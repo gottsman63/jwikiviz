@@ -14,8 +14,6 @@ DEPENDS =: 0 : 0
 data/sqlite
 web/gethttp
 arc/lz4
-gl2
-regex
 )
 
 FOLDER=: 'gottsman63/jwikiviz'
