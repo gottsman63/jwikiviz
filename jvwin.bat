@@ -5,13 +5,13 @@ set script_dir=%~dp0
 set script_dir=%script_dir:~0,-1%
 
 REM Strip the known substring "addons\gottsman63\jwikiviz\jvwin.bat" from the path to get the base directory
-set base_dir=%script_dir:addons\gottsman63\jwikiviz=%
+set base_dir=%script_dir:\addons\gottsman63\jwikiviz=%
 
 REM Construct the addon_path
 set addon_path="%script_dir%\run.ijs"
 
 REM Construct the executable path
-set executable="%base_dir%\bin\jqt.command"
+set executable="%base_dir%\bin\jqt.exe"
 
 REM Check if the executable exists
 if not exist %executable% (
