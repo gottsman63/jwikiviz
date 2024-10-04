@@ -1,16 +1,13 @@
 @echo off
 
-REM Get the directory where this script is located
+REM Get the full directory where this script is located
 set script_dir=%~dp0
 set script_dir=%script_dir:~0,-1%
 
-REM Find the part of the path before "\addons"
-for /f "delims=" %%a in ("%script_dir%") do (
-    set "base_dir=%%a"
+REM Trim everything after "\addons" to get the base directory
+for /f "tokens=1 delims=\addons" %%a in ("%script_dir%") do (
+    set base_dir=%%a
 )
-
-REM Strip off everything after and including "\addons" in the base_dir
-set base_dir=%base_dir:\addons=%
 
 REM Construct the addon_path
 set addon_path="%script_dir%\run.ijs"
