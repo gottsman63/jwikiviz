@@ -8,16 +8,16 @@ REM Strip everything after "\addons" to get the base directory
 for /f "tokens=1 delims=\addons" %%a in ("%script_dir%") do set base_dir=%%a
 
 REM Construct the addon_path
-set addon_path=%script_dir%\run.ijs
+set addon_path="%script_dir%\run.ijs"
 
 REM Construct the executable path
-set executable=%base_dir%\bin\jqt.command
+set executable="%base_dir%\bin\jqt.command"
 
 REM Check if the executable exists
-if not exist "%executable%" (
+if not exist %executable% (
     echo Error: %executable% not found
     exit /b 1
 )
 
 REM Launch the executable, passing in the addon_path
-start "" "%executable%" "%addon_path%"
+start "" %executable% %addon_path%
