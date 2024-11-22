@@ -89,10 +89,11 @@ NB. Title of the form /wiki/...
 'https://code.jsoftware.com/mediawiki/index.php?title=' , (urlencode 6 }. y) , '&action=edit'
 )
 
-getHtml =: 3 : 0
+getHtml =: 4 : 0
+NB. x = 1 means use Lynx, returning a text representation of the page rather than an hTML representation.
 NB. y Boxed urls
-NB. Return a list of boxed html, one for each url
-echo 'getHtml...'
+NB. Return a list of boxed html, one for each url.  Remove any stray invalid UTF-8 characters.
+echo (": x) , ' getHtml...'
 echo ,. y
 blockSize =. 100 <. # y
 urlBlocks =. (- blockSize) <\ y
@@ -109,7 +110,17 @@ for_i. i. # urlBlocks do.
 		echo (13!:12) ''
 		echo urlSpec
 	end.
-	result =. result , <@(1!:1)"0 files
+	if. x do.
+		
+		lynxCommands =. '/usr/local/bin/lynx -dump '&, &. > files
+		iconvCommand =. ' | iconv -f utf-8 -t utf-8//IGNORE '
+		fullCommands =. ,&iconvCommand &. > lynxCommands
+		result =. result , (2!:0) &. > fullCommands
+	else.
+NB. 		result =. result , <@(1!:1)"0 files
+		fullCommands =. 'iconv -f utf-8 -t utf-8//IGNORE '&, &. > files
+		result =. result , (2!:0) &. > fullCommands
+	end.
 end.
 result
 )
@@ -122,7 +133,7 @@ result =. 'extractTextFromWikiArticle Failure! '
 try.
  	result =. translateHtmlEncodings p {.~ I. end E. p =. ((# start) + I. start E. y) }. y
 catch.
-result =. 'extractTextFromWikiArticle failure!'
+	result =. 'extractTextFromWikiArticle failure!'
 end.
 NB. echo 'extractTextFromWikiArticle Failure! ' , 200 {. result
 result
@@ -173,27 +184,30 @@ NB. x The url of a challenge.
 NB. y The name of a challenge.
 NB. Get the challenge, extract the J portion, translate.
 NB. Return url ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; author ; content
-url =. x
-title =. '[Rosetta] ' , y
 try.
-	echo 'RosettaCode: ' , title
-	wd 'msgs'
-	html =. gethttp url , '?action=edit'
-	problemPlus =. html {.~ {. I. '=={{header|' E. html
-	problem =. problemPlus }.~ {. I. '<textarea' E. problemPlus
-	jSolution =. > jList #~ (< '=={{header|J}}==') = 16&{. &. > jList =. ('=={{header|' E. html) <  ;. 1 html
-	if. jSolution -: '' do. 
-		echo 'No J code found for ' , title
-		a:
-		return.
-	end.
-	content =. y , ' ' , (translateHtmlEncodings problem) , ' ' , translateToJEnglish translateHtmlEncodings jSolution
-	filename =. ' '
-	(url , '#J') ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; ' ' ; content
-catch. catchd.
-	echo (13!:12) ''
-	a:
-	return.
+  url =. x
+  title =. '[Rosetta] ' , y
+  echo 'RosettaCode: ' , title
+  text =. , > 1 getHtml < url
+  echo 'text' ; 100 {. text
+  candidateEndIndexes =. {."1 {."2 (rxcomp '^\[\d+\]') rxmatches text
+  problemStartIndex =. {. {. (rxcomp '\s+\[\d+\]Task ') rxmatch text
+  problemEndIndex =. {. candidateEndIndexes
+  problem =. problemStartIndex }. problemEndIndex {. text
+  solutionStartIndex =. {. {. (rxcomp '^\[\d+\]J') rxmatch text
+  if. solutionStartIndex -: '' do.
+    echo 'No J code found for ' , title
+    a:
+    return.
+  end.
+  solutionEndIndex =. (+/ solutionStartIndex >: candidateEndIndexes) { candidateEndIndexes
+  jSolution =. solutionStartIndex }. solutionEndIndex {. text
+  content =. y , ' ' , problem , ' ' , translateToJEnglish translateHtmlEncodings jSolution
+  filename =. ' '
+  (url , '#J') ; filename ; 'RosettaCode' ; 'R' ; 9999 ; 0 ; 0 ; title ; ' ' ; content
+catch.
+  echo 'Problem in updateMasterDbWithRosettaCodeChallenge: ' , (13!:12) ''
+  a:
 end.
 }}
 
@@ -203,14 +217,13 @@ createOrOpenMasterDb ''
 sqlcmd__masterDb 'delete from content where sourcetype = "R"'
 pat =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
 nextPagePat =. '<a href="(/wiki/Category:Programming_Tasks\?pagefrom[^"]+)"[^>]+>next page</a>'
-html =. gethttp 'https://rosettacode.org/wiki/Category:Programming_Tasks'
+html =. , > 0 getHtml < 'https://rosettacode.org/wiki/Category:Programming_Tasks'
 while. 0 < # html do.
 	try.
 		c =. 1 2 {"2 pat rxmatches html
 		urlTitles =. ({:"1 c) <@{."0 1 ({."1 c) }."0 1 html
 		titles =. 1 {"1 urlTitles
-		echo titles
-		wd 'msgs'
+		echo ,. titles
 		fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
 		table =: _10 ]\ , > (<a:) -.~ fullUrls updateMasterDbWithRosettaCodeChallenge &. > titles
 		data =: (0 {"1 table) ; (1 {"1 table) ; (2 {"1 table) ; (3 {"1 table) ; (> 4 {"1 table) ; (> 5 {"1 table) ; (> 6 {"1 table) ; (7 {"1 table) ; (8 {"1 table) ; (9 {"1 table) ; < ((# table) # 1)
@@ -220,16 +233,17 @@ while. 0 < # html do.
 			echo 'Problem ' , (13!:12) ''
 			echo sqlerror__masterDb ''
 		end.
+		echo 'About to check for the next page link...'
 		if. 0 < {. c =. {: nextPagePat rxmatch html do.
 			nextUrl =. 'https://rosettacode.org' , ({: c) {. ({. c) }. html
-			html =. gethttp nextUrl
+			html =. , > 0 getHtml < nextUrl
 		else.
 			html =. ''
 		end.
 	catch.
 		echo 'Problem ' , (13!:12) ''
 		echo sqlerror__masterDb ''
-		echo 400 {. html
+		echo _150 ]\ 1000 {. html
 		break.
 	end.
 end.
@@ -529,7 +543,7 @@ lengths =. {:"1 ol
 htmlIds =. lengths <@{."0 1 offsets }."0 1 tocHtml
 links =. ('https://www.jsoftware.com/pipermail/', x , '/' , (": year) , '-' , (> monthIndex { Months) , '/')&, &. > htmlIds
 if. 0 = # links do. 0 return. end.
-postsHtml =. getHtml links
+postsHtml =. 0 getHtml links
 dayPat =. rxcomp '<I>\w\w\w\s\w\w\w\s+(\d+)\s\d\d'
 titlePat =. rxcomp '<TITLE>([^<]+)</TITLE>'
 authorPat =. rxcomp '<B>([^<]+)</B>'
@@ -606,7 +620,7 @@ for_rowBatch. _100 < \ uniqueRows do.
 	links =. 1 {"1 rows
 	urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
 	titles =. '[Wiki] '&, &. > {."1 rows
-	rawHtmls =. getHtml urls
+	rawHtmls =. 0 getHtml urls
 	extractedHtmls =. extractTextFromWikiArticle &. > rawHtmls
 	htmls =. translateToJEnglish &. > extractedHtmls
 	data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; htmls ; < ((# links) # 1)
@@ -639,7 +653,7 @@ echo 'Found ', (": # titles) , ' changed wiki pages.'
 if. 0 = # titles do. return. end.
 links =. (wikiUrlPrefix , '/')&, &. > wikiLinks
 urls =. convertToWikiUrl &. > ids =. (# wikiUrlPrefix)&}. &. > links
-htmls =: translateToJEnglish &. > extractTextFromWikiArticle &. > getHtml urls
+htmls =: translateToJEnglish &. > extractTextFromWikiArticle &. > 0 getHtml urls
 data =. links ; ids ; ((<'wiki') #~ # urls) ; ((<'W') #~ # urls) ; (9999 #~ # urls) ; (11 #~ # urls) ; (0 #~ # urls) ; titles ; ((<' ') #~ # urls) ; htmls ; < ((# urls) # 1)
 try.
 	sqlupsert__masterDb 'content' ; 'link' ; masterCols ; <data
@@ -1138,7 +1152,7 @@ echo 'loadUserCategories'
 allUrls =. ''
 catUrl =. 'https://code.jsoftware.com/wiki/Special:AllPages?namespace=2'
 while. 1 do. 
-  pageListHtml =. , > getHtml < catUrl
+  pageListHtml =. , > 0 getHtml < catUrl
   allUrls =. allUrls , 'href="(/wiki/User:[^"]*)"' extractFields pageListHtml
   relativeCatUrl =. '<a href="([^"]*)" title="Special:AllPages">Next' extractFields pageListHtml
   if. a: -: relativeCatUrl do. break. end.
@@ -1371,16 +1385,10 @@ processCategory ''
 loadVoc ''
 loadAncillaryPages ''
 loadTagCategories ''
-NB. loadForum &. > ;: 'programming general beta chat source database '
 writeEndTime ''
 if. fexist masterDbFile do. updateMasterDbWithChangedWikiPages '' else. updateMasterDbWithAllWikiPages '' end.
 copyForumRecordsToMaster ''
 moveForumRecordsFromMasterToStage ''
-NB. updateMasterDbWithGitHubJSoftwareProjects ''
-NB. for_i. i.5 do.
-NB.   updateMasterDbWithGitHubJRepos ''
-NB. end.
-sqlcmd__masterDb 'delete from content where sourcetype = "G"'
 updateMasterDbWithGitHub ''
 updateMasterDbWithRosettaCode ''
 updateMasterDbWithQuora ''
