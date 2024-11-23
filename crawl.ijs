@@ -38,6 +38,16 @@ initializeLog =: 3 : 0
 'Log...' (1!:2) < logPath
 )
 
+getval =: 4 : 0
+NB. x A boxed labeled json key:value structure 
+NB. y A path of the form label.label.label...
+components =. < ;. _2 y , '.'
+key =. {. components
+val =. > (1 {"1 x) {~ (0 {"1 x) i. key
+if. 1 = # components do. val return. end.
+val getval }: ; }. ,&'.' &. > components
+)
+
 extractFields =: 4 : 0
 NB. x Pattern string (assumes a single parenthesized subpattern match)
 NB. y String
@@ -308,7 +318,111 @@ titles ,. episodeLinks ,. notesLinks ,. transcriptLinks ,. episodeHtmls ,. notes
 )
 NB. ========================= End ArrayCast ===============================
 
+NB. ============================ GitHub ===================================
+getGitHubProjects =: 3 : 0
+NB. Return a list of project paths /owner/project
+try.
+url =. 'https://api.github.com/search/repositories?q=language:J&per_page=100&page='
+echo url
+page =. 0
+allProjects =. ''
+while. 1 do.
+  echo 'page' ; page
+  json =. , > 0 getHtml < url , ": page =. >: page
+  rec =. dec_pjson_ json
+  echo totalCount =. rec getval 'total_count'
+  items =. rec getval 'items'
+  echo projects =. getval&'full_name' &. > items
+  (6!:3) 10
+  allProjects =. allProjects , projects
+  if. (100 * page) > totalCount do. break. end.
+end.
+catch. catcht.
+  echo (13!:12) ''
+end.
+/:~ '/'&, &. > allProjects
+)
 
+
+extractFilesFromGitHubProject =: 3 : 0
+NB. y zipball contents for a project from GitHub
+NB. Get the project, get contents of the relevant files,.
+project =. y
+echo project
+try.
+	token =. LF -.~ (1!:1) < tokenFile
+	cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com' , project , '/zipball/master/'
+	echo 'cmd' ; cmd
+	zip =. (2!:0) cmd
+	echo '$ zip' ; $ zip
+	zipFilename =. appDir , '/github/' , (project -. '/') , '.zip'
+	try. (2!:0) 'mkdir ' , appDir , '/github/' catch. end.
+	exdir =. appDir , '/github/' , project -. '/'
+	zip (1!:2) < zipFilename
+	try. (2!:0) 'rm -r ' , exdir catch. end.
+	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
+	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
+	filenames =. a: -.~ , > < ;. _2 @(2!:0) &. > commands
+	rawContents =. <@(1!:1)"0 filenames
+	contents =. translateToJEnglish &. > rawContents
+	echo '# filenames' ; # filenames
+	for_i. i. # filenames do.
+		lines =. < ;. 2 (> i { contents) , LF
+		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
+		fullPath =. , > i { filenames
+		partialPath_1 =. ((# project -. '/') + (project -. '/') I.@E. fullPath) }. fullPath
+		partialPath =. (('^/[^/]+/') ; '') rxrplc partialPath_1
+		url =. 'https://github.com' , project , '/blob/master/' , partialPath
+		subject =. '[GitHub] ' , project , ': ' , partialPath
+		content =. (kk =.translateToJEnglish partialPath) , ' ' , subject , ' ' , ; lineNumbers ,. lines
+		echo '[' , partialPath , '] [' , kk , ']'
+NB. masterCols: link id sourcename sourcetype year monthindex day subject author body
+		priority =. 2
+		if. +./ 'jsoftware' E. url do. priority =. 3 end.
+		if. +./ 'test' E. url do. priority =. 1 end.
+		data =. url ; url ; project ; 'G' ; 9999 ; 0 ; 0 ; subject ; ' ' ; content ; <priority
+		try.
+			sqlinsert__masterDb 'content' ; masterCols ; < data
+NB. 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
+		catch. catcht.
+			echo 'Problem upserting: ' , sqlerror__masterDb
+			echo (13!:12) ''
+		end.
+	end.
+catch. catcht.
+	echo (13!:12) ''
+	echo sqlerror__masterDb ''
+end.
+try. (2!:0) 'rm -r ' , exdir catch. end.
+try. (2!:0) 'rm ' , zipFilename catch. end.
+(6!:3) 10
+)
+
+crawlGitHub =: 3 : 0
+NB. Return a table of owner ; repo ; file ; code
+projectNames =. getGitHubProjects ''
+echo '$ projectNames' ; $ projectNames
+blockSize =. 100 <. # projectNames
+projectBlocks =. (- blockSize) <\ projectNames
+lynxResult =. ''
+htmlResult =. ''
+token =. LF -.~ (1!:1) < tokenFile
+finalZips =. ''
+for_i. i. # projectBlocks do.
+  projectBatch =. > i { projectBlocks
+  projectUrls =. 'https://api.github.com/repos'&, &. > projectBatch
+  urlSpec =. ; ('"'&, &. > ,&'"' &. > projectUrls) ,. <' '
+  files =. (jpath '~temp/html/')&, &. > ,&'.zip' &. > <@":"0 i. blockSize <. # projectUrls
+  outputSpec =. ; (<' -o ') ,. files
+  cmd =. 'curl --parallel --parallel-immediate -H "Authorization: token ' , token , ' " -L ' , (; '"https://github.com'&, &. > ,&'/zipball/master/" ' &. > projectBatch) , outputSpec
+  (2!:0) cmd
+  zips =. (1!:1) &. > < &. > files
+  finalZips =. finalZips , zips
+end.
+echo '$ finalZips' ; $ finalZips
+echo # &. > finalZips
+)
+NB. ========================== End GitHub =================================
 initializeLog ''
 
 crawl =: 3 : 0
