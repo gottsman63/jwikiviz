@@ -38,6 +38,29 @@ initializeLog =: 3 : 0
 'Log...' (1!:2) < logPath
 )
 
+extractFields =: 4 : 0
+NB. x Pattern string (assumes a single parenthesized subpattern match)
+NB. y String
+NB. Return boxed matches (all of them).
+try.
+  ols =. 1 {"2 (rxcomp x) rxmatches y
+  relativeIndices =. <@i."(0) 1 {"1 ols
+  indices =. (<"0 {."1 ols) + &. > relativeIndices
+  indices { &. > < y
+catch.
+  a:
+  return.
+end.
+)
+
+extractField =: 4 : 0
+NB. x Pattern string (assumes a parenthesized subpattern match)
+NB. y String
+NB. Return the first match of x in y
+ol =. {: (rxcomp x) rxmatch y
+({: ol) {. ({. ol) }. y
+)
+
 jEnglishEquivalents =: _2 ]\ '(' ; 'leftpar' ; ')' ; 'rightpar' ; '=' ; 'eq' ; '=.' ; 'eqdot' ; '=:' ; 'eqco' ; '<' ; 'lt' ; '<.' ; 'ltdot' ; '<:' ; 'ltco' ;  '>' ; 'gt' ; '>.' ; 'gtdot' ; '>:' ; 'gtco' ; '_' ; 'under' ; '_.' ; 'underdot' ; '_:' ; 'underco' ; '+' ; 'plus' ; '+.' ; 'plusdot' ; '+:' ; 'plusco' ; '*' ; 'star'  ;  '*.' ; 'stardot'  ; '*:' ; 'starco' ; '-' ; 'minus' ; '-.' ; 'minusdot' ; '-:' ; 'minusco' ; '%' ; 'percent' ; '%.' ; 'percentdot' ; '%:' ; 'percentco' ; '^' ; 'hat' ; '^.' ; 'hatdot' ; '^:' ; 'hatco' ; '$' ; 'dollar' ; '$.' ; 'dollardot' ; '$:' ; 'dollarco' ; '~' ; 'tilde' ;  '~.' ; 'tildedot'  ; '~:' ; 'tildeco' ; '|' ; 'bar' ; '|.' ; 'bardot' ; '|:' ; 'barco' ; '.'  ; 'dot' ; ':' ; 'co' ; ':.' ; 'codot' ; '::' ; 'coco' ; ',' ; 'comma' ; ',.' ; 'commadot' ; ',:' ; 'commaco' ; ';' ; 'semi' ; ';.' ; 'semidot' ; ';:' ; 'semico' ; '#' ; 'number' ; '#.' ; 'numberdot' ; '#:' ; 'numberco' ; '!' ; 'bang' ; '!.' ; 'bangdot' ; '!:' ; 'bangco' ; '/' ; 'slash' ; '/.' ; 'slashdot' ; '/:' ; 'slashco' ; '\' ; 'bslash' ; '\.' ; 'blsashdot' ; '\:' ; 'bslashco' ; '[' ; 'squarelf' ; '[.' ; 'squarelfdot' ; '[:' ; 'squarelfco' ; ']' ; 'squarert' ; '].' ; 'squarertdot' ; ']:' ; 'squarertco' ; '{' ; 'curlylf' ; '{.' ; 'curlylfdot' ; '{:' ; 'curlylfco' ; '{::' ; 'curlylfcoco' ; '}' ; 'curlyrt' ;  '}.' ; 'curlyrtdot' ; '}:' ; 'curlyrtco' ; '{{' ; 'curlylfcurlylf' ; '}}'  ; 'curlyrtcurlyrt' ; '"' ; 'quote' ; '".' ; 'quotedot' ; '":' ; 'quoteco' ; '`' ; 'grave' ; '@' ; 'at' ; '@.' ; 'atdot' ; '@:' ; 'atco' ; '&' ; 'ampm' ; '&.' ; 'ampmdot' ; '&:' ; 'ampmco' ; '?' ; 'query' ; '?.' ; 'querydot' ; 'a.' ; 'adot' ; 'a:' ; 'aco' ; 'A.' ; 'acapdot' ; 'b.' ; 'bdot' ; 'D.' ; 'dcapdot' ; 'D:' ; 'dcapco' ; 'e.' ; 'edot' ; 'E.' ; 'ecapdot' ; 'f.' ; 'fdot' ; 'F:.' ; 'fcapcodot' ; 'F::' ; 'fcapcoco' ; 'F:' ; 'fcapco' ; 'F..' ; 'fcapdotdot' ; 'F.:' ; 'fcapdotco' ; 'F.' ; 'fcapdot' ; 'H.' ; 'hcapdot' ; 'i.' ; 'idot' ; 'i:' ; 'ico' ; 'I.' ; 'icapdot' ; 'I:' ; 'icapco' ; 'j.' ; 'jdot' ; 'L.' ; 'lcapdot' ; 'L:' ; 'lcapco' ; 'm.' ; 'mdot' ; 'M.' ; 'mcapdot' ; 'NB.' ; 'ncapbcapdot' ; 'o.' ; 'odot' ; 'p.' ; 'pdot' ; 'p:' ; 'pco' ; 'q:' ; 'qco' ; 'r.' ; 'rdot' ; 's:' ; 'sco' ; 't.' ; 'tdot' ; 'T.' ; 'tcapdot' ; 'u:' ; 'uco' ; 'x:' ; 'xco' ; 'Z:' ; 'zcapco' ; 'assert.' ; 'assertdot' ; 'break.' ; 'breakdot' ; 'continue.' ; 'continuedot' ; 'else.' ; 'elsedot' ; 'elseif.' ; ' elseifdot' ; 'for.' ; 'fordot' ; 'if.' ; 'ifdot' ; 'return.' ; 'returndot' ; 'select.' ; 'selectdot' ; 'case.' ; 'casedot' ; 'fcase.' ; 'fcasedot' ; 'try.' ; 'trydot' ; 'catch.' ; 'catchdot' ; 'catchd.' ; 'catchddot' ; 'catcht.' ; 'catchtdot' ; 'while.' ; 'whiledot' ; 'whilst.' ; 'whilstdot'         
 jEnglishDict =: (0 {"1 jEnglishEquivalents) ,. 'J'&, &. > <@":"0 i. # jEnglishEquivalents
 jMnemonics =: , &. > 0 {"1 jEnglishDict
@@ -89,14 +112,17 @@ NB. Title of the form /wiki/...
 )
 
 getHtml =: 4 : 0
-NB. x = 1 means use Lynx, returning a text representation of the page rather than an hTML representation.
+NB. x = 0 means return the raw html.
+NB. x = 1 means use Lynx, returning a text representation of the page rather than the raw hTML.
+NB. x = 3 means to return both the raw html and the Lynx output in a pair of boxes.
 NB. y Boxed urls
 NB. Return a list of boxed html, one for each url.  Remove any stray invalid UTF-8 characters.
 log (": x) , ' getHtml...'
 NB.echo ,. y
 blockSize =. 100 <. # y
 urlBlocks =. (- blockSize) <\ y
-result =. ''
+lynxResult =. ''
+htmlResult =. ''
 for_i. i. # urlBlocks do.
 	urlBatch =. > i { urlBlocks
 	urlSpec =. ; ('"'&, &. > ,&'"' &. > urlBatch) ,. <' '
@@ -108,20 +134,18 @@ for_i. i. # urlBlocks do.
 	catch.
 		log (13!:12) ''
 		log urlSpec
-	end.
-	if. x do.
-		
-		lynxCommands =. '/usr/local/bin/lynx -dump '&, &. > files
-		iconvCommand =. ' | iconv -f utf-8 -t utf-8//IGNORE '
-		fullCommands =. ,&iconvCommand &. > lynxCommands
-		result =. result , (2!:0) &. > fullCommands
-	else.
-NB. 		result =. result , <@(1!:1)"0 files
-		fullCommands =. 'iconv -f utf-8 -t utf-8//IGNORE '&, &. > files
-		result =. result , (2!:0) &. > fullCommands
-	end.
+	end.		
+	lynxCommands =. '/usr/local/bin/lynx -dump '&, &. > files
+	iconvCommand =. ' | iconv -f utf-8 -t utf-8//IGNORE '
+	fullLynxCommands =. ,&iconvCommand &. > lynxCommands
+	lynxResult =. lynxResult , (2!:0) &. > fullLynxCommands
+	fullHtmlCommands =. 'iconv -f utf-8 -t utf-8//IGNORE '&, &. > files
+	htmlResult =. htmlResult , (2!:0) &. > fullHtmlCommands
 end.
-result
+if. x = 0 do. htmlResult
+elseif. x = 1 do. lynxResult
+else. htmlResult ,. lynxResult
+end.
 )
 
 NB. =========================== RosettaCode ===============================
@@ -182,34 +206,82 @@ end.
 )
 
 crawlRosettaCode =: 3 : 0
+NB. Return a table of titles, links and indexable challenge texts
 log 'crawlRosettaCode...'
-createOrOpenMasterDb ''
-sqlcmd__masterDb 'delete from content where sourcetype = "R"'
 urlTitles =. getRosettaCodeChallengeUrlsAndTitles ''
 titles =. 1 {"1 urlTitles
 fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
 fullChallengeTexts =. 1 getHtml fullUrls
 jTexts =. titles extractJPortionOfRosettaCodeChallenge &. > fullChallengeTexts
 jurls =. ,&'#J' &. > fullUrls
-filenames =. (# jurls) # < ' '
-sourceNames =. (# jurls) # < 'RosettaCode'
-sourceTypes =. (# jurls) # < 'R'
-years =. (# jurls) # 9999
-monthIndexes =. (# jurls) # 0
-days =. (# jurls) # 0
-authors =. (# jurls) # < ' '
-priorities =. (# jurls) # 1
-data =. jurls ; filenames ; sourceNames ; sourceTypes ; years ; monthIndexes ; days ; titles ; authors ; jTexts ; < priorities
-log 'crawlRosettaCode data shape = ' , ": $ data
-try.
- 	sqlinsert__masterDb 'content' ; masterCols ; < data
-	log sqlerror__masterDb ''
-catch. catcht. catchd.
-	log 'Problem ' , (13!:12) ''
-	log sqlerror__masterDb ''
-end.
+log '...crawlRosettaCode'
+titles ,. jurls ,. jTexts
 )
 
 NB. ========================== End RosettaCode ============================
 
+NB. ============================ Forums ===================================
+crawlForums =: 3 : 0
+NB. Return a table of subject ; url ; year ; monthindex ; day ; author ; body
+log 'crawlForums...'
+try.
+  forumsDb =: sqlopen_psqlite_ forumsDbPath
+  ftable =. > {: sqlreadm__forumsDb 'select link, id, sourcename, year, monthindex, day, subject, author, body from forum' 
+  links =. 0 {" 1 ftable
+  ids =. 1 {"1 ftable
+  sourceNames =. 2 {"1 ftable
+  years =. 3 {"1 ftable
+  monthIndexes =. 4 {"1 ftable
+  days =. 5 {"1 ftable
+  subjects =. 6 {"1 ftable
+  authors =. 7 {"1 ftable
+  bodies =. 8 {"1 ftable
+  log '...end updateMasterDbWithForumPosts'
+  subjects ,. links ,. years ,. monthIndexes ,. days ,. authors ,. bodies
+catch. catcht.
+  log (13!:12) ''
+  log sqlerror__forumsDb ''
+end.
+)
+NB. ========================== End Forums =================================
+
+NB. ============================= Wiki ====================================
+crawlWikiForLinksAndTitles =: 3 : 0
+NB. Return a table of url ; title
+allUrls =. ''
+allTitles =. ''
+catUrl =. 'https://code.jsoftware.com/wiki/Special:AllPages?namespace=0'
+while. 1 do. 
+  pageListHtml =. , > 0 getHtml < catUrl
+  allUrls =. allUrls , 'href="(/wiki/[^"]*)" title="[^"]*"' extractFields pageListHtml
+  allTitles =. allTitles , 'href="/wiki/[^"]*" title="([^"]*)"' extractFields pageListHtml
+  relativeCatUrl =. '<a href="([^"]*)" title="Special:AllPages">Next' extractFields pageListHtml
+  if. a: -: relativeCatUrl do. break. end.
+  catUrl =. ('&amp;' ; '&') rxrplc 'https://code.jsoftware.com' , > {. relativeCatUrl
+end.
+fullUrls =. 'https://code.jsoftware.com'&, &. > allUrls
+fullUrls ,. allTitles
+)
+
+crawlWiki =: 3 : 0
+NB. Return link ; title ; categories in a box ; text
+linksTitles =. crawlWikiForLinksAndTitles ''
+links =. {."1 linksTitles
+titles =. {:"1 linksTitles
+htmlTexts =. 3 getHtml links
+htmls =. {."1 htmlTexts
+texts =. {:"1 htmlTexts
+sectionPat =. rxcomp '"mw-normal-catlinks"(.*?)</div'
+categoryPat =. rxcomp '<a href="/wiki/Category:[^>]*>([^<]*)<'
+sections =. sectionPat&extractField &. > htmls
+categories =. categoryPat&extractFields &. > sections
+titles ,. categories
+) 
+NB. =========================== End Wiki ==================================
+
 initializeLog ''
+
+crawl =: 3 : 0
+crawlRosettaCode ''
+updateMasterDbWithForumPosts ''
+)
