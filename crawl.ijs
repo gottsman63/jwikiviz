@@ -149,7 +149,7 @@ end.
 )
 
 NB. =========================== RosettaCode ===============================
-getRosettaCodeChallengeUrlsAndTitles =: 3 : 0
+getRosettaCodeUrlsAndTitles =: 3 : 0
 log 'getRosettaCodeChallengeUrls...'
 pat =. rxcomp '<li>[^<]*<a href="([^"]+)" title="([^"]+)"'
 nextPagePat =. '<a href="(/wiki/Category:Programming_Tasks\?pagefrom[^"]+)"[^>]+>next page</a>'
@@ -208,7 +208,7 @@ end.
 crawlRosettaCode =: 3 : 0
 NB. Return a table of titles, links and indexable challenge texts
 log 'crawlRosettaCode...'
-urlTitles =. getRosettaCodeChallengeUrlsAndTitles ''
+urlTitles =. getRosettaCodeUrlsAndTitles ''
 titles =. 1 {"1 urlTitles
 fullUrls =. 'https://rosettacode.org'&, &. > 0 {"1 urlTitles
 fullChallengeTexts =. 1 getHtml fullUrls
@@ -275,13 +275,41 @@ sectionPat =. rxcomp '"mw-normal-catlinks"(.*?)</div'
 categoryPat =. rxcomp '<a href="/wiki/Category:[^>]*>([^<]*)<'
 sections =. sectionPat&extractField &. > htmls
 categories =. categoryPat&extractFields &. > sections
-titles ,. categories
+links ,. titles ,. categories ,. texts
 ) 
 NB. =========================== End Wiki ==================================
+
+NB. =========================== ArrayCast =================================
+crawlArrayCast =: 3 : 0
+httpPrefix =. 'https://www.arraycast.com'
+NB. Return a table of title ; mainLink ; mainText ; notesLink ; notesText ; transcriptLink ; transcriptText
+tocUrl =. httpPrefix , '/episodes'
+nextTocPat =. '<a href="(/episodes\?offset=[^"]*)" rel="next"'
+episodeLinkPat =. '<a href="(/episodes/episode[^"]*)"'
+episodeLinks =. ''
+while. 1 do.
+  html =. , > 0 getHtml < tocUrl
+  episodeLinks =. episodeLinks , episodeLinkPat extractFields html
+  partialUrl =. nextTocPat extractField html
+  if. 0 = # partialUrl do. break. end.
+  tocUrl =. httpPrefix , partialUrl
+end.
+episodeLinks =. httpPrefix&, &. > ~. episodeLinks
+episodeHtmls =. 0 getHtml episodeLinks
+titlePat =. '<title>(.*?)</title>'
+titles =. titlePat&extractField &. > episodeHtmls
+notesPat =. '"(.*?show-note[^"]*)"'
+notesLinks =. httpPrefix&, &. > notesPat&extractField &. > episodeHtmls
+notesHtmls =. 1 getHtml notesLinks
+transcriptPat =. '"(.*?transcript[^"]*)"'
+transcriptLinks =. httpPrefix&, &. > transcriptPat&extractField &. > episodeHtmls
+transcriptHtmls =. 1 getHtml transcriptLinks
+titles ,. episodeLinks ,. notesLinks ,. transcriptLinks ,. episodeHtmls ,. notesHtmls ,. transcriptHtmls
+)
+NB. ========================= End ArrayCast ===============================
+
 
 initializeLog ''
 
 crawl =: 3 : 0
-crawlRosettaCode ''
-updateMasterDbWithForumPosts ''
 )
