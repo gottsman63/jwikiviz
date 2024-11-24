@@ -41,11 +41,16 @@ initializeLog =: 3 : 0
 getval =: 4 : 0
 NB. x A boxed labeled json key:value structure 
 NB. y A path of the form label.label.label...
-components =. < ;. _2 y , '.'
-key =. {. components
-val =. > (1 {"1 x) {~ (0 {"1 x) i. key
-if. 1 = # components do. val return. end.
-val getval }: ; }. ,&'.' &. > components
+try.
+  components =. < ;. _2 y , '.'
+  key =. {. components
+  val =. > (1 {"1 x) {~ (0 {"1 x) i. key
+  if. 1 = # components do. val return. end.
+  val getval }: ; }. ,&'.' &. > components
+catch.
+  echo 'Error getting "' , y , '"'
+  echo (13!:12) ''
+end.
 )
 
 extractFields =: 4 : 0
@@ -246,7 +251,7 @@ try.
   subjects =. 6 {"1 ftable
   authors =. 7 {"1 ftable
   bodies =. 8 {"1 ftable
-  log '...end updateMasterDbWithForumPosts'
+  log '...end crawlForums'
   subjects ,. links ,. years ,. monthIndexes ,. days ,. authors ,. bodies
 catch. catcht.
   log (13!:12) ''
@@ -319,83 +324,69 @@ titles ,. episodeLinks ,. notesLinks ,. transcriptLinks ,. episodeHtmls ,. notes
 NB. ========================= End ArrayCast ===============================
 
 NB. ============================ GitHub ===================================
+indexSuffixes =:  '.ijs' ; '.ijt'
+
 getGitHubProjects =: 3 : 0
 NB. Return a list of project paths /owner/project
 try.
-url =. 'https://api.github.com/search/repositories?q=language:J&per_page=100&page='
-echo url
-page =. 0
-allProjects =. ''
-while. 1 do.
-  echo 'page' ; page
-  json =. , > 0 getHtml < url , ": page =. >: page
-  rec =. dec_pjson_ json
-  echo totalCount =. rec getval 'total_count'
-  items =. rec getval 'items'
-  echo projects =. getval&'full_name' &. > items
-  (6!:3) 10
-  allProjects =. allProjects , projects
-  if. (100 * page) > totalCount do. break. end.
-end.
-catch. catcht.
-  echo (13!:12) ''
-end.
-/:~ '/'&, &. > allProjects
+  url =. 'https://api.github.com/search/repositories?q=language:J&per_page=100&page='
+  echo url
+  page =. 0
+  allProjects =. ''
+  while. 1 do.
+    echo 'page' ; page
+    json =. , > 0 getHtml < url , ": page =. >: page
+    rec =. dec_pjson_ json
+    echo totalCount =. rec getval 'total_count'
+    items =. rec getval 'items'
+    echo projects =. getval&'full_name' &. > items
+    (6!:3) 10
+    allProjects =. allProjects , projects
+    if. totalCount <: # allProjects do. break. end.
+  end.
+  catch. catcht.
+    echo (13!:12) ''
+  end.
+ /:~ '/'&, &. > allProjects
 )
 
 
-extractFilesFromGitHubProject =: 3 : 0
+extractFilesFromGitHubProject =: 4 : 0
+NB. x fully-qualified project name: /owner/project
 NB. y zipball contents for a project from GitHub
-NB. Get the project, get contents of the relevant files,.
-project =. y
-echo project
+NB. Return table of owner ; project ; filename ; url ; file contents with line numbers
+ownerProject =. x
+echo ownerProject
+'owner project' =. < ;. _1 ownerProject
 try.
-	token =. LF -.~ (1!:1) < tokenFile
-	cmd =. 'curl -H "Authorization: token ' , token , '" -L https://github.com' , project , '/zipball/master/'
-	echo 'cmd' ; cmd
-	zip =. (2!:0) cmd
-	echo '$ zip' ; $ zip
-	zipFilename =. appDir , '/github/' , (project -. '/') , '.zip'
+	zipper =. 'zipper999'
+	zipFilename =. appDir , '/github/' , zipper , '.zip'
 	try. (2!:0) 'mkdir ' , appDir , '/github/' catch. end.
-	exdir =. appDir , '/github/' , project -. '/'
-	zip (1!:2) < zipFilename
+	exdir =. appDir , '/github/' , zipper , '/'
+	y (1!:2) < zipFilename
 	try. (2!:0) 'rm -r ' , exdir catch. end.
 	(2!:0) 'unzip -o -d ' , exdir , ' ' , zipFilename
 	commands =. ('find ' , exdir , ' -type f -name "*')&, &. > ,&'"' &. > indexSuffixes
 	filenames =. a: -.~ , > < ;. _2 @(2!:0) &. > commands
 	rawContents =. <@(1!:1)"0 filenames
 	contents =. translateToJEnglish &. > rawContents
-	echo '# filenames' ; # filenames
+	table =. ''
 	for_i. i. # filenames do.
 		lines =. < ;. 2 (> i { contents) , LF
 		lineNumbers =. ,&'_ ' &. > '_'&, &. > <@":"0 >: i. # lines
-		fullPath =. , > i { filenames
-		partialPath_1 =. ((# project -. '/') + (project -. '/') I.@E. fullPath) }. fullPath
-		partialPath =. (('^/[^/]+/') ; '') rxrplc partialPath_1
-		url =. 'https://github.com' , project , '/blob/master/' , partialPath
-		subject =. '[GitHub] ' , project , ': ' , partialPath
-		content =. (kk =.translateToJEnglish partialPath) , ' ' , subject , ' ' , ; lineNumbers ,. lines
-		echo '[' , partialPath , '] [' , kk , ']'
-NB. masterCols: link id sourcename sourcetype year monthindex day subject author body
-		priority =. 2
-		if. +./ 'jsoftware' E. url do. priority =. 3 end.
-		if. +./ 'test' E. url do. priority =. 1 end.
-		data =. url ; url ; project ; 'G' ; 9999 ; 0 ; 0 ; subject ; ' ' ; content ; <priority
-		try.
-			sqlinsert__masterDb 'content' ; masterCols ; < data
-NB. 			sqlupsert__masterDb 'content' ; 'link' ; masterCols ; < data
-		catch. catcht.
-			echo 'Problem upserting: ' , sqlerror__masterDb
-			echo (13!:12) ''
-		end.
+		fullPath =. , > i { filenames  NB. appDir / github / zipper / owner / project / filepath
+		fileName =. (('^.*?' , owner , '[^/]*/') ; '') rxrplc fullPath
+		url =. 'https://github.com' , ownerProject , '/blob/master/' , fileName
+		content =. (translateToJEnglish fileName) , ' ' , fileName , ' ' , ; lineNumbers ,. lines
+		row =. owner ; project ; fileName ; url ; content
+		if. table -: '' do. table =. ,: row else. table =. table , row end.
 	end.
 catch. catcht.
 	echo (13!:12) ''
-	echo sqlerror__masterDb ''
 end.
 try. (2!:0) 'rm -r ' , exdir catch. end.
 try. (2!:0) 'rm ' , zipFilename catch. end.
-(6!:3) 10
+table
 )
 
 crawlGitHub =: 3 : 0
@@ -416,13 +407,82 @@ for_i. i. # projectBlocks do.
   outputSpec =. ; (<' -o ') ,. files
   cmd =. 'curl --parallel --parallel-immediate -H "Authorization: token ' , token , ' " -L ' , (; '"https://github.com'&, &. > ,&'/zipball/master/" ' &. > projectBatch) , outputSpec
   (2!:0) cmd
-  zips =. (1!:1) &. > < &. > files
+  zips =. <@(1!:1)"0 files
   finalZips =. finalZips , zips
 end.
 echo '$ finalZips' ; $ finalZips
 echo # &. > finalZips
+; projectNames extractFilesFromGitHubProject &. > finalZips
 )
 NB. ========================== End GitHub =================================
+
+NB. ========================== Quora ==========================================
+crawlQuora =: 3 : 0
+echo 'crawlQuora...'
+quoraDb =. sqlopen_psqlite_ quoraDbPath
+table =. > {: sqlreadm__quoraDb 'select link, title, body from posts'
+links =. 0 {"1 table
+titles =. 1 {"1 table
+bodies =. 2 {"1 table
+augmentedBodies =. translateToJEnglish@translateHtmlEncodings &. > titles , &. > ' '&, &. > bodies
+titles ,. links ,. augmentedBodies
+)
+NB. ======================== End Quora ========================================
+
+NB. ========================= YouTube =========================================
+crawlYouTube =: 3 : 0
+echo 'crawlYouTube...'
+try.
+  youTubeDb =. sqlopen_psqlite_ youTubeDbPath
+  table =. > {: sqlreadm__youTubeDb 'select link, title, description, transcript from videos'
+  links =. 0 {"1 table
+  titles =. 1 {"1 table
+  descriptions =. 2 {"1 table
+  transcripts =. 3 {"1 table
+  titles ,. links ,. descriptions ,. transcripts
+catch. catcht.
+  echo (13!:12) ''
+end.
+)
+NB. ======================= End YouTube =======================================
+
+NB. ========================= StackOverflow =========================================
+crawlStackOverflow =: 3 : 0
+echo 'crawlStackOverflow...'
+baseUrl =. 'https://api.stackexchange.com/2.3/questions?order=desc&sort=creation&tagged=j&site=stackoverflow&pagesize=100&filter=withbody&page='
+pageNum =. 0
+lynxInputFile =. jpath '~temp/html/lynx.html'
+iconvCommand =. ' | iconv -f utf-8 -t utf-8//IGNORE '
+table =. ''
+has_more =. 1
+while. has_more do.
+  nextUrl =. baseUrl , ": pageNum =. >: pageNum
+  echo nextUrl
+  json =. 0 {:: 0 getHtml < nextUrl
+  boxed =. dec_pjson_ json
+  items =. boxed getval 'items'
+  echo '# items' ; # items
+  has_more =. boxed getval 'has_more'
+  echo 'has_more' ; has_more
+  for_item. items do.
+    item =. > item
+    title =. item getval 'title'
+    echo title
+    link =. item getval 'link'
+    bodyHtml =. item getval 'body'
+    bodyHtml (1!:2) < lynxInputFile
+    lynxCommand =. '/usr/local/bin/lynx -dump ', lynxInputFile
+    fullLynxCommand =. lynxCommand NB. , iconvCommand
+    echo fullLynxCommand
+    bodyText =. (2!:0) fullLynxCommand
+    row =. title ; link ; bodyText
+    if. table -: '' do. table =. ,: row else. table =. table , row end.
+  end.
+end.
+table
+)
+NB. ======================= End StackOverflow =======================================
+
 initializeLog ''
 
 crawl =: 3 : 0
